@@ -1,0 +1,31 @@
+{
+  "mainFile": "", 
+  "use-tabs": false, 
+  "venv": "C:\\Users\\FoxIS\\Envs\\opencv\\Scripts\\python.exe", 
+  "relatedProjects": [], 
+  "name": "EasyVision", 
+  "license": "New BSD License", 
+  "url": "", 
+  "pythonPath": "C:\\Python27_x64\\python.exe", 
+  "preExecScript": "", 
+  "additional_builtins": [], 
+  "programParams": "", 
+  "indentation": 4, 
+  "PYTHONPATH": "", 
+  "supported-extensions": [
+    ".py", 
+    ".html", 
+    ".jpg", 
+    ".png", 
+    ".ui", 
+    ".css", 
+    ".json", 
+    ".js", 
+    ".ini", 
+    ".md", 
+    ".*"
+  ], 
+  "project-type": "Import from sources", 
+  "postExecScript": "", 
+  "description": ""
+}
