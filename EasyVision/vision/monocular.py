@@ -20,7 +20,6 @@ class MonocularVision(VisionBase):
             raise DeviceNotFound()
 
         self._name = name
-        self._is_open = self._capture.isOpened()
         self._path = path
         self._frame_size = (self._capture.get(cv2.CAP_PROP_FRAME_WIDTH), self._capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self._fps = self._capture.get(cv2.CAP_PROP_FPS)
@@ -59,7 +58,7 @@ class MonocularVision(VisionBase):
 
     @property
     def is_open(self):
-        return self._is_open
+        return self._capture.isOpened()
 
     @property
     def name(self):

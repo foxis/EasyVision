@@ -2,28 +2,74 @@
 from EasyVision.base import *
 from collections import namedtuple
 from datetime import datetime
+from operator import itemgetter
 
 
-class Image(namedtuple('Image', ['source', 'image'])):
+class Image(NamedTupleExtendHelper, namedtuple('Image', ['source', 'image'])):
     __slots__ = ()
 
-    def __init__(self, source, image):
-        if not isinstance(source, VisionBase):
+    def __new__(cls, source, *args):
+        if source is not None and not isinstance(source, VisionBase):
             raise TypeError("Source must be VisionBase")
-        super(Image, self).__init__(source, image)
+        return tuple.__new__(cls, (source, ) + args)
 
 
-class Frame(namedtuple('Frame', ['timestamp', 'index', 'images'])):
+class ImageWithMask(Image):
+    __slots__ = ()
+    _fields = Image._fields + ('mask', )
+
+    def __new__(cls, source, image, mask, *args):
+        if mask is not None and not isinstance(mask, tuple):
+            raise TypeError("mask must be either a tuple of points or an image")
+        return super(ImageWithMask, cls).__new__(cls, *((source, image, mask) + args))
+
+    mask = property(itemgetter(2), doc='Alias for field number 2')
+
+
+class ImageWithFeatures(Image):
+    __slots__ = ()
+    _fields = Image._fields + ('features', )
+
+    def __new__(cls, source, image, features, *args):
+        return super(ImageWithFeatures, cls).__new__(cls, *((source, image, features) + args))
+
+    features = property(itemgetter(2), doc='Alias for field number 2')
+
+
+class ImageWithFeaturesAndMask(ImageWithMask):
+    __slots__ = ()
+    _fields = ImageWithMask._fields + ('features', )
+
+    def __new__(cls, source, image, mask, features, *args):
+        return super(ImageWithFeaturesAndMask, cls).__new__(cls, *((source, image, mask, features) + args))
+
+    features = property(itemgetter(3), doc='Alias for field number 3')
+
+
+class Frame(NamedTupleExtendHelper, namedtuple('Frame', ['timestamp', 'index', 'images'])):
     __slots__ = ()
 
-    def __init__(self, timestamp, index, images):
+    def __new__(cls, timestamp, index, images):
         if not isinstance(timestamp, datetime):
             raise TypeError("Timestamp must be datetime object")
         if not isinstance(index, int):
             raise TypeError("Index must be integer")
         if not isinstance(images, tuple) or not all(isinstance(i, Image) for i in images):
             raise TypeError("Images must be a tuple of Image objects")
-        super(Frame, self).__init__(timestamp, index, images)
+        return super(Frame, cls).__new__(cls, timestamp, index, images)
+
+    def get_image(self, source):
+        if isinstance(source, VisionBase):
+            for img in self.images:
+                if img.source == source:
+                    return img
+        elif isinstance(source, str):
+            for img in self.images:
+                if isinstance(img.source, VisionBase) and img.source.name == source:
+                    return img
+        else:
+            raise TypeError("Only either VisionBase or string are supported")
+        return None
 
 
 class VisionBase(EasyVisionBase):
