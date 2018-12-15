@@ -24,6 +24,19 @@ def test_load_images():
 
         assert(frame_count == 3)
 
+
+@mark.slow
+def test_load_image():
+    image = ImagesVision.load_image(images[0])
+    vision = ImagesVision(images)
+    with FeatureExtraction(vision, 'ORB') as vision:
+        result = vision.process(image)
+        assert(isinstance(result, ImageWithFeatures))
+        assert(result.image is image.image)
+        assert(hasattr(result.features, 'points'))
+        assert(hasattr(result.features, 'descriptors'))
+
+
 @mark.long
 def test_load_and_display_images():
     vision = ImagesVision(images, display_results=True)

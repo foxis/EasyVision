@@ -16,13 +16,6 @@ class Subclass(EngineBase):
     def compute(self):
         return self.vision.capture()
 
-    def release(self):
-        pass
-
-    @property
-    def name(self):
-        pass
-
     @property
     def description(self):
         pass
@@ -53,10 +46,6 @@ class VisionSubclass(VisionBase):
         return self.frame < self.frames
 
     @property
-    def name(self):
-        pass
-
-    @property
     def description(self):
         pass
 
@@ -82,6 +71,7 @@ class VisionSubclass(VisionBase):
         :return: [{name:, description:, path:, etc:}]
         """
         pass
+
 
 def test_abstract_vision_abstract():
     with raises(TypeError):

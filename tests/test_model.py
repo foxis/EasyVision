@@ -36,12 +36,18 @@ def test_implementation():
 def test_model_view():
     view = ModelView('image', 'mask', 'features', 'feature type')
     assert(view.image == 'image')
-    assert(view.mask == 'mask')
+    assert(view.outline == 'mask')
     assert(view.features == 'features')
     assert(view.feature_type == 'feature type')
 
 
-def test_add_model():
+def test_add_model_view():
     model = Subclass('empty model', [])
-    model.add_view(ModelView('image', 'mask', 'features', 'feature type'))
+    model.update(ModelView('image', 'outline', 'features', 'feature type'))
     assert(len(model))
+
+def test_add_model():
+    model = Subclass('model', [ModelView('image', 'outline', 'features', 'feature type')])
+    model2 = Subclass('new model', [ModelView('image1', 'outline1', 'features1', 'feature type')])
+    model.update(model2)
+    assert(len(model) == 2)

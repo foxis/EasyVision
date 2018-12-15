@@ -18,6 +18,19 @@ def test_load_images():
 
         assert(frame_count == 3)
 
+@mark.slow
+def test_load_image():
+    image = ImagesVision.load_image("test_data/34838518832_fd00147042_k.jpg")
+    assert(image.source is None)
+    assert(image.image is not None)
+
+
+@mark.slow
+def test_load_image_fail():
+    with raises(IOError):
+        ImagesVision.load_image("no-such-file.jpg")
+
+
 @mark.long
 def test_load_and_display_images():
     images = ["test_data/34838518832_fd00147042_k.jpg", "test_data/2732011028_f0f033e678_b.jpg", "test_data/4472701625_6b23da9a23_b.jpg"]
