@@ -1,33 +1,46 @@
 # -*- coding: utf-8 -*-
 from .base import EngineBase
 from EasyVision.models import ObjectModel, ModelView
+from EasyVision.processors.base import *
+from EasyVision.processors import FeatureExtraction
 import cv2
 import numpy as np
 
 
 class ObjectRecognitionEngine(EngineBase):
 
-    def __init__(self, vision, feature_type, max_matches=10, *args, **kwargs):
-        super(ObjectRecognitionEngine, self).__init__(vision, *args, **kwargs)
+    def __init__(self, vision, feature_type=None, max_matches=10, *args, **kwargs):
+        if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
+            raise TypeError("Vision must be either VisionBase or ProcessorBase")
+        if not isinstance(vision, ProcessorBase) and not feature_type:
+            raise TypeError("Feature type must be provided")
 
-        self._models = []
+        self._models = {}
+        self._feature_type = feature_type
         self._max_matches = max_matches
 
-        if feature_type == 'ORB':
-            self._descriptor = cv2.ORB_create(nfeatures=10000, scoreType=cv2.ORB_FAST_SCORE)
-        elif feature_type == 'KAZE':
-            self._descriptor = cv2.KAZE_create()
-        elif feature_type == 'AKAZE':
-            self._descriptor = cv2.AKAZE_create()
+        _vision = FeatureExtraction(vision, feature_type=feature_type) if not isinstance(vision, ProcessorBase) else vision
+
+        super(ObjectRecognitionEngine, self).__init__(_vision, *args, **kwargs)
 
     def compute(self):
         frame = self.vision.capture()
-        if frame:
-            views = self._extract_features(frame)
-            self._match_models(frame, views)
+        return frame, self._match_models(frame)
 
-    def enroll(self, image, add=True):
-        pass
+    def enroll(self, name, image, add=False):
+        processed = self.vision.process(image)
+        model = ObjectModel.from_processed_image(name, processed, self._feature_type)
+        if model is None:
+            return None
+        if add:
+            if name in self._models:
+                self._models[name].update(model)
+            else:
+                self._models[name] = model
+        return model
+
+    def release(self):
+        super(ObjectRecognitionEngine, self).release()
 
     @property
     def description(self):
@@ -44,10 +57,6 @@ class ObjectRecognitionEngine(EngineBase):
             "feature_types": ('ORB', 'KAZE', 'AKAZE')
         }
 
-    def _extract_features(self, frame):
-        keypoints = [ModelView(image, self._descriptor.detectAndCompute(image.image, np.array([])), self._feature_type) for image in frame.images]
-        return tuple(keypoints)
-
-    def _match_models(self, frame, views):
-        scores = [model.compute(frame, views) for model in self._models]
-        return sorted(scores, key=lambda x: x.score, reverse=True)[0:self._max_matches]
+    def _match_models(self, frame):
+        results = [model.compute(frame) for model in self._models.values()]
+        return sorted(results, key=lambda x: x.score, reverse=True)[0:self._max_matches]

@@ -39,6 +39,9 @@ class EasyVisionBase(object):
     def __exit__(self, type, value, traceback):
         self.release()
 
+    def __next__(self):
+        return self.next()
+
     def __iter__(self):
         return self
 

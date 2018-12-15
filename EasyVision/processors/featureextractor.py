@@ -5,6 +5,7 @@ from .base import *
 
 
 class FeatureExtraction(ProcessorBase):
+    Features = namedtuple('Features', ['points', 'descriptors'])
 
     def __init__(self, vision, feature_type, debug=False, display_results=False, *args, **kwargs):
         if feature_type == 'ORB':
@@ -20,7 +21,7 @@ class FeatureExtraction(ProcessorBase):
             defaults.update(kwargs)
             self._descriptor = cv2.AKAZE_create(**kwargs)
         else:
-            raise TypeError("Invalid feature type")
+            raise ValueError("Invalid feature type")
         super(FeatureExtraction, self).__init__(vision, debug=debug, display_results=display_results, *args, **kwargs)
 
     @property
@@ -38,9 +39,9 @@ class FeatureExtraction(ProcessorBase):
             self._draw_keypoints(image.image, keypoints[0])
 
         if mask:
-            return ImageWithMaskAndFeatures(self, image.image, image.mask, keypoints)
+            return ImageWithMaskAndFeatures(self, image.image, image.mask, self.Features(*keypoints))
         else:
-            return ImageWithFeatures(self, image.image, keypoints)
+            return ImageWithFeatures(self, image.image, self.Features(*keypoints))
 
     def _make_mask(self, mask):
         raise NotImplementedError()

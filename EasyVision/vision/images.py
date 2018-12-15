@@ -9,7 +9,8 @@ class ImagesVision(VisionBase):
 
     def __init__(self, image_paths, *args, **kwargs):
         self._name = 'images'
-        self._images = [cv2.imread(path) for path in image_paths]
+        self._paths = image_paths[:]
+        self._images = [ImagesVision.load_image(path, _self=self) for path in image_paths]
         self._frame_count = len(image_paths)
         self._frame_index = 0
         super(ImagesVision, self).__init__(*args, **kwargs)
@@ -28,8 +29,20 @@ class ImagesVision(VisionBase):
         self._frame_index += 1
         timestamp = datetime.now()
         if self.display_results:
-            cv2.imshow(self.name, frame)
-        return Frame(timestamp, self._frame_index, (Image(self, frame), ))
+            cv2.imshow(self.name, frame.image)
+        return Frame(timestamp, self._frame_index, (frame, ))
+
+    @staticmethod
+    def load_image(image_path, mask_path=None, _self=None):
+        image = cv2.imread(image_path)
+        if image is None:
+            raise IOError("Could not read the image: " + image_path)
+        mask = None
+        if mask_path:
+            mask = cv2.imread(mask_path)
+            if mask is None:
+                raise IOError("Could not read the mask image: " + mask_path)
+        return ImageWithMask(_self, image, path) if mask else Image(_self, image)
 
     @property
     def frame_size(self):
@@ -57,7 +70,7 @@ class ImagesVision(VisionBase):
 
     @property
     def path(self):
-        return ""
+        return self._paths[self._frame_index]
 
     @property
     def devices(self):
