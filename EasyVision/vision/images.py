@@ -8,15 +8,14 @@ from datetime import datetime
 class ImagesVision(VisionBase):
 
     def __init__(self, image_paths, *args, **kwargs):
-        super(ImagesVision, self).__init__(*args, **kwargs)
-
         self._name = 'images'
         self._images = [cv2.imread(path) for path in image_paths]
         self._frame_count = len(image_paths)
         self._frame_index = 0
+        super(ImagesVision, self).__init__(*args, **kwargs)
 
     def release(self):
-        if self._capture:
+        if self._images:
             self._images = None
             if self.debug:
                 cv2.destroyWindow(self.name)
@@ -28,7 +27,7 @@ class ImagesVision(VisionBase):
         frame = self._images[self._frame_index]
         self._frame_index += 1
         timestamp = datetime.now()
-        if self.debug:
+        if self.display_results:
             cv2.imshow(self.name, frame)
         return Frame(timestamp, self._frame_index, (Image(self, frame), ))
 
@@ -64,7 +63,7 @@ class ImagesVision(VisionBase):
     def devices(self):
         return ()
 
-    def debug_changed(self, last, current):
+    def display_results_changed(self, last, current):
         if current:
             cv2.namedWindow(self.name, cv2.WINDOW_NORMAL)
         else:

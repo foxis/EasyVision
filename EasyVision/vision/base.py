@@ -36,12 +36,12 @@ class ImageWithFeatures(Image):
     features = property(itemgetter(2), doc='Alias for field number 2')
 
 
-class ImageWithFeaturesAndMask(ImageWithMask):
+class ImageWithMaskAndFeatures(ImageWithMask):
     __slots__ = ()
     _fields = ImageWithMask._fields + ('features', )
 
     def __new__(cls, source, image, mask, features, *args):
-        return super(ImageWithFeaturesAndMask, cls).__new__(cls, *((source, image, mask, features) + args))
+        return super(ImageWithMaskAndFeatures, cls).__new__(cls, *((source, image, mask, features) + args))
 
     features = property(itemgetter(3), doc='Alias for field number 3')
 
@@ -56,7 +56,7 @@ class Frame(NamedTupleExtendHelper, namedtuple('Frame', ['timestamp', 'index', '
             raise TypeError("Index must be integer")
         if not isinstance(images, tuple) or not all(isinstance(i, Image) for i in images):
             raise TypeError("Images must be a tuple of Image objects")
-        return super(Frame, cls).__new__(cls, timestamp, index, images)
+        return super(Frame, cls).__new__(cls, timestamp, index, tuple(images))
 
     def get_image(self, source):
         if isinstance(source, VisionBase):

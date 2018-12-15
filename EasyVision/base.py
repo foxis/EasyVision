@@ -7,9 +7,9 @@ class NamedTupleExtendHelper(object):
         return "{}({})".format(self.__class__.__name__, ", ".join("%s=%r" % field for field in zip(self._fields, self)))
 
     @classmethod
-    def _make(cls, iterable, new=tuple.__new__, len=len):
+    def _make(cls, iterable, new=None, len=len):
         'Make a new object from a sequence or iterable'
-        result = new(cls, iterable)
+        result = cls.__new__(cls, *iterable)
         if len(result) != len(cls._fields):
             raise TypeError('Expected %d arguments, got %d' % (len(cls._fields), len(result)))
         return result
@@ -50,9 +50,9 @@ class EasyVisionBase(object):
     def next(self):
         pass
 
-    @abstractproperty
+    @property
     def name(self):
-        pass
+        return self.__class__.__name__
 
     @abstractproperty
     def description(self):
