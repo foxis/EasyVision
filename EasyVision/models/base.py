@@ -4,11 +4,11 @@ from EasyVision.exceptions import *
 from collections import namedtuple
 
 
-class ModelView(namedtuple('ModelView', ['image', 'mask', 'features', 'feature_type'])):
+class ModelView(NamedTupleExtendHelper, namedtuple('ModelView', ['image', 'mask', 'features', 'feature_type'])):
     __slots__ = ()
 
-    def __init__(self, image, mask, features, feature_type):
-        super(ModelView, self).__init__(image, mask, features, feature_type)
+    def __new__(cls, image, mask, features, feature_type):
+        return super(ModelView, cls).__new__(cls, image, mask, features, feature_type)
 
 
 class ModelBase(EasyVisionBase):
@@ -21,7 +21,6 @@ class ModelBase(EasyVisionBase):
         self._view_index = 0
         self._name = name
         self._views = [i for i in views]
-        print name, self._name, self.name
 
     def __len__(self):
         return len(self._views)
@@ -45,7 +44,6 @@ class ModelBase(EasyVisionBase):
 
     @property
     def name(self):
-        print 'name', self._name
         return self._name
 
     @abstractmethod

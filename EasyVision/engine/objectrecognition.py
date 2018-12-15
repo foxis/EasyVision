@@ -26,7 +26,7 @@ class ObjectRecognitionEngine(EngineBase):
             views = self._extract_features(frame)
             self._match_models(frame, views)
 
-    def enroll(self, image, mask=None):
+    def enroll(self, image, add=True):
         pass
 
     @property

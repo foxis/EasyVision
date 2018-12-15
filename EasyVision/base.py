@@ -2,6 +2,19 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 
+class NamedTupleExtendHelper(object):
+    def __repr__(self):
+        return "{}({})".format(self.__class__.__name__, ", ".join("%s=%r" % field for field in zip(self._fields, self)))
+
+    @classmethod
+    def _make(cls, iterable, new=tuple.__new__, len=len):
+        'Make a new Point object from a sequence or iterable'
+        result = new(cls, iterable)
+        if len(result) != len(cls._fields):
+            raise TypeError('Expected %d arguments, got %d' % (len(cls._fields), len(result)))
+        return result
+
+
 class EasyVisionBase(object):
     __metaclass__ = ABCMeta
     __slots__ = ['_debug', '_display_results']
