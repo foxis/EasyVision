@@ -116,7 +116,7 @@ def test_image_features():
 
 
 def test_image_features_mask():
-    img = ImageWithFeaturesAndMask(Subclass(), "Some frame", ("Some mask", ), "features")
+    img = ImageWithMaskAndFeatures(Subclass(), "Some frame", ("Some mask", ), "features")
     assert(isinstance(img.source, Subclass))
     assert(img.image == "Some frame")
     assert(img.features == "features")

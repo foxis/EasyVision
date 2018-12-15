@@ -35,10 +35,6 @@ class Subclass(EasyVisionBase):
         return self.frame < self.frames
 
     @property
-    def name(self):
-        return "Test"
-
-    @property
     def description(self):
         return "Testing base class"
 
@@ -72,7 +68,8 @@ def test_abstract_base_abstract():
 
 
 def test_implementation():
-    _ = Subclass()
+    tmp = Subclass()
+    assert(tmp.name == 'Subclass')
 
 
 def test_implementation_context():
@@ -142,6 +139,7 @@ def test_debug_changed():
 
 def test_debug_changed_init():
     vis = SubclassOverload(debug=True)
+    assert(vis.name == 'SubclassOverload')
     assert(vis.debug_changed_called)
     assert(not vis.display_changed_called)
 
