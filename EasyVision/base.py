@@ -8,10 +8,17 @@ class NamedTupleExtendHelper(object):
 
     @classmethod
     def _make(cls, iterable, new=tuple.__new__, len=len):
-        'Make a new Point object from a sequence or iterable'
+        'Make a new object from a sequence or iterable'
         result = new(cls, iterable)
         if len(result) != len(cls._fields):
             raise TypeError('Expected %d arguments, got %d' % (len(cls._fields), len(result)))
+        return result
+
+    def _replace(self, **kwds):
+        'Return a new object replacing specified fields with new values'
+        result = self._make(map(kwds.pop, self._fields, self))
+        if kwds:
+            raise ValueError('Got unexpected field names: %r' % kwds.keys())
         return result
 
 

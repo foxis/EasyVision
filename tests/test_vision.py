@@ -73,11 +73,39 @@ def test_image():
     assert(img.image == "Some frame")
 
 
+def test_image_make():
+    img = Image._make([Subclass(), "Some frame"])
+    assert(isinstance(img.source, Subclass))
+    assert(img.image == "Some frame")
+
+
+def test_image_replace():
+    img = Image(Subclass(), "Some frame")
+    img1 = img._replace(image="Some other frame")
+    assert(isinstance(img1.source, Subclass))
+    assert(img1.image == "Some other frame")
+
+
 def test_image_mask():
     img = ImageWithMask(Subclass(), "Some frame", ("Some mask", ))
     assert(isinstance(img.source, Subclass))
     assert(img.image == "Some frame")
     assert(img.mask == ("Some mask", ))
+
+
+def test_image_mask_make():
+    img = ImageWithMask._make([Subclass(), "Some frame", ("Some mask", )])
+    assert(isinstance(img.source, Subclass))
+    assert(img.image == "Some frame")
+    assert(img.mask == ("Some mask", ))
+
+
+def test_image_mask_replace():
+    img = ImageWithMask(Subclass(), "Some frame", ("Some mask", ))
+    img1 = img._replace(image="Some other frame")
+    assert(isinstance(img1.source, Subclass))
+    assert(img1.image == "Some other frame")
+    assert(img1.mask == ("Some mask", ))
 
 
 def test_image_features():
