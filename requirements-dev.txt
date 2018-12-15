@@ -1,2 +1,6 @@
 pathlib_mate    # autopep8 your code
 twine>=1.5.0    # make distribution archive
+numpy==1.15.4
+opencv-contrib-python==3.4.2.16
+pytest==4.0.1
+pytest-mock==1.10.0
