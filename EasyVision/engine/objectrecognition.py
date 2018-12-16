@@ -27,9 +27,9 @@ class ObjectRecognitionEngine(EngineBase):
         frame = self.vision.capture()
         return frame, self._match_models(frame)
 
-    def enroll(self, name, image, add=False):
+    def enroll(self, name, image, add=False, **kwargs):
         processed = self.vision.process(image)
-        model = ObjectModel.from_processed_image(name, processed, self._feature_type)
+        model = ObjectModel.from_processed_image(name, processed, self._feature_type, **kwargs)
         if model is None:
             return None
         if add:
@@ -58,5 +58,7 @@ class ObjectRecognitionEngine(EngineBase):
         }
 
     def _match_models(self, frame):
-        results = [model.compute(frame) for model in self._models.values()]
-        return sorted(results, key=lambda x: x.score, reverse=True)[0:self._max_matches]
+        results = (model.compute(frame) for model in self._models.values())
+        results = [i for i in results if i]
+        print results
+        return sorted(results, key=lambda x: x.score, reverse=False)[0:self._max_matches]

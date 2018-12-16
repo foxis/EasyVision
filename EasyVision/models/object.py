@@ -8,11 +8,11 @@ import numpy as np
 
 class ObjectModel(ModelBase):
     __slots__ = ('_matcher')
-    MatchResult = namedtuple('MatchResult', ['matches', 'homography', 'status', 'outline', 'view'])
-    ComputeResult = namedtuple('ComputeResult', ['score', 'homography', 'outline', 'matches'])
+    MatchResult = namedtuple('MatchResult', ['matches', 'homography', 'outline', 'view'])
+    ComputeResult = namedtuple('ComputeResult', ['model', 'score', 'homography', 'outline', 'matches'])
 
     def __init__(self, name, views, *args, **kwargs):
-        self._matcher = cv2.DescriptorMatcher_create("BruteForce")
+        self._matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
         super(ObjectModel, self).__init__(name, views, *args, **kwargs)
 
     def compute(self, frame, **kwargs):
@@ -23,7 +23,7 @@ class ObjectModel(ModelBase):
             if not hasattr(image, "features"):
                 raise ValueError("Image must implement features")
 
-        views = [self._match_view(frame, view) for view in self]
+        views = [self._match_view(frame, view, **kwargs) for view in self]
 
         if all(view is None for view in views):
             return None
@@ -31,9 +31,9 @@ class ObjectModel(ModelBase):
         best = max(views, key=lambda x: sum(len(y.matches) for y in x))
         homography = tuple(x.homography for x in best)
         outline = tuple(x.outline for x in best)
-        score = sum(len(x.matches) for x in best) / sum(len(x.view.features.points) for x in best)
+        score = min(sum(m.distance for m in x.matches) for x in best) ** .5
 
-        return self.ComputeResult(score=score, homography=homography, outline=outline, matches=views)
+        return self.ComputeResult(model=self, score=score, homography=homography, outline=outline, matches=views)
 
     def release(self):
         pass
@@ -43,7 +43,7 @@ class ObjectModel(ModelBase):
         return "Simple feature(SIFT/ORB/KAZE/AKAZE) based object model"
 
     @staticmethod
-    def from_processed_image(name, image, feature_type):
+    def from_processed_image(name, image, feature_type, **kwargs):
         if not isinstance(image, Image):
             raise TypeError("Image must be Image type")
         if not hasattr(image, "features"):
@@ -54,37 +54,80 @@ class ObjectModel(ModelBase):
             pass
         else:
             h, w, _ = image.image.shape
-            outline = (
-                (0, 0), (w, 0),
-                (w, h), (0, h)
+            pts = (
+                (0, 0), (w - 1, 0),
+                (w - 1, h - 1), (0, h - 1)
             )
+            outline = np.array(pts, dtype=np.float32).reshape((-1, 1, 2))
 
         view = ModelView(image.image, outline, image.features, feature_type)
-        return ObjectModel(name, [view])
+        return ObjectModel(name, [view], **kwargs)
 
     def _match_view(self, frame, view, **kwargs):
-        return [self._match_keypoints(image.features, view, **kwargs) for image in frame.images]
+        view_matches = [self._match_keypoints(image.features, view, **kwargs) for image in frame.images]
 
-    def _calculate_outline(self, view, match):
+        if self.display_results:
+            self._draw(frame, view_matches)
+
+        if all(match is None for match in view_matches):
+            return None
+        else:
+            return view_matches
+
+    def _calculate_outline(self, mask):
         pass
 
-    def _match_keypoints(self, featuresA, view, ratio=0.75, reprojThresh=4.0):
+    def _match_keypoints(self, featuresA, view, ratio=0.7, reprojThresh=5.0, distance_thresh=50, min_matches=5):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = view.features
         outline = view.outline
 
-        rawMatches = self._matcher.knnMatch(descriptorsA, descriptorsB, 2)
-        matches = [(m[0].trainIdx, m[0].queryIdx) for m in rawMatches if len(m) == 2 and m[0].distance < m[1].distance * ratio]
+        matches = self._matcher.knnMatch(descriptorsA, descriptorsB, 2)
 
-        # computing a homography requires at least 4 matches
-        if len(matches) > 4:
-            # construct the two sets of points
-            ptsA = np.float32([kpsA[i].pt for (_, i) in matches])
-            ptsB = np.float32([kpsB[i].pt for (i, _) in matches])
+        if matches is None:
+            return None
 
-            # compute the homography between the two sets of points
-            H, status = cv2.findHomography(ptsA, ptsB, cv2.RANSAC, reprojThresh)
+        matches.sort(key=lambda x: x[0].distance)
+        matches = [m for m, n in matches if m.distance < n.distance * ratio and m.distance < distance_thresh]
 
-            # return the matches along with the homograpy matrix
-            # and status of each matched point
-            return self.MatchResult(matches, H, status, outline, view)
+        #matches = sorted(matches, key=lambda x: x.distance)[:20]
+
+        if len(matches) > min_matches:
+            ptsA = np.float32([kpsA[m.queryIdx].pt for m in matches])
+            ptsB = np.float32([kpsB[m.trainIdx].pt for m in matches])
+
+            M = cv2.findHomography(ptsB, ptsA, cv2.RANSAC, reprojThresh)
+
+            H, inliers = M
+
+            if H is None:
+                return None
+
+            if sum(inliers) < min_matches:
+                return None
+
+            outline = cv2.perspectiveTransform(view.outline, H)
+
+            matches = [m for m, pt in zip(matches, ptsA) if cv2.pointPolygonTest(outline, (pt[0], pt[1]), False) >= 0]
+
+            if len(matches) < min_matches:
+                return None
+
+            return self.MatchResult(matches, H, outline, view)
+
+    def _draw(self, frame, view_matches):
+        for source, matches in zip(frame.images, view_matches):
+            if matches is None:
+                continue
+
+            name = "{} = {}[{}]".format(source.source.name, self._name, self._views.index(matches.view))
+
+            params = dict(
+                               singlePointColor=None,
+                               matchColor=(0, 255, 0),
+                               flags=2)
+            res = cv2.drawMatches(source.image, source.features.points,
+                                  matches.view.image, matches.view.features.points,
+                                  matches.matches, None, **params)
+            res = cv2.polylines(res, [np.int32(matches.outline)], True, [255, 0, 0], 3, 8)
+            cv2.imshow(name, res)

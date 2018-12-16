@@ -17,10 +17,10 @@ class ModelBase(EasyVisionBase):
     def __init__(self, name, views, *args, **kwargs):
         if not all(isinstance(view, ModelView) for view in views):
             raise TypeError("Views must be iterable with items of type ModelView")
-        super(ModelBase, self).__init__(*args, **kwargs)
         self._view_index = 0
         self._name = name
         self._views = [i for i in views]
+        super(ModelBase, self).__init__(*args, **kwargs)
 
     def __len__(self):
         return len(self._views)
