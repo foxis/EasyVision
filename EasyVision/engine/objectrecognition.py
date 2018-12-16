@@ -29,7 +29,7 @@ class ObjectRecognitionEngine(EngineBase):
 
     def enroll(self, name, image, add=False, **kwargs):
         processed = self.vision.process(image)
-        model = ObjectModel.from_processed_image(name, processed, self._feature_type, **kwargs)
+        model = ObjectModel.from_processed_image(name, processed, **kwargs)
         if model is None:
             return None
         if add:

@@ -28,22 +28,24 @@ class ImageWithMask(Image):
 
 class ImageWithFeatures(Image):
     __slots__ = ()
-    _fields = Image._fields + ('features', )
+    _fields = Image._fields + ('features', 'feature_type')
 
-    def __new__(cls, source, image, features, *args):
-        return super(ImageWithFeatures, cls).__new__(cls, *((source, image, features) + args))
+    def __new__(cls, source, image, features, feature_type, *args):
+        return super(ImageWithFeatures, cls).__new__(cls, *((source, image, features, feature_type) + args))
 
     features = property(itemgetter(2), doc='Alias for field number 2')
+    feature_type = property(itemgetter(3), doc='Alias for field number 3')
 
 
 class ImageWithMaskAndFeatures(ImageWithMask):
     __slots__ = ()
-    _fields = ImageWithMask._fields + ('features', )
+    _fields = ImageWithMask._fields + ('features', 'feature_type')
 
-    def __new__(cls, source, image, mask, features, *args):
-        return super(ImageWithMaskAndFeatures, cls).__new__(cls, *((source, image, mask, features) + args))
+    def __new__(cls, source, image, mask, features, feature_type, *args):
+        return super(ImageWithMaskAndFeatures, cls).__new__(cls, *((source, image, mask, features, feature_type) + args))
 
     features = property(itemgetter(3), doc='Alias for field number 3')
+    feature_type = property(itemgetter(4), doc='Alias for field number 4')
 
 
 class Frame(NamedTupleExtendHelper, namedtuple('Frame', ['timestamp', 'index', 'images'])):

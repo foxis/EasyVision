@@ -109,17 +109,19 @@ def test_image_mask_replace():
 
 
 def test_image_features():
-    img = ImageWithFeatures(Subclass(), "Some frame", "features")
+    img = ImageWithFeatures(Subclass(), "Some frame", "features", "type")
     assert(isinstance(img.source, Subclass))
     assert(img.image == "Some frame")
     assert(img.features == "features")
+    assert(img.feature_type == "type")
 
 
 def test_image_features_mask():
-    img = ImageWithMaskAndFeatures(Subclass(), "Some frame", ("Some mask", ), "features")
+    img = ImageWithMaskAndFeatures(Subclass(), "Some frame", ("Some mask", ), "features", "type")
     assert(isinstance(img.source, Subclass))
     assert(img.image == "Some frame")
     assert(img.features == "features")
+    assert(img.feature_type == "type")
     assert(img.mask == ("Some mask", ))
 
 

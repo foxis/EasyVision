@@ -7,12 +7,18 @@ import numpy as np
 
 
 class ObjectModel(ModelBase):
-    __slots__ = ('_matcher')
+    __slots__ = ('_matcher_bf', '_matcher_flann')
     MatchResult = namedtuple('MatchResult', ['matches', 'homography', 'outline', 'view'])
     ComputeResult = namedtuple('ComputeResult', ['model', 'score', 'homography', 'outline', 'matches'])
 
     def __init__(self, name, views, *args, **kwargs):
-        self._matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
+        self._matcher_bf = cv2.BFMatcher(cv2.NORM_HAMMING)
+        FLANN_INDEX_KDTREE = 0
+        index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+        search_params = dict(checks=50)   # or pass empty dictionary
+
+        self._matcher_flann = cv2.FlannBasedMatcher(index_params,search_params)
+
         super(ObjectModel, self).__init__(name, views, *args, **kwargs)
 
     def compute(self, frame, **kwargs):
@@ -22,6 +28,8 @@ class ObjectModel(ModelBase):
         for image in frame.images:
             if not hasattr(image, "features"):
                 raise ValueError("Image must implement features")
+            if not hasattr(image, "feature_type"):
+                raise ValueError("Image must implement feature_type")
 
         views = [self._match_view(frame, view, **kwargs) for view in self]
 
@@ -43,11 +51,13 @@ class ObjectModel(ModelBase):
         return "Simple feature(SIFT/ORB/KAZE/AKAZE) based object model"
 
     @staticmethod
-    def from_processed_image(name, image, feature_type, **kwargs):
+    def from_processed_image(name, image, **kwargs):
         if not isinstance(image, Image):
             raise TypeError("Image must be Image type")
         if not hasattr(image, "features"):
             raise ValueError("Image must implement features")
+        if not hasattr(image, "feature_type"):
+            raise ValueError("Image must implement feature_type")
 
         if hasattr(image, "mask"):
             #calculate outline
@@ -60,11 +70,11 @@ class ObjectModel(ModelBase):
             )
             outline = np.array(pts, dtype=np.float32).reshape((-1, 1, 2))
 
-        view = ModelView(image.image, outline, image.features, feature_type)
+        view = ModelView(image.image, outline, image.features, image.feature_type)
         return ObjectModel(name, [view], **kwargs)
 
     def _match_view(self, frame, view, **kwargs):
-        view_matches = [self._match_keypoints(image.features, view, **kwargs) for image in frame.images]
+        view_matches = [self._match_keypoints(image.features, view, **kwargs) for image in frame.images if image.feature_type == view.feature_type]
 
         if self.display_results:
             self._draw(frame, view_matches)
@@ -82,7 +92,10 @@ class ObjectModel(ModelBase):
         kpsB, descriptorsB = view.features
         outline = view.outline
 
-        matches = self._matcher.knnMatch(descriptorsA, descriptorsB, 2)
+        if view.feature_type in ['ORB', 'AKAZE']:
+            matches = self._matcher_bf.knnMatch(descriptorsA, descriptorsB, 2)
+        else:
+            matches = self._matcher_flann.knnMatch(descriptorsA, descriptorsB, 2)
 
         if matches is None:
             return None

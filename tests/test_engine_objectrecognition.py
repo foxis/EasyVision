@@ -21,31 +21,16 @@ obj2 = "test_data/4472701625_6b23da9a23_b_crop2.jpg"
 
 @mark.long
 def test_match_images():
-    with FeatureExtraction(ImagesVision(images), 'ORB', display_results=True) as extractor:
-        with ObjectRecognitionEngine(extractor, display_results=True) as engine:
+    _test_match_images('ORB', display=True)
+
+
+def _test_match_images(feature_type, display=False):
+    with FeatureExtraction(ImagesVision(images), feature_type, display_results=display) as extractor:
+        with ObjectRecognitionEngine(extractor, display_results=display) as engine:
             frame_count = 0
 
-            assert(engine.enroll("obj1", ImagesVision.load_image(obj1), add=True, display_results=True) is not None)
-            assert(engine.enroll("obj2", ImagesVision.load_image(obj2), add=True, display_results=True) is not None)
-            assert(len(engine.models) == 2)
-
-            for frame, matches in engine:
-                frame_count += 1
-                assert(isinstance(frame, Frame))
-                assert(frame.images[0].image is not None)
-                cv2.waitKey(0)
-
-            assert(frame_count == len(images))
-
-
-@mark.slow
-def test_match_images_default_extractor():
-    with FeatureExtraction(ImagesVision(images), 'ORB', display_results=False) as extractor:
-        with ObjectRecognitionEngine(extractor, display_results=False) as engine:
-            frame_count = 0
-
-            assert(engine.enroll("obj1", ImagesVision.load_image(obj1), add=True, display_results=False) is not None)
-            assert(engine.enroll("obj2", ImagesVision.load_image(obj2), add=True, display_results=False) is not None)
+            assert(engine.enroll("obj1", ImagesVision.load_image(obj1), add=True, display_results=display) is not None)
+            assert(engine.enroll("obj2", ImagesVision.load_image(obj2), add=True, display_results=display) is not None)
             assert(len(engine.models) == 2)
 
             for frame, matches in engine:
@@ -61,3 +46,18 @@ def test_match_images_default_extractor():
                     assert(len(matches) == 0)
 
             assert(frame_count == len(images))
+
+
+@mark.slow
+def test_match_images_default_extractor_ORB():
+    _test_match_images('ORB')
+
+
+@mark.slow
+def test_match_images_default_extractor_KAZE():
+    _test_match_images('KAZE')
+
+
+@mark.slow
+def test_match_images_default_extractor_AKAZE():
+    _test_match_images('AKAZE')
