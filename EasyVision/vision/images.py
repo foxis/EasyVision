@@ -7,12 +7,13 @@ from datetime import datetime
 
 class ImagesVision(VisionBase):
 
-    def __init__(self, image_paths, *args, **kwargs):
+    def __init__(self, image_paths, img_args=(), *args, **kwargs):
         self._name = 'images'
         self._paths = image_paths[:]
-        self._images = [ImagesVision.load_image(path, _self=self) for path in image_paths]
+        self._images = image_paths
         self._frame_count = len(image_paths)
         self._frame_index = 0
+        self._img_args = img_args
         super(ImagesVision, self).__init__(*args, **kwargs)
 
     def release(self):
@@ -25,7 +26,7 @@ class ImagesVision(VisionBase):
         if not self.is_open:
             return None
 
-        frame = self._images[self._frame_index]
+        frame = ImagesVision.load_image(self._paths[self._frame_index], _self=self, img_args=self._img_args)
         self._frame_index += 1
         timestamp = datetime.now()
         if self.display_results:
@@ -33,8 +34,8 @@ class ImagesVision(VisionBase):
         return Frame(timestamp, self._frame_index, (frame, ))
 
     @staticmethod
-    def load_image(image_path, mask_path=None, _self=None):
-        image = cv2.imread(image_path)
+    def load_image(image_path, mask_path=None, _self=None, img_args=()):
+        image = cv2.imread(image_path, *img_args)
         if image is None:
             raise IOError("Could not read the image: " + image_path)
         mask = None

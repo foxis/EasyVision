@@ -32,7 +32,7 @@ class ProcessorBase(VisionBase):
         return self._vision
 
     def get_source(self, name):
-        if self.name == name:
+        if self.__class__.__name__ == name:
             return self
         elif isinstance(self.source, ProcessorBase):
             return self.source.get_source(name)

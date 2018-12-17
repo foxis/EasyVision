@@ -119,3 +119,7 @@ def test_capture_stacked(mocker):
     assert(isinstance(img, Frame))
     assert(img.images[0].source is processorB)
     assert(img.images[0].image == "An Image")
+    assert(processorB.get_source('Test') is vision)
+    assert(processorB.get_source('ProcessorA') is processorA)
+    assert(processorB.get_source('ProcessorB') is processorB)
+    assert(processorB.get_source('Test no') is None)

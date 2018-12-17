@@ -26,6 +26,12 @@ class FeatureExtraction(ProcessorBase):
             if extract:
                 raise ValueError("Cannot extract features with FAST detector")
             self._descriptor = cv2.FastFeatureDetector_create(**kwargs)
+        elif feature_type == 'GFTT':
+            defaults = dict()
+            defaults.update(kwargs)
+            if extract:
+                raise ValueError("Cannot extract features with GFTT detector")
+            self._descriptor = cv2.GFTTDetector_create(**kwargs)
         else:
             raise ValueError("Invalid feature type")
         self._feature_type = feature_type

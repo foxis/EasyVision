@@ -47,7 +47,7 @@ class CalibratedCamera(ProcessorBase):
     def __init__(self, vision, camera, calibrate=False, max_samples=20, debug=False, display_results=False, *args, **kwargs):
         if not calibrate:
             if not isinstance(camera, PinholeCamera) and not (isinstance(camera, tuple) and len(camera) == 3):
-                raise TypeError("Camera must be either Camera or tuple with (camera_matrix, distortion)")
+                raise TypeError("Camera must be either Camera or tuple with (frame_size, camera_matrix, distortion)")
             if isinstance(vision, ProcessorBase):
                 raise TypeError("Vision must be VisionBase")
             self._camera = PinholeCamera._make(camera)

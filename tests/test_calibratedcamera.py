@@ -26,6 +26,7 @@ def test_camera():
     assert(camera.distortion[0][0] == approx(d[0]))
 
 
+@mark.slow
 def test_calibrate():
     vision = ImagesVision(images)
     with CalibratedCamera(vision, None, calibrate=True, max_samples=len(images) - 3) as vision:
