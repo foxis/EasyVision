@@ -12,10 +12,15 @@ import numpy as np
 
 
 camera = PinholeCamera.from_parameters((1241.0, 376.0), (718.8560, 718.8560), (607.1928, 185.2157), [0.0, 0.0, 0.0, 0.0, 0.0])
+camera1 = PinholeCamera.from_parameters((1920, 1080), (1920/2, 1080/2), (1920/2, 1080/2), [0.0, 0.0, 0.0, 0.0, 0.0])
+camera2 = PinholeCamera.from_parameters((1280, 1024),
+    (1280 * 0.535719308086809, 1024 * 0.669566858850269),
+    (1280 * 0.493248545285398, 1024 * 0.500408664348414),
+    [0.897966326944875 , 0.0, 0.0, 0.0, 0.0])
 
 
 @mark.complex
-def test_visual_odometry():
+def test_visual_odometry_kitti():
     traj = np.zeros((600,600,3), dtype=np.uint8)
     NUM_IMAGES = 1591
     pose = "09"
@@ -58,6 +63,59 @@ def test_visual_odometry():
 
                 text = "scale: %2fm " % scale
                 cv2.putText(traj, text, (20, 20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+
+                cv2.imshow('Trajectory', traj)
+                cv2.waitKey(1)
+
+    cv2.waitKey(0)
+
+
+@mark.complex
+def test_visual_odometry_indoor():
+    traj = np.zeros((600,600,3), dtype=np.uint8)
+    NUM_IMAGES = 1591
+
+    with CalibratedCamera(MonocularVision("d:\datasets\VID_20181217_163202.mp4"), camera1, display_results=False, enabled=False) as cam:
+        with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='GFTT') as engine:
+            for frame, pose in engine:
+                if not pose:
+                    continue
+
+                t = pose.translation
+                draw_x, draw_y = int(t[0])+300, int(t[2])+300
+
+                cv2.circle(traj, (draw_x, draw_y), 1, (0, 255, 0), 1)
+                cv2.rectangle(traj, (0, 0), (600, 60), (0, 0, 0), -1)
+                text = "Coordinates: x=%2fm y=%2fm z=%2fm" % (t[0], t[1], t[2])
+                cv2.putText(traj, text, (20, 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+
+                cv2.imshow('Trajectory', traj)
+                cv2.waitKey(1)
+
+    cv2.waitKey(0)
+
+
+@mark.complex
+def test_visual_odometry_dataset():
+    traj = np.zeros((600,600,3), dtype=np.uint8)
+
+    sequence = 'd:/datasets/vision.in.tum.de/sequence_50/'
+    with open(sequence + "times.txt") as f:
+        images = ['{}images/{}.jpg'.format(sequence, line.split()[0])  for line in f.readlines()]
+
+    with CalibratedCamera(ImagesVision(images), camera2, display_results=False, enabled=False) as cam:
+        with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='GFTT') as engine:
+            for frame, pose in engine:
+                if not pose:
+                    continue
+
+                t = pose.translation
+                draw_x, draw_y = int(t[0])+300, int(t[2])+300
+
+                cv2.circle(traj, (draw_x, draw_y), 1, (0, 255, 0), 1)
+                cv2.rectangle(traj, (0, 0), (600, 60), (0, 0, 0), -1)
+                text = "Coordinates: x=%2fm y=%2fm z=%2fm" % (t[0], t[1], t[2])
+                cv2.putText(traj, text, (20, 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
 
                 cv2.imshow('Trajectory', traj)
                 cv2.waitKey(1)
