@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from EasyVision.vision.base import *
+import cv2
 
 
 class ProcessorBase(VisionBase):
@@ -29,6 +30,14 @@ class ProcessorBase(VisionBase):
     @property
     def source(self):
         return self._vision
+
+    def get_source(self, name):
+        if self.name == name:
+            return self
+        elif isinstance(self.source, ProcessorBase):
+            return self.source.get_source(name)
+        elif self.source.name == name:
+            return self.source
 
     @property
     def enabled(self):
@@ -65,3 +74,9 @@ class ProcessorBase(VisionBase):
     @property
     def devices(self):
         return self._vision.devices
+
+    def display_results_changed(self, last, current):
+        if current:
+            cv2.namedWindow(self.name, cv2.WINDOW_NORMAL)
+        else:
+            cv2.destroyWindow(self.name)

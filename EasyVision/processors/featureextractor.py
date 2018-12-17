@@ -25,7 +25,7 @@ class FeatureExtraction(ProcessorBase):
             defaults.update(kwargs)
             if extract:
                 raise ValueError("Cannot extract features with FAST detector")
-            self._descriptor = cv2.FastFeatureDetector(**kwargs)
+            self._descriptor = cv2.FastFeatureDetector_create(**kwargs)
         else:
             raise ValueError("Invalid feature type")
         self._feature_type = feature_type
@@ -60,9 +60,3 @@ class FeatureExtraction(ProcessorBase):
         img = cv2.drawKeypoints(image, keypoints, np.array([]), color=(0, 0, 255),
                                  flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
         cv2.imshow(self.name, img)
-
-    def display_results_changed(self, last, current):
-        if current:
-            cv2.namedWindow(self.name, cv2.WINDOW_NORMAL)
-        else:
-            cv2.destroyWindow(self.name)
