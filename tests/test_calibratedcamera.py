@@ -58,5 +58,3 @@ def test_calibrated():
         for frame in vision:
             pass
             cv2.waitKey(0)
-
-    assert(False)
