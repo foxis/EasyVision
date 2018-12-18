@@ -9,7 +9,7 @@ import numpy as np
 class VisualOdometryEngine(EngineBase):
     Pose = namedtuple('Pose', ['rotation', 'translation'])
 
-    def __init__(self, vision, feature_type='GFTT', pose=None, min_features=1500, debug=False, display_results=False, *args, **kwargs):
+    def __init__(self, vision, feature_type='GFTT', pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
         if not isinstance(vision, CalibratedCamera):
             raise TypeError("Vision must be CalibratedCamera")
 
@@ -24,7 +24,9 @@ class VisualOdometryEngine(EngineBase):
             defaults = dict()
 
         if feature_type == 'ORB':
-            defaults['nfeatures'] = 5000
+            defaults['nfeatures'] = 10000
+            #defaults['scoreType'] = cv2.ORB_FAST_SCORE
+            defaults['nlevels'] = 16
             defaults.update(kwargs)
 
         self._feature_type = feature_type
@@ -49,10 +51,18 @@ class VisualOdometryEngine(EngineBase):
 
         self._matcher_bf = cv2.BFMatcher(cv2.NORM_HAMMING)
         FLANN_INDEX_KDTREE = 0
-        index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+        index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
         search_params = dict(checks=50)   # or pass empty dictionary
 
-        self._matcher_flann = cv2.FlannBasedMatcher(index_params,search_params)
+        self._matcher_flann = cv2.FlannBasedMatcher(index_params, search_params)
+
+        FLANN_INDEX_LSH = 6
+        index_params = dict(algorithm=FLANN_INDEX_LSH,
+                            table_number=6,
+                            key_size=12,
+                            multi_probe_level=1)
+        search_params = dict(checks=50)
+        self._matcher_flann_hamming = cv2.FlannBasedMatcher(index_params, search_params)
 
         super(VisualOdometryEngine, self).__init__(_vision, debug=debug, display_results=display_results, *args, **kwargs)
 
@@ -167,22 +177,42 @@ class VisualOdometryEngine(EngineBase):
 
         return kp1, kp2
 
-    def _match_features(self, featuresA, featuresB, ratio=0.7, reprojThresh=5.0, distance_thresh=50, min_matches=5):
+    def _match_features(self, featuresA, featuresB, ratio=0.7, reprojThresh=5.0, distance_thresh=30, min_matches=5):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = featuresB
 
         if self._feature_type in ['ORB', 'AKAZE']:
-            matches = self._matcher_bf.knnMatch(descriptorsA, descriptorsB, 2)
+            matches = self._matcher_flann_hamming.knnMatch(descriptorsA, descriptorsB, 2)
         else:
             matches = self._matcher_flann.knnMatch(descriptorsA, descriptorsB, 2)
 
         if matches is None:
             return None
 
-        matches.sort(key=lambda x: x[0].distance)
+        #matches.sort(key=lambda x: x[0].distance)
         matches = [m for m, n in matches if m.distance < n.distance * ratio and m.distance < distance_thresh]
+
+        if not matches:
+            return None
+
+        print matches
 
         ptsA = np.float32([kpsA[m.queryIdx].pt for m in matches])
         ptsB = np.float32([kpsB[m.trainIdx].pt for m in matches])
+        #M = cv2.findHomography(ptsB, ptsA, cv2.RANSAC, reprojThresh)
+
+        #H, inliers = M
+
+        #if H is None:
+        #    return None
+
+        #if sum(inliers) < min_matches:
+        #    return None
+
+        #inliers = inliers.ravel().tolist()
+
+
+        #ptsA = np.float32([kpsA[m.queryIdx].pt for i, m in zip(inliers, matches) if i])
+        #ptsB = np.float32([kpsB[m.trainIdx].pt for i, m in zip(inliers, matches) if i])
 
         return ptsA, ptsB

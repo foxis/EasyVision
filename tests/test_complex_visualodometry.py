@@ -23,15 +23,16 @@ camera2 = PinholeCamera.from_parameters((1280, 1024),
 def test_visual_odometry_kitti():
     traj = np.zeros((600,600,3), dtype=np.uint8)
     NUM_IMAGES = 1591
-    pose = "09"
+    pose = "00"
     images = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in xrange(NUM_IMAGES)]
     gt_path = "d:/datasets/data_odometry_gray/dataset/poses/{}.txt".format(pose)
 
     with open(gt_path) as f:
         ground_truth = [[float(i) for i in line.split()] for line in f.readlines()]
 
-    with CalibratedCamera(ImagesVision(images, img_args=(0,)), camera, display_results=False, enabled=False) as cam:
-        with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='GFTT') as engine:
+    error = 0
+    with CalibratedCamera(ImagesVision(images, img_args=()), camera, display_results=False, enabled=False) as cam:
+        with VisualOdometryEngine(cam, display_results=True, debug=True, feature_type='ORB') as engine:
             for img_id, _ in enumerate(images):
                 true_x = ground_truth[img_id][3]
                 true_y = ground_truth[img_id][7]
@@ -50,19 +51,22 @@ def test_visual_odometry_kitti():
 
                 t = pose.translation
 
+                error += np.sqrt((true_x - t[0]) ** 2 + (true_y - t[1]) ** 2 + (true_z - t[2]) ** 2)
+
                 draw_x, draw_y = int(t[0])+290, int(t[2])+90
                 dtrue_x, dtrue_y = int(true_x)+290, int(true_z)+90
 
-                cv2.circle(traj, (draw_x, draw_y), 1, (img_id * 255 / 4540, 255 - img_id * 255 / 4540, 0), 1)
-                cv2.circle(traj, (dtrue_x, dtrue_y), 1, (0, 0, 255), 2)
+                cv2.circle(traj, (draw_x, draw_y), 1, (img_id * 255 / 4540, 255 - img_id * 255 / 4540, 0))
+                cv2.circle(traj, (dtrue_x, dtrue_y), 1, (0, 0, 255))
                 cv2.rectangle(traj, (0, 0), (600, 60), (0, 0, 0), -1)
-                text = "Coordinates: x=%2fm y=%2fm z=%2fm" % (t[0], t[1], t[2])
-                cv2.putText(traj, text, (20, 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
-                text = "Coordinates: x=%2fm y=%2fm z=%2fm" % (true_x, true_y, true_z)
-                cv2.putText(traj, text, (20, 40), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
-
-                text = "scale: %2fm " % scale
-                cv2.putText(traj, text, (20, 20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                text = "pose: x=%2fm y=%2fm z=%2fm" % (t[0], t[1], t[2])
+                cv2.putText(traj, text, (20, 11), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                text = "true: x=%2fm y=%2fm z=%2fm" % (true_x, true_y, true_z)
+                cv2.putText(traj, text, (20, 22), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                text = "scale: %2f" % scale
+                cv2.putText(traj, text, (20, 33), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                text = "cumulative error: %2f " % error
+                cv2.putText(traj, text, (20, 44), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
 
                 cv2.imshow('Trajectory', traj)
                 cv2.waitKey(1)
