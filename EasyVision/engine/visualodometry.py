@@ -24,7 +24,7 @@ class VisualOdometryEngine(EngineBase):
             defaults = dict()
 
         if feature_type == 'ORB':
-            defaults['nfeatures'] = 10000
+            defaults['nfeatures'] = 15000
             #defaults['scoreType'] = cv2.ORB_FAST_SCORE
             defaults['nlevels'] = 16
             defaults.update(kwargs)
@@ -181,7 +181,7 @@ class VisualOdometryEngine(EngineBase):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = featuresB
 
-        if self._feature_type in ['ORB', 'AKAZE']:
+        if self._feature_type in ['ORB', 'AKAZE', 'FREAK', 'BRISK']:
             matches = self._matcher_flann_hamming.knnMatch(descriptorsA, descriptorsB, 2)
         else:
             matches = self._matcher_flann.knnMatch(descriptorsA, descriptorsB, 2)
@@ -195,24 +195,7 @@ class VisualOdometryEngine(EngineBase):
         if not matches:
             return None
 
-        print matches
-
         ptsA = np.float32([kpsA[m.queryIdx].pt for m in matches])
         ptsB = np.float32([kpsB[m.trainIdx].pt for m in matches])
-        #M = cv2.findHomography(ptsB, ptsA, cv2.RANSAC, reprojThresh)
-
-        #H, inliers = M
-
-        #if H is None:
-        #    return None
-
-        #if sum(inliers) < min_matches:
-        #    return None
-
-        #inliers = inliers.ravel().tolist()
-
-
-        #ptsA = np.float32([kpsA[m.queryIdx].pt for i, m in zip(inliers, matches) if i])
-        #ptsB = np.float32([kpsB[m.trainIdx].pt for i, m in zip(inliers, matches) if i])
 
         return ptsA, ptsB

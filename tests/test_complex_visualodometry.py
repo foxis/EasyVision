@@ -31,8 +31,12 @@ def test_visual_odometry_kitti():
         ground_truth = [[float(i) for i in line.split()] for line in f.readlines()]
 
     error = 0
-    with CalibratedCamera(ImagesVision(images, img_args=()), camera, display_results=False, enabled=False) as cam:
-        with VisualOdometryEngine(cam, display_results=True, debug=True, feature_type='ORB') as engine:
+    with CalibratedCamera(
+        ImageTransform(
+            ImagesVision(images, img_args=()),
+            ocl=True, color=cv2.COLOR_BGR2GRAY, enabled=True),
+        camera, display_results=False, enabled=False) as cam:
+        with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='ORB') as engine:
             for img_id, _ in enumerate(images):
                 true_x = ground_truth[img_id][3]
                 true_y = ground_truth[img_id][7]
