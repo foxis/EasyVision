@@ -24,7 +24,7 @@ class VisualOdometryEngine(EngineBase):
             defaults = dict()
 
         if feature_type == 'ORB':
-            defaults['nfeatures'] = 15000
+            defaults['nfeatures'] = 10000
             #defaults['scoreType'] = cv2.ORB_FAST_SCORE
             defaults['nlevels'] = 16
             defaults.update(kwargs)
