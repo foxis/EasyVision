@@ -44,12 +44,10 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion']
 
 
 class CalibratedCamera(ProcessorBase):
-    def __init__(self, vision, camera, calibrate=False, max_samples=20, debug=False, display_results=False, *args, **kwargs):
+    def __init__(self, vision, camera, calibrate=False, max_samples=20, debug=False, display_results=False, enabled=True, *args, **kwargs):
         if not calibrate:
             if not isinstance(camera, PinholeCamera) and not (isinstance(camera, tuple) and len(camera) == 3):
                 raise TypeError("Camera must be either Camera or tuple with (frame_size, camera_matrix, distortion)")
-            if isinstance(vision, ProcessorBase):
-                raise TypeError("Vision must be VisionBase")
             self._camera = PinholeCamera._make(camera)
         else:
             self._camera = None
@@ -66,7 +64,7 @@ class CalibratedCamera(ProcessorBase):
             self._max_samples = max_samples
 
         self._calibrate = calibrate
-        super(CalibratedCamera, self).__init__(vision, debug=debug, display_results=display_results, *args, **kwargs)
+        super(CalibratedCamera, self).__init__(vision, debug=debug, display_results=display_results, enabled=enabled, *args, **kwargs)
 
     @property
     def description(self):

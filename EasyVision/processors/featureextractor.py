@@ -7,36 +7,53 @@ from .base import *
 class FeatureExtraction(ProcessorBase):
     Features = namedtuple('Features', ['points', 'descriptors'])
 
-    def __init__(self, vision, feature_type, extract=True, debug=False, display_results=False, *args, **kwargs):
+    def __init__(self, vision, feature_type, extract=True, debug=False, display_results=False, enabled=True, *args, **kwargs):
         if feature_type == 'ORB':
             defaults = dict(nfeatures=10000)
             defaults.update(kwargs)
             self._descriptor = cv2.ORB_create(**defaults)
+        elif feature_type == 'BRISK':
+            defaults = dict()
+            defaults.update(kwargs)
+            self._descriptor = cv2.BRISK_create(**defaults)
+        elif feature_type == 'SURF':
+            defaults = dict()
+            defaults.update(kwargs)
+            self._descriptor = cv2.xfeatures2d.SURF_create(**defaults)
+        elif feature_type == 'SIFT':
+            defaults = dict()
+            defaults.update(kwargs)
+            self._descriptor = cv2.xfeatures2d.SIFT_create(**defaults)
         elif feature_type == 'KAZE':
             defaults = dict()
             defaults.update(kwargs)
-            self._descriptor = cv2.KAZE_create(**kwargs)
+            self._descriptor = cv2.KAZE_create(**defaults)
         elif feature_type == 'AKAZE':
             defaults = dict()
             defaults.update(kwargs)
-            self._descriptor = cv2.AKAZE_create(**kwargs)
+            self._descriptor = cv2.AKAZE_create(**defaults)
+        elif feature_type == 'FREAK':
+            defaults = dict()
+            defaults.update(kwargs)
+            self._descriptor = cv2.xfeatures2d.FREAK_create(**defaults)
+            self._detector = cv2.xfeatures2d.SURF_create()
         elif feature_type == 'FAST':
             defaults = dict()
             defaults.update(kwargs)
             if extract:
                 raise ValueError("Cannot extract features with FAST detector")
-            self._descriptor = cv2.FastFeatureDetector_create(**kwargs)
+            self._descriptor = cv2.FastFeatureDetector_create(**defaults)
         elif feature_type == 'GFTT':
             defaults = dict()
             defaults.update(kwargs)
             if extract:
                 raise ValueError("Cannot extract features with GFTT detector")
-            self._descriptor = cv2.GFTTDetector_create(**kwargs)
+            self._descriptor = cv2.GFTTDetector_create(**defaults)
         else:
             raise ValueError("Invalid feature type")
         self._feature_type = feature_type
         self._extract = extract
-        super(FeatureExtraction, self).__init__(vision, debug=debug, display_results=display_results, *args, **kwargs)
+        super(FeatureExtraction, self).__init__(vision, debug=debug, display_results=display_results, enabled=enabled, *args, **kwargs)
 
     @property
     def description(self):
@@ -47,7 +64,11 @@ class FeatureExtraction(ProcessorBase):
         if isinstance(image, ImageWithMask):
             mask = self._make_mask(image.mask)
 
-        keypoints, descriptors = self._descriptor.detect(image.image, mask), None
+        if not hasattr(self, '_detector'):
+            keypoints, descriptors = self._descriptor.detect(image.image, mask), None
+        else:
+            keypoints, descriptors = self._detector.detect(image.image, mask), None
+
         if self._extract:
             keypoints, descriptors = self._descriptor.compute(image.image, keypoints)
 
