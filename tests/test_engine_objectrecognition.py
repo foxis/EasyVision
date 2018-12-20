@@ -44,20 +44,33 @@ def _test_match_images(feature_type, display=False):
                     assert(matches[1].model.name == 'obj1' or matches[1].model.name == 'obj2')
                 else:
                     assert(len(matches) == 0)
+            if display:
+                cv2.waitKey(0)
+
 
             assert(frame_count == len(images))
 
 
 @mark.slow
-def test_match_images_default_extractor_ORB():
+def test_match_images_ORB():
     _test_match_images('ORB')
 
 
 @mark.slow
-def test_match_images_default_extractor_KAZE():
+def test_match_images_KAZE():
     _test_match_images('KAZE')
 
 
 @mark.slow
-def test_match_images_default_extractor_AKAZE():
+def test_match_images_AKAZE():
     _test_match_images('AKAZE')
+
+
+@mark.slow
+def test_match_images_SURF():
+    _test_match_images('SURF')
+
+
+@mark.slow
+def test_match_images_SIFT():
+    _test_match_images('SIFT')

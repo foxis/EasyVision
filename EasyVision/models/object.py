@@ -2,23 +2,17 @@
 from .base import *
 from collections import namedtuple
 from EasyVision.vision import Image, Frame
+from EasyVision.processors import FeatureMatchingMixin
 import cv2
 import numpy as np
 
 
-class ObjectModel(ModelBase):
-    __slots__ = ('_matcher_bf', '_matcher_flann')
+class ObjectModel(FeatureMatchingMixin, ModelBase):
+    __slots__ = FeatureMatchingMixin.SLOTS
     MatchResult = namedtuple('MatchResult', ['matches', 'homography', 'outline', 'view'])
     ComputeResult = namedtuple('ComputeResult', ['model', 'score', 'homography', 'outline', 'matches'])
 
     def __init__(self, name, views, *args, **kwargs):
-        self._matcher_bf = cv2.BFMatcher(cv2.NORM_HAMMING)
-        FLANN_INDEX_KDTREE = 0
-        index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-        search_params = dict(checks=50)   # or pass empty dictionary
-
-        self._matcher_flann = cv2.FlannBasedMatcher(index_params,search_params)
-
         super(ObjectModel, self).__init__(name, views, *args, **kwargs)
 
     def compute(self, frame, **kwargs):
@@ -74,7 +68,7 @@ class ObjectModel(ModelBase):
         return ObjectModel(name, [view], **kwargs)
 
     def _match_view(self, frame, view, **kwargs):
-        view_matches = [self._match_keypoints(image.features, view, **kwargs) for image in frame.images if image.feature_type == view.feature_type]
+        view_matches = [self._match_features(image.features, view, **kwargs) for image in frame.images if image.feature_type == view.feature_type]
 
         if self.display_results:
             self._draw(frame, view_matches)
@@ -87,46 +81,37 @@ class ObjectModel(ModelBase):
     def _calculate_outline(self, mask):
         pass
 
-    def _match_keypoints(self, featuresA, view, ratio=0.7, reprojThresh=5.0, distance_thresh=50, min_matches=5):
+    def _match_features(self, featuresA, view, ratio=0.7, reprojThresh=5.0, distance_thresh=50, min_matches=5):
+        matches = super(ObjectModel, self)._match_features(featuresA.descriptors, view.features.descriptors, view.feature_type, ratio, distance_thresh, min_matches)
+
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = view.features
         outline = view.outline
 
-        if view.feature_type in ['ORB', 'AKAZE']:
-            matches = self._matcher_bf.knnMatch(descriptorsA, descriptorsB, 2)
-        else:
-            matches = self._matcher_flann.knnMatch(descriptorsA, descriptorsB, 2)
-
-        if matches is None:
+        if matches is None or not matches:
             return None
 
-        matches.sort(key=lambda x: x[0].distance)
-        matches = [m for m, n in matches if m.distance < n.distance * ratio and m.distance < distance_thresh]
+        ptsA = np.float32([kpsA[m.queryIdx].pt for m in matches])
+        ptsB = np.float32([kpsB[m.trainIdx].pt for m in matches])
 
-        #matches = sorted(matches, key=lambda x: x.distance)[:20]
+        M = cv2.findHomography(ptsB, ptsA, cv2.RANSAC, reprojThresh)
 
-        if len(matches) > min_matches:
-            ptsA = np.float32([kpsA[m.queryIdx].pt for m in matches])
-            ptsB = np.float32([kpsB[m.trainIdx].pt for m in matches])
+        H, inliers = M
 
-            M = cv2.findHomography(ptsB, ptsA, cv2.RANSAC, reprojThresh)
+        if H is None:
+            return None
 
-            H, inliers = M
+        if sum(inliers) < min_matches:
+            return None
 
-            if H is None:
-                return None
+        outline = cv2.perspectiveTransform(view.outline, H)
 
-            if sum(inliers) < min_matches:
-                return None
+        matches = [m for m, pt in zip(matches, ptsA) if cv2.pointPolygonTest(outline, (pt[0], pt[1]), False) >= 0]
 
-            outline = cv2.perspectiveTransform(view.outline, H)
+        if len(matches) < min_matches:
+            return None
 
-            matches = [m for m, pt in zip(matches, ptsA) if cv2.pointPolygonTest(outline, (pt[0], pt[1]), False) >= 0]
-
-            if len(matches) < min_matches:
-                return None
-
-            return self.MatchResult(matches, H, outline, view)
+        return self.MatchResult(matches, H, outline, view)
 
     def _draw(self, frame, view_matches):
         for source, matches in zip(frame.images, view_matches):

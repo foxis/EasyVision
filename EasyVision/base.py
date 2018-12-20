@@ -24,7 +24,7 @@ class NamedTupleExtendHelper(object):
 
 class EasyVisionBase(object):
     __metaclass__ = ABCMeta
-    __slots__ = ['_debug', '_display_results']
+    __slots__ = ('_debug', '_display_results')
 
     def __init__(self, *args, **kwargs):
         self._debug = False

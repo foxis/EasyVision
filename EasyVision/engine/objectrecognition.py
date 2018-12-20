@@ -19,7 +19,7 @@ class ObjectRecognitionEngine(EngineBase):
         self._feature_type = feature_type
         self._max_matches = max_matches
 
-        _vision = FeatureExtraction(vision, feature_type=feature_type) if not isinstance(vision, ProcessorBase) else vision
+        _vision = FeatureExtraction(vision, feature_type=feature_type) if not isinstance(vision, FeatureExtraction) else vision
 
         super(ObjectRecognitionEngine, self).__init__(_vision, *args, **kwargs)
 

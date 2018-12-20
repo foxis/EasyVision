@@ -34,7 +34,7 @@ def test_visual_odometry_kitti():
     with CalibratedCamera(
         ImageTransform(
             ImagesVision(images, img_args=()),
-            ocl=True, color=cv2.COLOR_BGR2GRAY, enabled=True),
+            ocl=False, color=cv2.COLOR_BGR2GRAY, enabled=True),
         camera, display_results=False, enabled=False) as cam:
         with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='ORB') as engine:
             for img_id, _ in enumerate(images):
@@ -55,7 +55,7 @@ def test_visual_odometry_kitti():
 
                 t = pose.translation
 
-                error += np.sqrt((true_x - t[0]) ** 2 + (true_y - t[1]) ** 2 + (true_z - t[2]) ** 2)
+                error += np.sqrt((true_x - t[0]) ** 2 + 0 * (true_y - t[1]) ** 2 + (true_z - t[2]) ** 2)
 
                 draw_x, draw_y = int(t[0])+290, int(t[2])+90
                 dtrue_x, dtrue_y = int(true_x)+290, int(true_z)+90

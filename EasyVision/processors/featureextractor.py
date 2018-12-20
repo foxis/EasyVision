@@ -87,3 +87,39 @@ class FeatureExtraction(ProcessorBase):
         img = cv2.drawKeypoints(image, keypoints, np.array([]), color=(0, 0, 255),
                                  flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
         cv2.imshow(self.name, img)
+
+
+class FeatureMatchingMixin(object):
+    SLOTS = ('_matcher_h', '_matcher_l')
+    __slots__ = ()
+
+    def __init__(self, *args, **kwargs):
+        FLANN_INDEX_LSH = 6
+        index_params = dict(algorithm=FLANN_INDEX_LSH,
+                            table_number=6,
+                            key_size=12,
+                            multi_probe_level=1)
+        search_params = dict(checks=50)
+        self._matcher_h = cv2.FlannBasedMatcher(index_params, search_params)
+
+        FLANN_INDEX_KDTREE = 0
+        index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+        search_params = dict(checks=50)   # or pass empty dictionary
+        self._matcher_l = cv2.FlannBasedMatcher(index_params, search_params)
+
+        super(FeatureMatchingMixin, self).__init__(*args, **kwargs)
+
+    def _match_features(self, descriptorsA, descriptorsB, feature_type, ratio, distance_thresh=30, min_matches=10):
+        if feature_type in ['ORB', 'AKAZE', 'FREAK', 'BRISK']:
+            matches = self._matcher_h.knnMatch(descriptorsA, descriptorsB, 2)
+        else:
+            matches = self._matcher_l.knnMatch(descriptorsA, descriptorsB, 2)
+
+        if matches is None:
+            return None
+
+        matches = [M[0] for M in matches if len(M) == 2 and M[0].distance < M[1].distance * ratio and M[0].distance < distance_thresh]
+        if len(matches) < min_matches:
+            return None
+
+        return matches

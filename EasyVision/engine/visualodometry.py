@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from .base import EngineBase
 from EasyVision.processors.base import *
-from EasyVision.processors import FeatureExtraction, CalibratedCamera
+from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin
 import cv2
 import numpy as np
 
 
-class VisualOdometryEngine(EngineBase):
+class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
     Pose = namedtuple('Pose', ['rotation', 'translation'])
 
     def __init__(self, vision, feature_type='GFTT', pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
@@ -48,21 +48,6 @@ class VisualOdometryEngine(EngineBase):
         self._last_kps = None
         self._last_features = None
         self.pose = pose
-
-        self._matcher_bf = cv2.BFMatcher(cv2.NORM_HAMMING)
-        FLANN_INDEX_KDTREE = 0
-        index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-        search_params = dict(checks=50)   # or pass empty dictionary
-
-        self._matcher_flann = cv2.FlannBasedMatcher(index_params, search_params)
-
-        FLANN_INDEX_LSH = 6
-        index_params = dict(algorithm=FLANN_INDEX_LSH,
-                            table_number=6,
-                            key_size=12,
-                            multi_probe_level=1)
-        search_params = dict(checks=50)
-        self._matcher_flann_hamming = cv2.FlannBasedMatcher(index_params, search_params)
 
         super(VisualOdometryEngine, self).__init__(_vision, debug=debug, display_results=display_results, *args, **kwargs)
 
@@ -169,8 +154,10 @@ class VisualOdometryEngine(EngineBase):
         return {}
 
     def _track_features(self, image_ref, image_cur, px_ref):
-        kp2, st, err = cv2.calcOpticalFlowPyrLK(image_ref, image_cur, px_ref, None, **self._lk_params)  #shape: [k,2] [k,1] [k,1]
+        kp2, st, err = cv2.calcOpticalFlowPyrLK(image_ref, image_cur, px_ref, None, **self._lk_params)  # shape: [k,2] [k,1] [k,1]
 
+        if isinstance(st, cv2.UMat):
+            st = st.get()
         st = st.reshape(st.shape[0])
         kp1 = px_ref[st == 1]
         kp2 = kp2[st == 1]
@@ -181,18 +168,9 @@ class VisualOdometryEngine(EngineBase):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = featuresB
 
-        if self._feature_type in ['ORB', 'AKAZE', 'FREAK', 'BRISK']:
-            matches = self._matcher_flann_hamming.knnMatch(descriptorsA, descriptorsB, 2)
-        else:
-            matches = self._matcher_flann.knnMatch(descriptorsA, descriptorsB, 2)
+        matches = super(VisualOdometryEngine, self)._match_features(descriptorsA, descriptorsB, self._feature_type, ratio, distance_thresh, min_matches)
 
-        if matches is None:
-            return None
-
-        #matches.sort(key=lambda x: x[0].distance)
-        matches = [m for m, n in matches if m.distance < n.distance * ratio and m.distance < distance_thresh]
-
-        if not matches:
+        if matches is None or not matches:
             return None
 
         ptsA = np.float32([kpsA[m.queryIdx].pt for m in matches])
