@@ -2,26 +2,22 @@
 from .base import EngineBase
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin
+from .bowvocabulary import BOWMatchingMixin
 import cv2
 import numpy as np
 
 
-class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
+class TopologicalSLAMEngine(FeatureMatchingMixin, BOWMatchingMixin, EngineBase):
+    Keyframe = namedtuple('Keyframe', ['image', 'points', 'descriptors', 'bow'])
     Pose = namedtuple('Pose', ['rotation', 'translation'])
+    Node = namedtuple('Node', ['keyframe', 'transitions'])
+    Transition = namedtuple('transition', ['current', 'target', 'pose', 'control'])
 
-    def __init__(self, vision, feature_type, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
+    def __init__(self, vision, vocabulary, feature_type, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
         if not isinstance(vision, CalibratedCamera):
             raise TypeError("Vision must be CalibratedCamera")
 
-        if feature_type == 'FAST':
-            defaults = dict(threshold=25, nonmaxSuppression=True)
-            self._extract = False
-        elif feature_type == 'GFTT':
-            defaults = dict(maxCorners=3000, qualityLevel=0.01, blockSize=3, minDistance=1)
-            self._extract = False
-        else:
-            self._extract = True
-            defaults = dict()
+        defaults = dict()
 
         if feature_type == 'ORB':
             defaults['nfeatures'] = 10000
@@ -30,15 +26,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
             defaults.update(kwargs)
 
         self._feature_type = feature_type
-        _vision = FeatureExtraction(vision, feature_type=feature_type, extract=self._extract, **defaults)
-
-        self._min_features = min_features
-
-        self._lk_params = dict(
-            winSize=(21, 21),
-            #maxLevel = 3,
-            criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01)
-        )
+        _vision = FeatureExtraction(vision, feature_type=feature_type, extract=True, **defaults)
 
         if _vision.get_source("CalibratedCamera") is None:
             raise ValueError("vision processor stack must contain CalibratedCamera")
@@ -49,7 +37,9 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
         self._last_features = None
         self.pose = pose
 
-        super(VisualOdometryEngine, self).__init__(_vision, debug=debug, display_results=display_results, *args, **kwargs)
+        super(TopologicalSLAMEngine, self).__init__(_vision, debug=debug, display_results=display_results, *args, **kwargs)
+
+        self.initBOW(None, self._matcher_h, vocabulary)
 
     def compute(self, absolute_scale=1.0):
         frame = self.vision.capture()
@@ -102,36 +92,6 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
 
         return self._pose
 
-    def _compute_track(self, current_image, absolute_scale):
-        self.vision.enable = False
-        if not self._last_image:
-            self._last_kps = np.array([x.pt for x in current_image.features.points], dtype=np.float32)
-        else:
-            self._last_kps, cur_kps = self._track_features(self._last_image.image, current_image.image, self._last_kps)
-
-            if self.debug:
-                for a, b in zip(self._last_kps, cur_kps):
-                    cv2.line(current_image.image, (a[0], a[1]), (b[0], b[1]), (0, 0, 255))
-
-            E, mask = cv2.findEssentialMat(cur_kps, self._last_kps,
-                                           focal=self.camera.focal_point[0], pp=self.camera.center,
-                                           method=cv2.RANSAC, prob=0.999, threshold=1.0)
-            _, R, t, mask = cv2.recoverPose(E, cur_kps, self._last_kps,
-                                            focal=self.camera.focal_point[0], pp=self.camera.center)
-            if self._pose:
-                self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
-                                                rotation=R.dot(self._pose.rotation))
-            else:
-                self._pose = self.Pose(R, t)
-
-            if len(self._last_kps) < self._min_features:
-                current_image = self.vision.process(current_image)
-                cur_kps = np.array([x.pt for x in current_image.features.points], dtype=np.float32)
-
-            self._last_kps = cur_kps
-
-        return self._pose
-
     @property
     def pose(self):
         return self._pose
@@ -153,22 +113,11 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
     def capabilities(self):
         return {}
 
-    def _track_features(self, image_ref, image_cur, px_ref):
-        kp2, st, err = cv2.calcOpticalFlowPyrLK(image_ref, image_cur, px_ref, None, **self._lk_params)  # shape: [k,2] [k,1] [k,1]
-
-        if isinstance(st, cv2.UMat):
-            st = st.get()
-        st = st.reshape(st.shape[0])
-        kp1 = px_ref[st == 1]
-        kp2 = kp2[st == 1]
-
-        return kp1, kp2
-
     def _match_features(self, featuresA, featuresB, ratio=0.7, reprojThresh=5.0, distance_thresh=30, min_matches=5):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = featuresB
 
-        matches = super(VisualOdometryEngine, self)._match_features(descriptorsA, descriptorsB, self._feature_type, ratio, distance_thresh, min_matches)
+        matches = super(TopologicalSLAMEngine, self)._match_features(descriptorsA, descriptorsB, self._feature_type, ratio, distance_thresh, min_matches)
 
         if matches is None or not matches:
             return None

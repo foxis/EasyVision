@@ -25,7 +25,7 @@ gt_path = "d:/datasets/data_odometry_gray/dataset/poses/{}.txt".format(pose)
 
 
 @mark.complex
-def test_visual_odometry_kitti():
+def test_topological_SLAM_kitti():
     traj = np.zeros((600, 600, 3), dtype=np.uint8)
 
     with open(gt_path) as f:
@@ -72,57 +72,6 @@ def test_visual_odometry_kitti():
                 cv2.putText(traj, text, (20, 33), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
                 text = "cumulative error: %2f " % error
                 cv2.putText(traj, text, (20, 44), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
-
-                cv2.imshow('Trajectory', traj)
-                cv2.waitKey(1)
-
-    cv2.waitKey(0)
-
-
-@mark.complex
-def test_visual_odometry_indoor():
-    traj = np.zeros((600, 600, 3), dtype=np.uint8)
-    with CalibratedCamera(MonocularVision("d:\datasets\VID_20181217_163202.mp4"), camera1, display_results=False, enabled=False) as cam:
-        with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='ORB') as engine:
-            for frame, pose in engine:
-                if not pose:
-                    continue
-
-                t = pose.translation
-                draw_x, draw_y = int(t[0]) + 300, int(t[2]) + 300
-
-                cv2.circle(traj, (draw_x, draw_y), 1, (0, 255, 0), 1)
-                cv2.rectangle(traj, (0, 0), (600, 60), (0, 0, 0), -1)
-                text = "Coordinates: x=%2fm y=%2fm z=%2fm" % (t[0], t[1], t[2])
-                cv2.putText(traj, text, (20, 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
-
-                cv2.imshow('Trajectory', traj)
-                cv2.waitKey(1)
-
-    cv2.waitKey(0)
-
-
-@mark.complex
-def test_visual_odometry_dataset():
-    traj = np.zeros((600, 600, 3), dtype=np.uint8)
-
-    sequence = 'd:/datasets/vision.in.tum.de/sequence_50/'
-    with open(sequence + "times.txt") as f:
-        images = ['{}images/{}.jpg'.format(sequence, line.split()[0]) for line in f.readlines()]
-
-    with CalibratedCamera(ImagesVision(images), camera2, display_results=False, enabled=False) as cam:
-        with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='GFTT') as engine:
-            for frame, pose in engine:
-                if not pose:
-                    continue
-
-                t = pose.translation
-                draw_x, draw_y = int(t[0]) + 300, int(t[2]) + 300
-
-                cv2.circle(traj, (draw_x, draw_y), 1, (0, 255, 0), 1)
-                cv2.rectangle(traj, (0, 0), (600, 60), (0, 0, 0), -1)
-                text = "Coordinates: x=%2fm y=%2fm z=%2fm" % (t[0], t[1], t[2])
-                cv2.putText(traj, text, (20, 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
 
                 cv2.imshow('Trajectory', traj)
                 cv2.waitKey(1)

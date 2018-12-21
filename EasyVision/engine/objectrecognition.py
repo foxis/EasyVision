@@ -9,7 +9,7 @@ import numpy as np
 
 class ObjectRecognitionEngine(EngineBase):
 
-    def __init__(self, vision, feature_type=None, max_matches=10, *args, **kwargs):
+    def __init__(self, vision, feature_type, max_matches=10, *args, **kwargs):
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
         if not isinstance(vision, ProcessorBase) and not feature_type:
