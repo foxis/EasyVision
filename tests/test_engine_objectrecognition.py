@@ -26,7 +26,7 @@ def test_match_images():
 
 def _test_match_images(feature_type, display=False):
     with FeatureExtraction(ImagesVision(images), feature_type, display_results=display) as extractor:
-        with ObjectRecognitionEngine(extractor, display_results=display) as engine:
+        with ObjectRecognitionEngine(extractor, feature_type, display_results=display) as engine:
             frame_count = 0
 
             assert(engine.enroll("obj1", ImagesVision.load_image(obj1), add=True, display_results=display) is not None)
