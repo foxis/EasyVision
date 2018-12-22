@@ -57,6 +57,14 @@ def test_import_featureextractor():
     from EasyVision.processors import CalibratedCamera
 
 
+def test_import_topologicalslam():
+    from EasyVision.engine import TopologicalSLAMEngine
+
+
+def test_import_bowvocabulary():
+    from EasyVision.engine import BOWVocabularyBuilderEngine
+
+
 if __name__ == "__main__":
     import os
 
