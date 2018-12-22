@@ -45,6 +45,10 @@ def test_import_stereopair():
     from EasyVision.vision import StereoPairVision
 
 
+def test_import_multiprocessing():
+    from EasyVision.vision import MultiProcessing
+
+
 def test_import_processors():
     import EasyVision.processors
 
