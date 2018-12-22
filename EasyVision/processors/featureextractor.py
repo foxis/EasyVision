@@ -59,6 +59,10 @@ class FeatureExtraction(ProcessorBase):
     def description(self):
         return "Simple Feature Detection/Extraction processor"
 
+    @property
+    def feature_type(self):
+        return self._feature_type
+
     def process(self, image):
         mask = None
         if isinstance(image, ImageWithMask):

@@ -14,6 +14,7 @@ class Subclass(VisionBase):
         self.frame = 0
         self.frames = 10
         self._name = name
+        self._camera_called = False
 
     def capture(self):
         from datetime import datetime
@@ -22,6 +23,14 @@ class Subclass(VisionBase):
 
     def release(self):
         pass
+
+    def camera(self):
+        self._camera_called = True
+        return True
+
+    @property
+    def camera_called(self):
+        return self._camera_called
 
     @property
     def is_open(self):
@@ -123,3 +132,16 @@ def test_capture_stacked(mocker):
     assert(processorB.get_source('ProcessorA') is processorA)
     assert(processorB.get_source('ProcessorB') is processorB)
     assert(processorB.get_source('Test no') is None)
+
+
+def test_method_resolution(mocker):
+    vision = Subclass(0)
+    processorA = ProcessorA(vision)
+    processorB = ProcessorB(processorA)
+
+    assert(processorB.name == "ProcessorB <- ProcessorA <- Test")
+
+    assert(not vision.camera_called)
+    assert(processorB.camera())
+    assert(processorB.camera_called)
+    assert(vision.camera_called)

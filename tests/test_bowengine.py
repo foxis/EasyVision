@@ -61,3 +61,24 @@ def test_build_vocabulary_kmeans_save():
 @mark.complex
 def test_build_vocabulary_dbow3():
     build_vocabulary("test.dbow3", True, 'ORB')
+
+
+@mark.complex
+def test_dbow3_matching_mixin():
+    with CalibratedCamera(
+        ImageTransform(
+            ImagesVision(images, img_args=()),
+            ocl=False, color=cv2.COLOR_BGR2GRAY, enabled=True),
+        camera, display_results=True, enabled=True) as cam:
+        with FeatureExtraction(cam, 'ORB') as vision:
+            frame_count = 0
+
+            mixin = BOWMatchingMixin(None, None, "EasyVision/engine/orbvoc.dbow3", vision.feature_type)
+
+            for frame in vision:
+                frame_count += 1
+                assert(isinstance(frame, Frame))
+                print frame.images[0].image.__class__
+                assert(frame.images[0].image is not None)
+
+            assert(frame_count == 3)

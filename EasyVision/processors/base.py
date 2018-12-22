@@ -34,10 +34,13 @@ class ProcessorBase(VisionBase):
     def get_source(self, name):
         if self.__class__.__name__ == name:
             return self
-        elif isinstance(self.source, ProcessorBase):
-            return self.source.get_source(name)
-        elif self.source.name == name:
-            return self.source
+        elif isinstance(self._vision, ProcessorBase):
+            return self._vision.get_source(name)
+        elif self._vision.name == name:
+            return self._vision
+
+    def __getattr__(self, attr):
+        return getattr(self._vision, attr)
 
     @property
     def enabled(self):
