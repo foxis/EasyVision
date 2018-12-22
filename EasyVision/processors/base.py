@@ -40,7 +40,10 @@ class ProcessorBase(VisionBase):
             return self._vision
 
     def __getattr__(self, attr):
-        return getattr(self._vision, attr)
+        if hasattr(self, '_vision'):
+            return getattr(self._vision, attr)
+        else:
+            return super(ProcessorBase, self).__getattr__(attr)
 
     @property
     def enabled(self):

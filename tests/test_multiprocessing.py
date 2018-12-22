@@ -86,11 +86,16 @@ class ProcessorA(ProcessorBase):
 def test_capture_mp():
     vision = Subclass(0)
     processor = ProcessorA(vision)
-    mp = MultiProcessing(processor)
+    with MultiProcessing(processor) as mp:
+        img = mp.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].image == "AN IMAGE")
 
-    img = mp.capture()
-    assert(isinstance(img, Frame))
-    assert(img.images[0].source is mp)
-    assert(img.images[0].image == "AN IMAGE")
 
-    mp.release()
+def test_capture_mp_lazy():
+    vision = Subclass(0)
+    processor = ProcessorA(vision)
+    with MultiProcessing(processor, freerun=False) as mp:
+        img = mp.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].image == "AN IMAGE")
