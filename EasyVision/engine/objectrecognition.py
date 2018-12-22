@@ -9,17 +9,22 @@ import numpy as np
 
 class ObjectRecognitionEngine(EngineBase):
 
-    def __init__(self, vision, feature_type, max_matches=10, *args, **kwargs):
+    def __init__(self, vision, feature_type=None, max_matches=10, *args, **kwargs):
+        feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
-        if not isinstance(vision, ProcessorBase) and not feature_type:
-            raise TypeError("Feature type must be provided")
+        if isinstance(vision, ProcessorBase):
+            if vision.get_source('FeatureExtraction'):
+                feature_type = vision.feature_type
+                feature_extractor_provided = True
+            elif not feature_type:
+                raise TypeError("Feature type must be provided")
 
         self._models = {}
         self._feature_type = feature_type
         self._max_matches = max_matches
 
-        _vision = FeatureExtraction(vision, feature_type=feature_type) if not isinstance(vision, FeatureExtraction) else vision
+        _vision = FeatureExtraction(vision, feature_type=feature_type) if not feature_extractor_provided else vision
 
         super(ObjectRecognitionEngine, self).__init__(_vision, *args, **kwargs)
 

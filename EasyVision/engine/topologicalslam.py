@@ -14,8 +14,18 @@ class TopologicalSLAMEngine(FeatureMatchingMixin, BOWMatchingMixin, EngineBase):
     Transition = namedtuple('transition', ['current', 'target', 'pose', 'control'])
 
     def __init__(self, vision, vocabulary, feature_type, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
-        if not isinstance(vision, CalibratedCamera):
-            raise TypeError("Vision must be CalibratedCamera")
+        feature_extractor_provided = False
+        if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
+            raise TypeError("Vision must be either VisionBase or ProcessorBase")
+        if isinstance(vision, ProcessorBase):
+            if not vision.get_source('CalibratedCamera'):
+                raise TypeError("Vision must contain CalibratedCamera")
+
+            if vision.get_source('FeatureExtraction'):
+                feature_type = vision.feature_type
+                feature_extractor_provided = True
+            elif not feature_type:
+                raise TypeError("Feature type must be provided")
 
         defaults = dict()
 
@@ -26,12 +36,9 @@ class TopologicalSLAMEngine(FeatureMatchingMixin, BOWMatchingMixin, EngineBase):
             defaults.update(kwargs)
 
         self._feature_type = feature_type
-        _vision = FeatureExtraction(vision, feature_type=feature_type, extract=True, **defaults)
+        _vision = FeatureExtraction(vision, feature_type=feature_type, extract=True, **defaults) if not feature_extractor_provided else vision
 
-        if _vision.get_source("CalibratedCamera") is None:
-            raise ValueError("vision processor stack must contain CalibratedCamera")
-
-        self.camera = _vision.get_source("CalibratedCamera").camera
+        self.camera = _vision.camera
         self._last_image = None
         self._last_kps = None
         self._last_features = None

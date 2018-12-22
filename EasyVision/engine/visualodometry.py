@@ -9,9 +9,19 @@ import numpy as np
 class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
     Pose = namedtuple('Pose', ['rotation', 'translation'])
 
-    def __init__(self, vision, feature_type, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
-        if not isinstance(vision, CalibratedCamera):
-            raise TypeError("Vision must be CalibratedCamera")
+    def __init__(self, vision, feature_type=None, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
+        feature_extractor_provided = False
+        if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
+            raise TypeError("Vision must be either VisionBase or ProcessorBase")
+        if isinstance(vision, ProcessorBase):
+            if not vision.get_source('CalibratedCamera'):
+                raise TypeError("Vision must contain CalibratedCamera")
+
+            if vision.get_source('FeatureExtraction'):
+                feature_type = vision.feature_type
+                feature_extractor_provided = True
+            elif not feature_type:
+                raise TypeError("Feature type must be provided")
 
         if feature_type == 'FAST':
             defaults = dict(threshold=25, nonmaxSuppression=True)
@@ -30,7 +40,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
             defaults.update(kwargs)
 
         self._feature_type = feature_type
-        _vision = FeatureExtraction(vision, feature_type=feature_type, extract=self._extract, **defaults)
+        _vision = FeatureExtraction(vision, feature_type=feature_type, extract=self._extract, **defaults) if not feature_extractor_provided else vision
 
         self._min_features = min_features
 
@@ -40,10 +50,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
             criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01)
         )
 
-        if _vision.get_source("CalibratedCamera") is None:
-            raise ValueError("vision processor stack must contain CalibratedCamera")
-
-        self.camera = _vision.get_source("CalibratedCamera").camera
+        self.camera = _vision.camera
         self._last_image = None
         self._last_kps = None
         self._last_features = None
