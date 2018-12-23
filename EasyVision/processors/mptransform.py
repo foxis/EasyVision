@@ -4,6 +4,7 @@ import numpy as np
 import multiprocessing
 from .base import *
 from EasyVision.base import EasyVisionBase
+import functools
 
 
 Attr = namedtuple("Attr", ['name', 'method', 'args', 'kwargs'])
@@ -33,6 +34,28 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
 
         super(MultiProcessing, self).__init__(vision, *args, **kwargs)
 
+    def __getattr__(self, name):
+        def caller_proxy(_self, name, attr):
+            @functools.wraps(attr)
+            def wrapper(*args, **kwargs):
+                return _self.remote_call(name, *args, **kwargs)
+            return wrapper
+
+        if name.startswith('__') and name.endswith('__'):
+            return super(MultiProcessing, self).__getattr__(name)
+        attr = getattr(self._vision, name)
+        if hasattr(attr, '__call__'):
+            return caller_proxy(self, name, attr)
+        else:
+            return self.remote_get(name)
+
+    # attribute routing to remote
+    #def __setattr__(self, name, value):
+    #    if hasattr(self, name):
+    #        super(MultiProcessing, self).__setattr__(name, value)
+    #    else:
+    #        remote_set(name, value)
+
     def next(self):
         frame = self.capture()
 
@@ -57,16 +80,13 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
         return self._remote_call('process', (image,))
 
     def capture(self):
-        print 'capture', self._running.value
         assert(self._running.value)
 
         if not self._freerun:
             self._cap_event.set()
 
         self._frame_event.wait(10)
-        print 'wait done'
         frame = self._frame_in.recv()
-        print 'received: ', frame
         self._frame_event.clear()
         if isinstance(frame, Exception):
             raise frame
@@ -94,10 +114,19 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
     def _remote_call_handle(self):
         if self._ctrl_sem.acquire(False):
             ctrl = self._ctrl_in.recv()
+            print 'receiving ctrl', ctrl
             try:
                 result = None
                 if ctrl.method == 'SET':
-                    setattr(self._vision, ctrl.name, ctrl.args)
+                    cur_obj = self._vision
+                    while cur_obj or last_obj:
+                        last_obj, cur_obj = cur_obj, getattr(cur_obj, '_vision', None)
+
+                        if hasattr(last_obj, ctrl.name) and not hasattr(cur_obj, ctrl.name):
+                            setattr(last_obj, ctrl.name, ctrl.args)
+                            break
+                    if not cur_obj and not last_obj:
+                        raise AttributeError("can't set attribute")
                 elif ctrl.method == 'GET':
                     result = getattr(self._vision, ctrl.name)
                 elif ctrl.method == 'CALL':
