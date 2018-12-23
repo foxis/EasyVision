@@ -37,15 +37,23 @@ def test_monocular_vision(mocker):
 def test_monocular_vision_devicenotfound(mocker):
     mocker.patch('cv2.VideoCapture', VideoCaptureMock)
     with raises(DeviceNotFound):
-        MonocularVision(999)
+        with MonocularVision(999) as vis:
+            pass
+
+
+def test_monocular_vision_capture_incorrect(mocker):
+    mocker.patch('cv2.VideoCapture', VideoCaptureMock)
+    vision = MonocularVision(0)
+
+    with raises(AssertionError):
+        img = vision.capture()
 
 
 def test_monocular_vision_capture(mocker):
     mocker.patch('cv2.VideoCapture', VideoCaptureMock)
-    vision = MonocularVision(0)
-
-    img = vision.capture()
-    assert(isinstance(img, Frame))
+    with MonocularVision(0) as vision:
+        img = vision.capture()
+        assert(isinstance(img, Frame))
 
 
 def test_monocular_vision_capture_debug(mocker):

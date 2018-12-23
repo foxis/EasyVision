@@ -24,16 +24,18 @@ class NamedTupleExtendHelper(object):
 
 class EasyVisionBase(object):
     __metaclass__ = ABCMeta
-    __slots__ = ('_debug', '_display_results')
+    __slots__ = ('_debug', '_display_results', '__setup_called')
 
     def __init__(self, *args, **kwargs):
         self._debug = False
         self.debug = kwargs.get('debug', False)
         self._display_results = False
+        self.__setup_called = False
         self.display_results = kwargs.get('display_results', False)
         super(EasyVisionBase, self).__init__()
 
     def __enter__(self):
+        self.setup()
         return self
 
     def __exit__(self, type, value, traceback):
@@ -51,7 +53,12 @@ class EasyVisionBase(object):
 
     @abstractmethod
     def next(self):
-        pass
+        assert(self.__setup_called)
+
+    @abstractmethod
+    def setup(self):
+        assert(not self.__setup_called)
+        self.__setup_called = True
 
     @property
     def name(self):
@@ -63,7 +70,8 @@ class EasyVisionBase(object):
 
     @abstractmethod
     def release(self):
-        pass
+        assert(self.__setup_called)
+        self.__setup_called = False
 
     @property
     def debug(self):

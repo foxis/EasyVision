@@ -17,6 +17,7 @@ class ProcessorBase(VisionBase):
         pass
 
     def capture(self):
+        super(ProcessorBase, self).capture()
         frame = self._vision.capture()
         if not self.enabled:
             return frame
@@ -24,8 +25,13 @@ class ProcessorBase(VisionBase):
             images = tuple(self.process(img) for img in frame.images)
             return frame._replace(images=images)
 
+    def setup(self):
+        self._vision.setup()
+        super(ProcessorBase, self).setup()
+
     def release(self):
         self._vision.release()
+        super(ProcessorBase, self).release()
 
     @property
     def source(self):

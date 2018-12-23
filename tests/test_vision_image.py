@@ -6,6 +6,7 @@ from pytest import raises, approx, mark
 from EasyVision.vision import *
 import cv2
 
+
 @mark.slow
 def test_load_images():
     with ImagesVision(["test_data/34838518832_fd00147042_k.jpg", "test_data/2732011028_f0f033e678_b.jpg", "test_data/4472701625_6b23da9a23_b.jpg"]) as vision:
@@ -17,6 +18,7 @@ def test_load_images():
             assert(frame.images[0].image is not None)
 
         assert(frame_count == 3)
+
 
 @mark.slow
 def test_load_image():

@@ -46,7 +46,7 @@ def test_import_stereopair():
 
 
 def test_import_multiprocessing():
-    from EasyVision.vision import MultiProcessing
+    from EasyVision.processors import MultiProcessing
 
 
 def test_import_processors():

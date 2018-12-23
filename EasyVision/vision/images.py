@@ -16,6 +16,9 @@ class ImagesVision(VisionBase):
         self._img_args = img_args
         super(ImagesVision, self).__init__(*args, **kwargs)
 
+    def setup(self):
+        super(ImagesVision, self).setup()
+
     def release(self):
         if self._images:
             self._images = None

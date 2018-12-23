@@ -14,13 +14,16 @@ class Subclass(VisionBase):
         self.frames = 10
         self._name = name
 
+    def setup(self):
+        super(Subclass, self).setup()
+
     def capture(self):
         from datetime import datetime
         self.frame += 1
         return (datetime.now, ('an image',))
 
     def release(self):
-        pass
+        super(Subclass, self).release()
 
     @property
     def is_open(self):
@@ -65,6 +68,28 @@ def test_abstract_vision_abstract():
 
 def test_abstract_vision_implementation():
     Subclass()
+
+
+def test_abstract_vision_implementation_nosetup():
+    s = Subclass()
+    with raises(AssertionError):
+        for _ in s:
+            break
+
+
+def test_abstract_vision_implementation_context():
+    s = Subclass()
+    with s as ss:
+        for _ in ss:
+            break
+
+
+def test_abstract_vision_implementation_setup():
+    s = Subclass()
+    s.setup()
+    for _ in s:
+        break
+    s.release()
 
 
 def test_image():

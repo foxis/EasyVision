@@ -21,6 +21,9 @@ class Subclass(VisionBase):
         self.frame += 1
         return Frame(datetime.now(), self.frame - 1, (Image(self, 'an image'),))
 
+    def setup(self):
+        pass
+
     def release(self):
         pass
 
@@ -107,34 +110,54 @@ def test_implementation():
     assert(pr.source is source)
 
 
-def test_capture(mocker):
+def test_capture():
+    vision = Subclass(0)
+
+    with ProcessorA(vision) as processor:
+        img = processor.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].source is processor)
+        assert(img.images[0].image == "AN IMAGE")
+
+
+def test_capture_incorrect():
     vision = Subclass(0)
     processor = ProcessorA(vision)
 
-    img = processor.capture()
-    assert(isinstance(img, Frame))
-    assert(img.images[0].source is processor)
-    assert(img.images[0].image == "AN IMAGE")
+    with raises(AssertionError):
+        processor.capture()
 
 
-def test_capture_stacked(mocker):
+def test_capture_stacked_incorrect():
     vision = Subclass(0)
     processorA = ProcessorA(vision)
     processorB = ProcessorB(processorA)
 
     assert(processorB.name == "ProcessorB <- ProcessorA <- Test")
 
-    img = processorB.capture()
-    assert(isinstance(img, Frame))
-    assert(img.images[0].source is processorB)
-    assert(img.images[0].image == "An Image")
-    assert(processorB.get_source('Test') is vision)
-    assert(processorB.get_source('ProcessorA') is processorA)
-    assert(processorB.get_source('ProcessorB') is processorB)
-    assert(processorB.get_source('Test no') is None)
+    with raises(AssertionError):
+        processorB.capture()
 
 
-def test_method_resolution(mocker):
+def test_capture_stacked():
+    vision = Subclass(0)
+    processorA = ProcessorA(vision)
+    processorB = ProcessorB(processorA)
+
+    assert(processorB.name == "ProcessorB <- ProcessorA <- Test")
+
+    with processorB as processor:
+        img = processor.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].source is processorB)
+        assert(img.images[0].image == "An Image")
+        assert(processorB.get_source('Test') is vision)
+        assert(processorB.get_source('ProcessorA') is processorA)
+        assert(processorB.get_source('ProcessorB') is processorB)
+        assert(processorB.get_source('Test no') is None)
+
+
+def test_method_resolution():
     vision = Subclass(0)
     processorA = ProcessorA(vision)
     processorB = ProcessorB(processorA)

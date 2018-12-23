@@ -82,6 +82,7 @@ class VisionBase(EasyVisionBase):
         return self.frame_count
 
     def next(self):
+        super(VisionBase, self).next()
         if self.is_open:
             return self.capture()
         else:
@@ -89,10 +90,7 @@ class VisionBase(EasyVisionBase):
 
     @abstractmethod
     def capture(self):
-        """
-        :return: either None or (timestamp, (image1, image2, image3, etc))
-        """
-        pass
+        super(VisionBase, self).next()
 
     @abstractproperty
     def is_open(self):

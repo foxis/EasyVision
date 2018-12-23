@@ -8,23 +8,29 @@ from datetime import datetime
 class MonocularVision(VisionBase):
 
     def __init__(self, path, width=None, height=None, fps=None, name=None, *args, **kwargs):
+        self._name = name
+        self._path = path
+        self._frame_index = 0
+        self._width, self._height = width, height
+        self._fps = fps
+        self._capture = None
         super(MonocularVision, self).__init__(*args, **kwargs)
-        self._capture = cv2.VideoCapture(path)
-        if width and height:
-            self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-            self._capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        if fps:
-            self._capture.set(cv2.CAP_PROP_FPS, fps)
+
+    def setup(self):
+        super(MonocularVision, self).setup()
+        self._capture = cv2.VideoCapture(self._path)
+        if self._width and self._height:
+            self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
+            self._capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self._height)
+        if self._fps:
+            self._capture.set(cv2.CAP_PROP_FPS, self._fps)
 
         if not self._capture.isOpened():
             raise DeviceNotFound()
 
-        self._name = name
-        self._path = path
         self._frame_size = (self._capture.get(cv2.CAP_PROP_FRAME_WIDTH), self._capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self._fps = self._capture.get(cv2.CAP_PROP_FPS)
         self._frame_count = self._capture.get(cv2.CAP_PROP_FRAME_COUNT)
-        self._frame_index = 0
 
     def release(self):
         if self._capture:
@@ -58,6 +64,7 @@ class MonocularVision(VisionBase):
 
     @property
     def is_open(self):
+        assert(self._capture is not None)
         return self._capture.isOpened()
 
     @property

@@ -12,8 +12,14 @@ class Subclass(EasyVisionBase):
         super(Subclass, self).__init__(*args, **kwargs)
         self.frame = 0
         self.frames = 10
+        self.release_called = self.setup_called = False
+
+    def setup(self):
+        super(Subclass, self).setup()
+        self.setup_called = True
 
     def next(self):
+        super(Subclass, self).next()
         if self.is_open:
             return self.capture()
         else:
@@ -28,7 +34,8 @@ class Subclass(EasyVisionBase):
         return (datetime.now, ('an image',))
 
     def release(self):
-        pass
+        super(Subclass, self).release()
+        self.release_called, self.setup_called = True, False
 
     @property
     def is_open(self):
@@ -64,7 +71,7 @@ class SubclassOverload(Subclass):
 
 def test_abstract_base_abstract():
     with raises(TypeError):
-        _ = EasyVisionBase()
+        EasyVisionBase()
 
 
 def test_implementation():
@@ -73,8 +80,10 @@ def test_implementation():
 
 
 def test_implementation_context():
-    with Subclass() as _:
-        pass
+    sub = Subclass()
+    with sub as s:
+        assert(s.setup_called)
+    assert(s.release_called)
 
 
 def test_iterator():
@@ -85,6 +94,18 @@ def test_iterator():
             if count > 13:
                 break
         assert(count == 10)
+
+
+def test_setup_release():
+    vis = Subclass()
+    vis.setup()
+    count = 0
+    for frame in vis:
+        count += 1
+        if count > 13:
+            break
+    assert(count == 10)
+    vis.release()
 
 
 def test_debug():
