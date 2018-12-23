@@ -78,16 +78,20 @@ class Subclass(VisionBase):
 
     @property
     def test_remote_get(self):
+        print 'remote get', self._test_remote_get
         return self._test_remote_get
 
     @test_remote_get.setter
-    def test_remote_get_(self, value):
+    def test_remote_get(self, value):
+        print 'remote set', value
         self._test_remote_get = value
 
-    def test_remote_call(a, b, kwarg_test=0):
-        return (a + b, kwarg_test)
+    def test_remote_call(self, a, b, kwarg_test=0):
+        print 'remote call', a, b, kwarg_test
+        return (a, b, kwarg_test)
 
     def test_remote_exception(self, a, b, kwarg_test=0):
+        print 'remote exception', a, b, kwarg_test
         raise MyException()
 
 
@@ -105,14 +109,16 @@ class ProcessorA(ProcessorBase):
         return image._replace(source=self, image=new_image)
 
 
-def test_capture_mp():
+def test_capture_mp_freerun():
     vision = Subclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor) as mp:
-        img = mp.capture()
-        print img
-        assert(isinstance(img, Frame))
-        assert(img.images[0].image == "AN IMAGE")
+        for index, img in enumerate(mp):
+            assert(isinstance(img, Frame))
+            assert(img.images[0].image == "AN IMAGE")
+            if index > 10:
+                assert(img.index > index)
+                break
 
 
 def test_capture_mp_get():
@@ -157,6 +163,8 @@ def test_capture_mp_lazy():
     vision = Subclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor, freerun=False) as mp:
-        img = mp.capture()
-        assert(isinstance(img, Frame))
-        assert(img.images[0].image == "AN IMAGE")
+        for img in mp:
+            assert(isinstance(img, Frame))
+            assert(img.images[0].image == "AN IMAGE")
+            if img.index > 10:
+                break

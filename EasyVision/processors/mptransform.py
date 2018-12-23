@@ -3,34 +3,47 @@ import cv2
 import numpy as np
 import multiprocessing
 from .base import *
+from EasyVision.base import EasyVisionBase
+
+
+Attr = namedtuple("Attr", ['name', 'method', 'args', 'kwargs'])
 
 
 class MultiProcessing(ProcessorBase, multiprocessing.Process):
-    Attr = namedtuple("Attr", ['name', 'method', 'args', 'kwargs'])
 
     def __init__(self, vision, freerun=True, *args, **kwargs):
         self._freerun = freerun
 
         self._running = multiprocessing.Value("i", 0)
-        self._frame_in, self._frame_out = multiprocessing.Pipe()
-        self._ctrl_in, self._ctrl_out = multiprocessing.Pipe()
-        self._res_in, self._res_out = multiprocessing.Pipe()
+        self._frame_in, self._frame_out = multiprocessing.Pipe(False)
+        self._ctrl_in, self._ctrl_out = multiprocessing.Pipe(False)
+        self._res_in, self._res_out = multiprocessing.Pipe(False)
 
-        self._ctrl_sem = multiprocessing.Semaphore()
-        self._res_sem = multiprocessing.Semaphore()
+        self._ctrl_sem = multiprocessing.Semaphore(0)
+        self._res_sem = multiprocessing.Semaphore(0)
 
+        self._run_event = multiprocessing.Event()
         self._exit_event = multiprocessing.Event()
         self._frame_event = multiprocessing.Event()
         self._cap_event = multiprocessing.Event()
+        self._run_event.clear()
         self._exit_event.clear()
         self._frame_event.clear()
         self._cap_event.clear()
 
         super(MultiProcessing, self).__init__(vision, *args, **kwargs)
 
+    def next(self):
+        frame = self.capture()
+
+        if frame is None:
+            raise StopIteration()
+        return frame
+
     def setup(self):
         assert(self._running.value == 0)
         self.start()
+        self._run_event.wait(10)
 
     def release(self):
         self._running.value = 0
@@ -44,56 +57,56 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
         return self._remote_call('process', (image,))
 
     def capture(self):
+        print 'capture', self._running.value
         assert(self._running.value)
 
-        if self._freerun:
+        if not self._freerun:
             self._cap_event.set()
 
         self._frame_event.wait(10)
         print 'wait done'
-        frame = self._out.recv()
+        frame = self._frame_in.recv()
         print 'received: ', frame
         self._frame_event.clear()
         if isinstance(frame, Exception):
             raise frame
         return frame
 
-    def _send_ctrl(self, ctrl, lock):
+    def _send_ctrl(self, ctrl, lock=True):
         assert(self._running.value)
-        self._ctrl_in.send(ctrl)
+        self._ctrl_out.send(ctrl)
         self._ctrl_sem.release()
         self._res_sem.acquire(lock)
-        res = self._res_out.recv()
+        res = self._res_in.recv()
         if isinstance(res, Exception):
             raise res
         return res
 
-    def remote_get(self, name, lock=True):
-        return self._send_ctrl(self.Attr(name, 'GET', None, None), lock)
+    def remote_get(self, name):
+        return self._send_ctrl(Attr(name, 'GET', None, None))
 
-    def remote_set(self, name, value, lock=True):
-        self._send_ctrl(self.Attr(name, 'SET', value, None), lock)
+    def remote_set(self, name, value):
+        self._send_ctrl(Attr(name, 'SET', value, None))
 
-    def remote_call(self, name, lock=True, *args, **kwargs):
-        return self._send_ctrl(self.Attr(name, 'CALL', args, kwargs), lock)
+    def remote_call(self, name, *args, **kwargs):
+        return self._send_ctrl(Attr(name, 'CALL', args, kwargs))
 
     def _remote_call_handle(self):
-        if self.ctrl_event.acquire(False):
-            ctrl = self._ctrl_out.recv()
+        if self._ctrl_sem.acquire(False):
+            ctrl = self._ctrl_in.recv()
             try:
-                attr = getattr(self._vision, ctrl.name)
                 result = None
                 if ctrl.method == 'SET':
-                    attr = ctrl.args
+                    setattr(self._vision, ctrl.name, ctrl.args)
                 elif ctrl.method == 'GET':
-                    result = attr
+                    result = getattr(self._vision, ctrl.name)
                 elif ctrl.method == 'CALL':
-                    result = attr(*ctrl.args, **ctrl.kwargs)
+                    result = getattr(self._vision, ctrl.name)(*ctrl.args, **ctrl.kwargs)
                 else:
                     pass
-                self._res_in.send(result)
+                self._res_out.send(result)
             except Exception as e:
-                self._res_in.send(e)
+                self._res_out.send(e)
             finally:
                 self._res_sem.release()
 
@@ -101,6 +114,7 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
         super(MultiProcessing, self).setup()
         self._running.value = 1
         self._lazy_frame = None
+        self._run_event.set()
         while self._running.value:
             self._remote_call_handle()
 
@@ -112,14 +126,12 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
             except Exception as e:
                 self._send_frame(e)
 
-            self.exit_event.set()
-
         super(MultiProcessing, self).release()
+        self._exit_event.set()
 
     def _send_frame(self, frame):
         if not self._frame_event.is_set():
-            print 'sending: ', frame
-            self._frame_in.send(frame)
+            self._frame_out.send(frame)
             self._frame_event.set()
 
     def _capture_freerun(self):
@@ -138,11 +150,11 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
                 self._send_frame(None)
                 self.running.value = 0
 
-    def enabled_changed(self, last, current):
-        self.remote_set('enabled', current)
+    #def enabled_changed(self, last, current):
+    #    self.remote_set('enabled', current)
 
-    def debug_changed(self, last, current):
-        self.remote_set('debug', current)
+    #def debug_changed(self, last, current):
+    #    self.remote_set('debug', current)
 
-    def display_results_changed(self, last, current):
-        self.remote_set('display_results', current)
+    #def display_results_changed(self, last, current):
+    #    self.remote_set('display_results', current)
