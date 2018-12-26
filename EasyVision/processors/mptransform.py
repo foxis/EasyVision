@@ -78,6 +78,10 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
         self._exit_event.wait(10)
 
     @property
+    def is_open(self):
+        return self._running.value
+
+    @property
     def description(self):
         return "Allows processors run on a separate process"
 
@@ -85,7 +89,8 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
         return self.remote_call('process', image)
 
     def capture(self):
-        assert(self._running.value)
+        if not self._running.value:
+            return None
 
         if not self._freerun:
             self._cap_event.set()
@@ -161,12 +166,20 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
             except Exception as e:
                 self._send_frame(e)
 
+            if self.debug:
+                cv2.waitKey(1)
+        self._running.value = 0
+        if self.debug:
+            cv2.waitKey(0)
+
         super(MultiProcessing, self).release()
         self._exit_event.set()
 
     def _send_frame(self, frame):
         if not self._frame_event.is_set():
-            self._frame_out.send_bytes(cPickle.dumps(frame, protocol=-1))
+            data = cPickle.dumps(frame, protocol=-1)
+            print 'sending ', len(data), bytes
+            self._frame_out.send_bytes(data)
             self._frame_event.set()
 
     def _capture_freerun(self):

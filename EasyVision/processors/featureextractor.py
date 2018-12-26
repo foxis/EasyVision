@@ -2,8 +2,24 @@
 import cv2
 import numpy as np
 from .base import *
+from collections import namedtuple
 
-Features = namedtuple('Features', ['points', 'descriptors'])
+
+KeyPoint = namedtuple('KeyPoint', ['pt', 'size', 'angle', 'response', 'octave', 'class_id'])
+
+
+class Features(namedtuple('Features', ['points', 'descriptors'])):
+    __slots__ = ()
+
+    @property
+    def keypoints(self):
+        return [cv2.KeyPoint(x=pt.pt[0], y=pt.pt[1], _size=pt.size, _angle=pt.angle,
+                             _response=pt.response, _octave=pt.octave, _class_id=pt.class_id) for pt in self.points]
+
+    @classmethod
+    def _make(cls, keypoints, descriptors):
+        points = [KeyPoint(pt.pt, pt.size, pt.angle, pt.response, pt.octave, pt.class_id) for pt in keypoints]
+        return super(Features, cls)._make((points, descriptors))
 
 
 class FeatureExtraction(ProcessorBase):
@@ -90,9 +106,9 @@ class FeatureExtraction(ProcessorBase):
             self._draw_keypoints(image.image, keypoints)
 
         if mask:
-            return ImageWithMaskAndFeatures(self, image.image, image.mask, Features(keypoints, descriptors), self._feature_type)
+            return ImageWithMaskAndFeatures(self, image.image, image.mask, Features._make(keypoints, descriptors), self._feature_type)
         else:
-            return ImageWithFeatures(self, image.image, Features(keypoints, descriptors), self._feature_type)
+            return ImageWithFeatures(self, image.image, Features._make(keypoints, descriptors), self._feature_type)
 
     def _make_mask(self, mask):
         raise NotImplementedError()
@@ -126,7 +142,7 @@ class FeatureMatchingMixin(object):
         search_params = dict(checks=50)   # or pass empty dictionary
         self._matcher_l = cv2.FlannBasedMatcher(index_params, search_params)
 
-    def _match_features(self, descriptorsA, descriptorsB, feature_type, ratio, distance_thresh=30, min_matches=10):
+    def _match_features(self, descriptorsA, descriptorsB, feature_type, ratio=0.7, distance_thresh=30, min_matches=10):
         if feature_type in ['ORB', 'AKAZE', 'FREAK', 'BRISK']:
             matches = self._matcher_h.knnMatch(descriptorsA, descriptorsB, 2)
         else:

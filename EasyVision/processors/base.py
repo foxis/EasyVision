@@ -21,7 +21,7 @@ class ProcessorBase(VisionBase):
         frame = self._vision.capture()
         if not self.enabled:
             return frame
-        else:
+        elif frame:
             images = tuple(self.process(img) for img in frame.images)
             return frame._replace(images=images)
 
