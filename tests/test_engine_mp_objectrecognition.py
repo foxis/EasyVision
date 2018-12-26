@@ -27,7 +27,7 @@ def test_match_mp_images():
 def _test_match_images(feature_type, display=False):
     vision = ImagesReader(images)
     _extractor = FeatureExtraction(vision, feature_type, display_results=display)
-    extractor = MultiProcessing(_extractor, freerun=False)
+    extractor = MultiProcessing(_extractor, freerun=False, display_results=display, debug=display)
     with ObjectRecognitionEngine(extractor, feature_type, display_results=display) as engine:
         frame_count = 0
 

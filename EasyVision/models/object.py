@@ -85,8 +85,8 @@ class ObjectModel(ModelBase):
     def _calculate_outline(self, mask):
         pass
 
-    def _match_features(self, featuresA, view, matcher, ratio=0.7, reprojThresh=5.0, distance_thresh=50, min_matches=5):
-        matches = matcher._match_features(featuresA.descriptors, view.features.descriptors, view.feature_type, ratio, distance_thresh, min_matches)
+    def _match_features(self, featuresA, view, matcher, min_matches=10, reproj_thresh=0.9, **kwargs):
+        matches = matcher._match_features(featuresA.descriptors, view.features.descriptors, view.feature_type, min_matches=min_matches, **kwargs)
 
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = view.features
@@ -98,9 +98,11 @@ class ObjectModel(ModelBase):
         ptsA = np.float32([kpsA[m.queryIdx].pt for m in matches])
         ptsB = np.float32([kpsB[m.trainIdx].pt for m in matches])
 
-        M = cv2.findHomography(ptsB, ptsA, cv2.RANSAC, reprojThresh)
+        M = cv2.findHomography(ptsB, ptsA, cv2.RANSAC, reproj_thresh)
 
         H, inliers = M
+
+        #print [p.pt for p in kpsA]
 
         if H is None:
             return None
@@ -115,7 +117,7 @@ class ObjectModel(ModelBase):
         if len(matches) < min_matches:
             return None
 
-        return self.MatchResult(matches, H, outline, view)
+        return MatchResult(matches, H, outline, view)
 
     def _draw(self, frame, view_matches):
         for source, matches in zip(frame.images, view_matches):
@@ -128,8 +130,8 @@ class ObjectModel(ModelBase):
                                singlePointColor=None,
                                matchColor=(0, 255, 0),
                                flags=2)
-            res = cv2.drawMatches(source.image, source.features.points,
-                                  matches.view.image, matches.view.features.points,
+            res = cv2.drawMatches(source.image, source.features.keypoints,
+                                  matches.view.image, matches.view.features.keypoints,
                                   matches.matches, None, **params)
             res = cv2.polylines(res, [np.int32(matches.outline)], True, [255, 0, 0], 3, 8)
             cv2.imshow(name, res)

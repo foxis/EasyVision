@@ -13,7 +13,11 @@ class EngineBase(EasyVisionBase):
 
     def next(self):
         if self._vision.is_open:
-            return self.compute()
+            result = self.compute()
+            if result:
+                return result
+            else:
+                raise StopIteration()
         else:
             raise StopIteration()
 

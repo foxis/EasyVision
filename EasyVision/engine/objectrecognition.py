@@ -37,6 +37,8 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
 
     def compute(self):
         frame = self.vision.capture()
+        if not frame:
+            return None
         return frame, self._match_models(frame)
 
     def enroll(self, name, image, add=False, **kwargs):
@@ -69,5 +71,4 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
     def _match_models(self, frame):
         results = (model.compute(frame, self) for model in self._models.values())
         results = [i for i in results if i]
-        print results
         return sorted(results, key=lambda x: x.score, reverse=False)[0:self._max_matches]
