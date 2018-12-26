@@ -34,7 +34,7 @@ def test_visual_odometry_kitti():
     error = 0
     with CalibratedCamera(
         ImageTransform(
-            ImagesVision(images, img_args=()),
+            ImagesReader(images, img_args=()),
             ocl=False, color=cv2.COLOR_BGR2GRAY, enabled=True),
         camera, display_results=False, enabled=False) as cam:
         with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='SURF') as engine:
@@ -82,7 +82,7 @@ def test_visual_odometry_kitti():
 @mark.complex
 def test_visual_odometry_indoor():
     traj = np.zeros((600, 600, 3), dtype=np.uint8)
-    with CalibratedCamera(MonocularVision("d:\datasets\VID_20181217_163202.mp4"), camera1, display_results=False, enabled=False) as cam:
+    with CalibratedCamera(VideoCapture("d:\datasets\VID_20181217_163202.mp4"), camera1, display_results=False, enabled=False) as cam:
         with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='ORB') as engine:
             for frame, pose in engine:
                 if not pose:
@@ -110,7 +110,7 @@ def test_visual_odometry_dataset():
     with open(sequence + "times.txt") as f:
         images = ['{}images/{}.jpg'.format(sequence, line.split()[0]) for line in f.readlines()]
 
-    with CalibratedCamera(ImagesVision(images), camera2, display_results=False, enabled=False) as cam:
+    with CalibratedCamera(ImagesReader(images), camera2, display_results=False, enabled=False) as cam:
         with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='GFTT') as engine:
             for frame, pose in engine:
                 if not pose:

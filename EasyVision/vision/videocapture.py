@@ -5,7 +5,7 @@ import cv2
 from datetime import datetime
 
 
-class MonocularVision(VisionBase):
+class VideoCapture(VisionBase):
 
     def __init__(self, path, width=None, height=None, fps=None, name=None, *args, **kwargs):
         self._name = name
@@ -14,10 +14,10 @@ class MonocularVision(VisionBase):
         self._width, self._height = width, height
         self._fps = fps
         self._capture = None
-        super(MonocularVision, self).__init__(*args, **kwargs)
+        super(VideoCapture, self).__init__(*args, **kwargs)
 
     def setup(self):
-        super(MonocularVision, self).setup()
+        super(VideoCapture, self).setup()
         self._capture = cv2.VideoCapture(self._path)
         if self._width and self._height:
             self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
@@ -39,6 +39,7 @@ class MonocularVision(VisionBase):
             self._capture = None
             if self.debug:
                 cv2.destroyWindow(self.name)
+        super(VideoCapture, self).release()
 
     def capture(self):
         if not self.is_open:
@@ -73,7 +74,7 @@ class MonocularVision(VisionBase):
 
     @property
     def description(self):
-        return "Monocular Camera/Video file capturer"
+        return "Camera/Video file capturer"
 
     @property
     def path(self):

@@ -211,7 +211,7 @@ def test_capture_mp_lazy():
 
 
 def test_capture_mp_images():
-    vision = ImagesVision(["test_data/34838518832_fd00147042_k.jpg", "test_data/2732011028_f0f033e678_b.jpg", "test_data/4472701625_6b23da9a23_b.jpg"])
+    vision = ImagesReader(["test_data/34838518832_fd00147042_k.jpg", "test_data/2732011028_f0f033e678_b.jpg", "test_data/4472701625_6b23da9a23_b.jpg"])
     with MultiProcessing(vision, freerun=False) as mp:
         frame_count = 0
         for frame in mp:
@@ -224,7 +224,7 @@ def test_capture_mp_images():
 
 
 def test_capture_mp_camera():
-    vision = MonocularVision(0)
+    vision = VideoCapture(0)
     with MultiProcessing(vision, freerun=False) as mp:
         for i, img in enumerate(mp):
             assert(isinstance(img, Frame))

@@ -34,15 +34,11 @@ def test_import_vision():
 
 
 def test_import_monocular():
-    from EasyVision.vision import MonocularVision
+    from EasyVision.vision import VideoCapture
 
 
 def test_import_image():
-    from EasyVision.vision import ImagesVision
-
-
-def test_import_stereopair():
-    from EasyVision.vision import StereoPairVision
+    from EasyVision.vision import ImagesReader
 
 
 def test_import_multiprocessing():

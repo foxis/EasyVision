@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 from .base import *
-from .exceptions import DeviceNotFound
 import cv2
 from datetime import datetime
 
 
-class ImagesVision(VisionBase):
+class ImagesReader(VisionBase):
 
     def __init__(self, image_paths, img_args=(), *args, **kwargs):
         self._name = 'images'
@@ -14,10 +13,10 @@ class ImagesVision(VisionBase):
         self._frame_count = len(image_paths)
         self._frame_index = 0
         self._img_args = img_args
-        super(ImagesVision, self).__init__(*args, **kwargs)
+        super(ImagesReader, self).__init__(*args, **kwargs)
 
     def setup(self):
-        super(ImagesVision, self).setup()
+        super(ImagesReader, self).setup()
 
     def release(self):
         if self._images:
@@ -29,7 +28,7 @@ class ImagesVision(VisionBase):
         if not self.is_open:
             return None
 
-        frame = ImagesVision.load_image(self._paths[self._frame_index], _self=self, img_args=self._img_args)
+        frame = ImagesReader.load_image(self._paths[self._frame_index], _self=self, img_args=self._img_args)
         self._frame_index += 1
         timestamp = datetime.now()
         if self.display_results:

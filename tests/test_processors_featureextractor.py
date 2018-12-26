@@ -13,7 +13,7 @@ images = ["test_data/34838518832_fd00147042_k.jpg", "test_data/2732011028_f0f033
 
 @mark.slow
 def test_load_images():
-    vision = ImagesVision(images)
+    vision = ImagesReader(images)
     with FeatureExtraction(vision, 'ORB') as vision:
         frame_count = 0
         for frame in vision:
@@ -27,8 +27,8 @@ def test_load_images():
 
 @mark.slow
 def test_load_image():
-    image = ImagesVision.load_image(images[0])
-    vision = ImagesVision(images)
+    image = ImagesReader.load_image(images[0])
+    vision = ImagesReader(images)
     with FeatureExtraction(vision, 'ORB') as vision:
         result = vision.process(image)
         assert(isinstance(result, ImageWithFeatures))
@@ -39,7 +39,7 @@ def test_load_image():
 
 @mark.long
 def test_load_and_display_images():
-    vision = ImagesVision(images, display_results=True)
+    vision = ImagesReader(images, display_results=True)
     with FeatureExtraction(vision, 'ORB', display_results=True) as vision:
         frame_count = 0
         for frame in vision:

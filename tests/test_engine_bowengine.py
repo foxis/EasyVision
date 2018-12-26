@@ -28,7 +28,7 @@ gt_path = "d:/datasets/data_odometry_gray/dataset/poses/{}.txt".format(pose)
 def build_vocabulary(path, dbow3, feature_type):
     with CalibratedCamera(
         ImageTransform(
-            ImagesVision(images, img_args=()),
+            ImagesReader(images, img_args=()),
             ocl=False, color=cv2.COLOR_BGR2GRAY, enabled=True),
         camera, display_results=True, enabled=True) as cam:
         with BOWVocabularyBuilderEngine(cam, clusters=70, display_results=True, debug=False, feature_type=feature_type, dbow3_trainer=dbow3) as engine:
@@ -67,7 +67,7 @@ def test_build_vocabulary_dbow3():
 def test_dbow3_matching_mixin():
     with CalibratedCamera(
         ImageTransform(
-            ImagesVision(images, img_args=()),
+            ImagesReader(images, img_args=()),
             ocl=False, color=cv2.COLOR_BGR2GRAY, enabled=True),
         camera, display_results=True, enabled=True) as cam:
         with FeatureExtraction(cam, 'ORB') as vision:

@@ -6,7 +6,7 @@ from pytest import raises, approx, mark
 from EasyVision.exceptions import *
 from EasyVision.engine import *
 from EasyVision.processors import FeatureExtraction
-from EasyVision.vision import ImagesVision, Frame, Image
+from EasyVision.vision import *
 import cv2
 
 images = [
@@ -25,12 +25,12 @@ def test_match_images():
 
 
 def _test_match_images(feature_type, display=False):
-    with FeatureExtraction(ImagesVision(images), feature_type, display_results=display) as extractor:
+    with FeatureExtraction(ImagesReader(images), feature_type, display_results=display) as extractor:
         with ObjectRecognitionEngine(extractor, feature_type, display_results=display) as engine:
             frame_count = 0
 
-            assert(engine.enroll("obj1", ImagesVision.load_image(obj1), add=True, display_results=display) is not None)
-            assert(engine.enroll("obj2", ImagesVision.load_image(obj2), add=True, display_results=display) is not None)
+            assert(engine.enroll("obj1", ImagesReader.load_image(obj1), add=True, display_results=display) is not None)
+            assert(engine.enroll("obj2", ImagesReader.load_image(obj2), add=True, display_results=display) is not None)
             assert(len(engine.models) == 2)
 
             for frame, matches in engine:

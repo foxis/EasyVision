@@ -28,7 +28,7 @@ def test_camera():
 
 @mark.slow
 def test_calibrate():
-    vision = ImagesVision(images)
+    vision = ImagesReader(images)
     with CalibratedCamera(vision, None, calibrate=True, max_samples=len(images) - 3) as vision:
 
         for i in range(15):
@@ -52,7 +52,7 @@ def test_calibrate():
 def test_calibrated():
     camera = PinholeCamera.from_parameters((640, 480), fp, cp, d)
 
-    vision = ImagesVision(images)
+    vision = ImagesReader(images)
     with CalibratedCamera(vision, camera, display_results=True) as vision:
 
         for frame in vision:

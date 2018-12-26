@@ -34,7 +34,7 @@ def test_topological_SLAM_kitti():
     error = 0
     with CalibratedCamera(
         ImageTransform(
-            ImagesVision(images, img_args=()),
+            ImagesReader(images, img_args=()),
             ocl=False, color=cv2.COLOR_BGR2GRAY, enabled=True),
         camera, display_results=False, enabled=False) as cam:
         with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type='SURF') as engine:
