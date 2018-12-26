@@ -2,13 +2,16 @@
 import cv2
 import numpy as np
 import multiprocessing
+import multiprocessing.connection
 from .base import *
 from EasyVision.base import EasyVisionBase
 import functools
+import cProfile
+import cPickle
 
 
 Attr = namedtuple("Attr", ['name', 'method', 'args', 'kwargs'])
-
+multiprocessing.connection.BUFSIZE = 32 * 1024 * 1024
 
 class MultiProcessing(ProcessorBase, multiprocessing.Process):
 
@@ -84,9 +87,8 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
 
         if not self._freerun:
             self._cap_event.set()
-
         self._frame_event.wait(10)
-        frame = self._frame_in.recv()
+        frame = cPickle.loads(self._frame_in.recv_bytes())
         self._frame_event.clear()
         if isinstance(frame, Exception):
             raise frame
@@ -114,7 +116,6 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
     def _remote_call_handle(self):
         if self._ctrl_sem.acquire(False):
             ctrl = self._ctrl_in.recv()
-            print 'receiving ctrl', ctrl
             try:
                 result = None
                 if ctrl.method == 'SET':
@@ -140,6 +141,9 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
                 self._res_sem.release()
 
     def run(self):
+        cProfile.runctx('self._run()', globals(), locals(), 'processing.profile')
+
+    def _run(self):
         super(MultiProcessing, self).setup()
         self._running.value = 1
         self._lazy_frame = None
@@ -160,7 +164,7 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
 
     def _send_frame(self, frame):
         if not self._frame_event.is_set():
-            self._frame_out.send(frame)
+            self._frame_out.send_bytes(cPickle.dumps(frame, protocol=-1))
             self._frame_event.set()
 
     def _capture_freerun(self):
