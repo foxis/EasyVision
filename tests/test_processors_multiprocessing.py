@@ -6,6 +6,7 @@ from pytest import raises, approx
 from EasyVision.vision.base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import MultiProcessing
+from EasyVision.vision import *
 
 
 class MyException(Exception):
@@ -206,4 +207,26 @@ def test_capture_mp_lazy():
             assert(img.index == index)
             assert(img.images[0].image == "AN IMAGE")
             if img.index > 10:
+                break
+
+
+def test_capture_mp_images():
+    vision = ImagesVision(["test_data/34838518832_fd00147042_k.jpg", "test_data/2732011028_f0f033e678_b.jpg", "test_data/4472701625_6b23da9a23_b.jpg"])
+    with MultiProcessing(vision, freerun=False) as mp:
+        frame_count = 0
+        for frame in mp:
+            frame_count += 1
+            assert(isinstance(frame, Frame))
+            assert(frame.images[0].image is not None)
+            print(frame.images[0].image.shape)
+
+        assert(frame_count == 3)
+
+
+def test_capture_mp_camera():
+    vision = MonocularVision(0)
+    with MultiProcessing(vision, freerun=False) as mp:
+        for i, img in enumerate(mp):
+            assert(isinstance(img, Frame))
+            if i > 30:
                 break
