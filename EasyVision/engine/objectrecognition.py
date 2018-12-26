@@ -3,11 +3,12 @@ from .base import EngineBase
 from EasyVision.models import ObjectModel, ModelView
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction
+from EasyVision.processors import FeatureMatchingMixin
 import cv2
 import numpy as np
 
 
-class ObjectRecognitionEngine(EngineBase):
+class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
 
     def __init__(self, vision, feature_type=None, max_matches=10, *args, **kwargs):
         feature_extractor_provided = False
@@ -66,7 +67,7 @@ class ObjectRecognitionEngine(EngineBase):
         }
 
     def _match_models(self, frame):
-        results = (model.compute(frame) for model in self._models.values())
+        results = (model.compute(frame, self) for model in self._models.values())
         results = [i for i in results if i]
         print results
         return sorted(results, key=lambda x: x.score, reverse=False)[0:self._max_matches]

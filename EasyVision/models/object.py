@@ -2,21 +2,21 @@
 from .base import *
 from collections import namedtuple
 from EasyVision.vision import Image, Frame
-from EasyVision.processors import FeatureMatchingMixin
 import cv2
 import numpy as np
 
 
-class ObjectModel(FeatureMatchingMixin, ModelBase):
-    __slots__ = FeatureMatchingMixin.SLOTS
-    MatchResult = namedtuple('MatchResult', ['matches', 'homography', 'outline', 'view'])
-    ComputeResult = namedtuple('ComputeResult', ['model', 'score', 'homography', 'outline', 'matches'])
+MatchResult = namedtuple('MatchResult', ['matches', 'homography', 'outline', 'view'])
+ComputeResult = namedtuple('ComputeResult', ['model', 'score', 'homography', 'outline', 'matches'])
+
+
+class ObjectModel(ModelBase):
 
     def __init__(self, name, views, *args, **kwargs):
         super(ObjectModel, self).__init__(name, views, *args, **kwargs)
         self.setup()
 
-    def compute(self, frame, **kwargs):
+    def compute(self, frame, matcher, **kwargs):
         if not isinstance(frame, Frame):
             raise TypeError("frame must be Frame type")
 
@@ -26,7 +26,7 @@ class ObjectModel(FeatureMatchingMixin, ModelBase):
             if not hasattr(image, "feature_type"):
                 raise ValueError("Image must implement feature_type")
 
-        views = [self._match_view(frame, view, **kwargs) for view in self]
+        views = [self._match_view(frame, view, matcher, **kwargs) for view in self]
 
         if all(view is None for view in views):
             return None
@@ -36,7 +36,7 @@ class ObjectModel(FeatureMatchingMixin, ModelBase):
         outline = tuple(x.outline for x in best)
         score = min(sum(m.distance for m in x.matches) for x in best) ** .5
 
-        return self.ComputeResult(model=self, score=score, homography=homography, outline=outline, matches=views)
+        return ComputeResult(model=self, score=score, homography=homography, outline=outline, matches=views)
 
     def setup(self):
         super(ObjectModel, self).setup()
@@ -71,8 +71,8 @@ class ObjectModel(FeatureMatchingMixin, ModelBase):
         view = ModelView(image.image, outline, image.features, image.feature_type)
         return ObjectModel(name, [view], **kwargs)
 
-    def _match_view(self, frame, view, **kwargs):
-        view_matches = [self._match_features(image.features, view, **kwargs) for image in frame.images if image.feature_type == view.feature_type]
+    def _match_view(self, frame, view, matcher, **kwargs):
+        view_matches = [self._match_features(image.features, view, matcher, **kwargs) for image in frame.images if image.feature_type == view.feature_type]
 
         if self.display_results:
             self._draw(frame, view_matches)
@@ -85,8 +85,8 @@ class ObjectModel(FeatureMatchingMixin, ModelBase):
     def _calculate_outline(self, mask):
         pass
 
-    def _match_features(self, featuresA, view, ratio=0.7, reprojThresh=5.0, distance_thresh=50, min_matches=5):
-        matches = super(ObjectModel, self)._match_features(featuresA.descriptors, view.features.descriptors, view.feature_type, ratio, distance_thresh, min_matches)
+    def _match_features(self, featuresA, view, matcher, ratio=0.7, reprojThresh=5.0, distance_thresh=50, min_matches=5):
+        matches = matcher._match_features(featuresA.descriptors, view.features.descriptors, view.feature_type, ratio, distance_thresh, min_matches)
 
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = view.features

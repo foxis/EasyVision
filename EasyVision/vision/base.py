@@ -5,7 +5,10 @@ from datetime import datetime
 from operator import itemgetter
 
 
-class Image(NamedTupleExtendHelper, namedtuple('Image', ['source', 'image'])):
+_Image = namedtuple('_Image', ['source', 'image'])
+
+
+class Image(NamedTupleExtendHelper, _Image):
     __slots__ = ()
 
     def __new__(cls, source, *args):

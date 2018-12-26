@@ -45,8 +45,9 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
                 return _self.remote_call(name, *args, **kwargs)
             return wrapper
 
-        if name.startswith('__') and name.endswith('__'):
+        if (name.startswith('__') and name.endswith('__')) or not self._running.value:
             return super(MultiProcessing, self).__getattr__(name)
+        print self.__class__.__name__, name
         attr = getattr(self._vision, name)
         if hasattr(attr, '__call__'):
             return caller_proxy(self, name, attr)
@@ -81,7 +82,7 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
         return "Allows processors run on a separate process"
 
     def process(self, image):
-        return self._remote_call('process', (image,))
+        return self.remote_call('process', image)
 
     def capture(self):
         assert(self._running.value)
@@ -97,10 +98,10 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
 
     def _send_ctrl(self, ctrl, lock=True):
         assert(self._running.value)
-        self._ctrl_out.send(ctrl)
+        self._ctrl_out.send_bytes(cPickle.dumps(ctrl, protocol=-1))
         self._ctrl_sem.release()
         self._res_sem.acquire(lock)
-        res = self._res_in.recv()
+        res = cPickle.loads(self._res_in.recv_bytes())
         if isinstance(res, Exception):
             raise res
         return res
@@ -116,7 +117,7 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
 
     def _remote_call_handle(self):
         if self._ctrl_sem.acquire(False):
-            ctrl = self._ctrl_in.recv()
+            ctrl = cPickle.loads(self._ctrl_in.recv_bytes())
             try:
                 result = None
                 if ctrl.method == 'SET':

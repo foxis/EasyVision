@@ -45,10 +45,10 @@ class ProcessorBase(VisionBase):
         elif self._vision.name == name:
             return self._vision
 
-    def __getattr__(self, attr):
-        if attr.startswith('__') and attr.endswith('__'):
-            return super(ProcessorBase, self).__getattr__(attr)
-        return getattr(self._vision, attr)
+    def __getattr__(self, name):
+        if name.startswith('__') and name.endswith('__'):
+            return super(ProcessorBase, self).__getattr__(name)
+        return getattr(self._vision, name)
 
     @property
     def enabled(self):

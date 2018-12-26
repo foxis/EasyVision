@@ -7,6 +7,10 @@ from EasyVision.vision.base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import MultiProcessing
 from EasyVision.vision import *
+from collections import namedtuple
+
+
+Payload = namedtuple('Payload', ('a', 'b'))
 
 
 class MyException(Exception):
@@ -105,6 +109,14 @@ class ProcessorA(ProcessorBase):
         super(ProcessorA, self).__init__(vision, *args, **kwargs)
         self._some_field = 0
 
+    def test_payload1(self, payload):
+        assert(payload.a == payload.b * 2)
+        return Payload(payload.a + payload.b, 10)
+
+    def test_payload2(self, payload):
+        assert(payload.a == payload.b * 2)
+        return Image(None, payload.a + payload.b)
+
     @property
     def description(self):
         return "Simple processor"
@@ -174,6 +186,9 @@ def test_capture_mp_call():
         assert(mp.remote_get('test_remote_get') == 2)
         assert(mp.remote_call('test_remote_call', 2, 5, kwarg_test=7) == (2, 2, 5, 7))
         assert(mp.test_remote_call(2, 5, kwarg_test=7) == (2, 2, 5, 7))
+        assert(mp.test_payload1(Payload(2, 1)).a == 3)
+        assert(mp.test_payload2(Payload(2, 1)).image == 3)
+        assert(mp.process(Image(None, 'testing')).image == 'TESTING')
 
 
 def test_capture_mp_call_exception():

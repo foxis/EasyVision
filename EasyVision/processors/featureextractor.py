@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 from .base import *
 
+Features = namedtuple('Features', ['points', 'descriptors'])
+
 
 class FeatureExtraction(ProcessorBase):
-    Features = namedtuple('Features', ['points', 'descriptors'])
 
     def __init__(self, vision, feature_type, extract=True, *args, **kwargs):
         if feature_type in ['FAST', 'GFTT'] and extract:
@@ -16,6 +17,7 @@ class FeatureExtraction(ProcessorBase):
         self._kwargs.pop('display_results', None)
         self._feature_type = feature_type
         self._extract = extract
+        self._detector = self._descriptor = None
         super(FeatureExtraction, self).__init__(vision, *args, **kwargs)
 
     def setup(self):
@@ -76,7 +78,7 @@ class FeatureExtraction(ProcessorBase):
         if isinstance(image, ImageWithMask):
             mask = self._make_mask(image.mask)
 
-        if not hasattr(self, '_detector'):
+        if not self._detector:
             keypoints, descriptors = self._descriptor.detect(image.image, mask), None
         else:
             keypoints, descriptors = self._detector.detect(image.image, mask), None
@@ -88,9 +90,9 @@ class FeatureExtraction(ProcessorBase):
             self._draw_keypoints(image.image, keypoints)
 
         if mask:
-            return ImageWithMaskAndFeatures(self, image.image, image.mask, self.Features(keypoints, descriptors), self._feature_type)
+            return ImageWithMaskAndFeatures(self, image.image, image.mask, Features(keypoints, descriptors), self._feature_type)
         else:
-            return ImageWithFeatures(self, image.image, self.Features(keypoints, descriptors), self._feature_type)
+            return ImageWithFeatures(self, image.image, Features(keypoints, descriptors), self._feature_type)
 
     def _make_mask(self, mask):
         raise NotImplementedError()

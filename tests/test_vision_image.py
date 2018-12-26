@@ -5,6 +5,7 @@ import pytest
 from pytest import raises, approx, mark
 from EasyVision.vision import *
 import cv2
+import cPickle
 
 
 @mark.slow
@@ -46,3 +47,12 @@ def test_load_and_display_images():
             cv2.waitKey(0)
 
         assert(frame_count == 3)
+
+
+def test_pickle_image():
+    _image = ImagesReader.load_image("test_data/34838518832_fd00147042_k.jpg")
+    tmp = cPickle.dumps(_image, -1)
+    image = cPickle.loads(tmp)
+
+    assert(image.source is None)
+    assert(image.image is not None)
