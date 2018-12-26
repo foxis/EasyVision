@@ -5,4 +5,3 @@ from test_import import test_import_models
 from test_import import test_import_models_object
 from test_import import test_import_vision
 from test_import import test_import_monocular
-from test_import import test_import_stereopair

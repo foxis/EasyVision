@@ -14,6 +14,9 @@ class Subclass(ModelBase):
     def compute(self, frame, views):
         pass
 
+    def setup(self):
+        pass
+
     def release(self):
         pass
 

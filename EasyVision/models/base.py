@@ -29,6 +29,12 @@ class ModelBase(EasyVisionBase):
         self._view_index = 0
         return self
 
+    def setup(self):
+        pass
+
+    def release(self):
+        pass
+
     def next(self):
         if self._view_index < len(self._views):
             result = self._views[self._view_index]

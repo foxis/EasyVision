@@ -7,53 +7,61 @@ from .base import *
 class FeatureExtraction(ProcessorBase):
     Features = namedtuple('Features', ['points', 'descriptors'])
 
-    def __init__(self, vision, feature_type, extract=True, debug=False, display_results=False, enabled=True, *args, **kwargs):
-        if feature_type == 'ORB':
+    def __init__(self, vision, feature_type, extract=True, *args, **kwargs):
+        if feature_type in ['FAST', 'GFTT'] and extract:
+                raise ValueError("Cannot extract features with %s detector" % feature_type)
+        self._kwargs = dict(**kwargs)
+        self._kwargs.pop('enabled', None)
+        self._kwargs.pop('debug', None)
+        self._kwargs.pop('display_results', None)
+        self._feature_type = feature_type
+        self._extract = extract
+        super(FeatureExtraction, self).__init__(vision, *args, **kwargs)
+
+    def setup(self):
+        super(FeatureExtraction, self).setup()
+        if self._feature_type == 'ORB':
             defaults = dict(nfeatures=10000)
-            defaults.update(kwargs)
+            defaults.update(self._kwargs)
             self._descriptor = cv2.ORB_create(**defaults)
-        elif feature_type == 'BRISK':
+        elif self._feature_type == 'BRISK':
             defaults = dict()
-            defaults.update(kwargs)
+            defaults.update(self._kwargs)
             self._descriptor = cv2.BRISK_create(**defaults)
-        elif feature_type == 'SURF':
+        elif self._feature_type == 'SURF':
             defaults = dict()
-            defaults.update(kwargs)
+            defaults.update(self._kwargs)
             self._descriptor = cv2.xfeatures2d.SURF_create(**defaults)
-        elif feature_type == 'SIFT':
+        elif self._feature_type == 'SIFT':
             defaults = dict()
-            defaults.update(kwargs)
+            defaults.update(self._kwargs)
             self._descriptor = cv2.xfeatures2d.SIFT_create(**defaults)
-        elif feature_type == 'KAZE':
+        elif self._feature_type == 'KAZE':
             defaults = dict()
-            defaults.update(kwargs)
+            defaults.update(self._kwargs)
             self._descriptor = cv2.KAZE_create(**defaults)
-        elif feature_type == 'AKAZE':
+        elif self._feature_type == 'AKAZE':
             defaults = dict()
-            defaults.update(kwargs)
+            defaults.update(self._kwargs)
             self._descriptor = cv2.AKAZE_create(**defaults)
-        elif feature_type == 'FREAK':
+        elif self._feature_type == 'FREAK':
             defaults = dict()
-            defaults.update(kwargs)
+            defaults.update(self._kwargs)
             self._descriptor = cv2.xfeatures2d.FREAK_create(**defaults)
             self._detector = cv2.xfeatures2d.SURF_create()
-        elif feature_type == 'FAST':
+        elif self._feature_type == 'FAST':
             defaults = dict()
-            defaults.update(kwargs)
-            if extract:
-                raise ValueError("Cannot extract features with FAST detector")
+            defaults.update(self._kwargs)
             self._descriptor = cv2.FastFeatureDetector_create(**defaults)
-        elif feature_type == 'GFTT':
+        elif self._feature_type == 'GFTT':
             defaults = dict()
-            defaults.update(kwargs)
-            if extract:
-                raise ValueError("Cannot extract features with GFTT detector")
+            defaults.update(self._kwargs)
             self._descriptor = cv2.GFTTDetector_create(**defaults)
         else:
             raise ValueError("Invalid feature type")
-        self._feature_type = feature_type
-        self._extract = extract
-        super(FeatureExtraction, self).__init__(vision, debug=debug, display_results=display_results, enabled=enabled, *args, **kwargs)
+
+    def release(self):
+        super(FeatureExtraction, self).release()
 
     @property
     def description(self):
@@ -98,6 +106,11 @@ class FeatureMatchingMixin(object):
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
+
+        super(FeatureMatchingMixin, self).__init__(*args, **kwargs)
+
+    def setup(self):
+        super(FeatureMatchingMixin, self).setup()
         FLANN_INDEX_LSH = 6
         index_params = dict(algorithm=FLANN_INDEX_LSH,
                             table_number=6,
@@ -110,8 +123,6 @@ class FeatureMatchingMixin(object):
         index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
         search_params = dict(checks=50)   # or pass empty dictionary
         self._matcher_l = cv2.FlannBasedMatcher(index_params, search_params)
-
-        super(FeatureMatchingMixin, self).__init__(*args, **kwargs)
 
     def _match_features(self, descriptorsA, descriptorsB, feature_type, ratio, distance_thresh=30, min_matches=10):
         if feature_type in ['ORB', 'AKAZE', 'FREAK', 'BRISK']:

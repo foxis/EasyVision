@@ -14,6 +14,7 @@ class ObjectModel(FeatureMatchingMixin, ModelBase):
 
     def __init__(self, name, views, *args, **kwargs):
         super(ObjectModel, self).__init__(name, views, *args, **kwargs)
+        self.setup()
 
     def compute(self, frame, **kwargs):
         if not isinstance(frame, Frame):
@@ -37,8 +38,11 @@ class ObjectModel(FeatureMatchingMixin, ModelBase):
 
         return self.ComputeResult(model=self, score=score, homography=homography, outline=outline, matches=views)
 
+    def setup(self):
+        super(ObjectModel, self).setup()
+
     def release(self):
-        pass
+        super(ObjectModel, self).release()
 
     @property
     def description(self):

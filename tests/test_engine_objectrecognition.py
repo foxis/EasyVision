@@ -25,30 +25,30 @@ def test_match_images():
 
 
 def _test_match_images(feature_type, display=False):
-    with FeatureExtraction(ImagesReader(images), feature_type, display_results=display) as extractor:
-        with ObjectRecognitionEngine(extractor, feature_type, display_results=display) as engine:
-            frame_count = 0
+    extractor = FeatureExtraction(ImagesReader(images), feature_type, display_results=display)
+    with ObjectRecognitionEngine(extractor, feature_type, display_results=display) as engine:
+        frame_count = 0
 
-            assert(engine.enroll("obj1", ImagesReader.load_image(obj1), add=True, display_results=display) is not None)
-            assert(engine.enroll("obj2", ImagesReader.load_image(obj2), add=True, display_results=display) is not None)
-            assert(len(engine.models) == 2)
+        assert(engine.enroll("obj1", ImagesReader.load_image(obj1), add=True, display_results=display) is not None)
+        assert(engine.enroll("obj2", ImagesReader.load_image(obj2), add=True, display_results=display) is not None)
+        assert(len(engine.models) == 2)
 
-            for frame, matches in engine:
-                frame_count += 1
-                assert(isinstance(frame, Frame))
-                assert(frame.images[0].image is not None)
+        for frame, matches in engine:
+            frame_count += 1
+            assert(isinstance(frame, Frame))
+            assert(frame.images[0].image is not None)
 
-                if frame.index == 3:
-                    assert(len(matches) == 2)
-                    assert(matches[0].model.name == 'obj1' or matches[0].model.name == 'obj2')
-                    assert(matches[1].model.name == 'obj1' or matches[1].model.name == 'obj2')
-                else:
-                    assert(len(matches) == 0)
-            if display:
-                cv2.waitKey(0)
+            if frame.index == 3:
+                assert(len(matches) == 2)
+                assert(matches[0].model.name == 'obj1' or matches[0].model.name == 'obj2')
+                assert(matches[1].model.name == 'obj1' or matches[1].model.name == 'obj2')
+            else:
+                assert(len(matches) == 0)
+        if display:
+            cv2.waitKey(0)
 
 
-            assert(frame_count == len(images))
+        assert(frame_count == len(images))
 
 
 @mark.slow

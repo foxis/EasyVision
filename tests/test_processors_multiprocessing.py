@@ -210,6 +210,7 @@ def test_capture_mp_lazy():
                 break
 
 
+@pytest.mark.slow
 def test_capture_mp_images():
     vision = ImagesReader(["test_data/34838518832_fd00147042_k.jpg", "test_data/2732011028_f0f033e678_b.jpg", "test_data/4472701625_6b23da9a23_b.jpg"])
     with MultiProcessing(vision, freerun=False) as mp:
@@ -223,6 +224,7 @@ def test_capture_mp_images():
         assert(frame_count == 3)
 
 
+@pytest.mark.slow
 def test_capture_mp_camera():
     vision = VideoCapture(0)
     with MultiProcessing(vision, freerun=False) as mp:

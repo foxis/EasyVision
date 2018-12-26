@@ -24,8 +24,13 @@ class EngineBase(EasyVisionBase):
     def compute(self):
         pass
 
+    def setup(self):
+        self._vision.setup()
+        super(EngineBase, self).setup()
+
     def release(self):
         self._vision.release()
+        super(EngineBase, self).release()
 
     @abstractproperty
     def capabilities(self):

@@ -13,6 +13,9 @@ class Subclass(EngineBase):
     def __init__(self, vision, *args, **kwargs):
         super(Subclass, self).__init__(vision, *args, **kwargs)
 
+    def setup(self):
+        super(Subclass, self).setup()
+
     def compute(self):
         return self.vision.capture()
 
@@ -37,8 +40,11 @@ class VisionSubclass(VisionBase):
         self.frame += 1
         return (datetime.now, ('an image',))
 
+    def setup(self):
+        super(VisionSubclass, self).setup()
+
     def release(self):
-        pass
+        super(VisionSubclass, self).release()
 
     @property
     def is_open(self):
