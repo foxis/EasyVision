@@ -13,6 +13,7 @@ import cPickle
 Attr = namedtuple("Attr", ['name', 'method', 'args', 'kwargs'])
 multiprocessing.connection.BUFSIZE = 32 * 1024 * 1024
 
+
 class MultiProcessing(ProcessorBase, multiprocessing.Process):
 
     def __init__(self, vision, freerun=True, *args, **kwargs):
