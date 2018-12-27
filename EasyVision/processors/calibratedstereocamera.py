@@ -5,18 +5,37 @@ from .base import *
 from .calibratedcamera import PinholeCamera
 
 
-class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', 'F'])):
+class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', 'F', 'Q'])):
+    """
 
-    @staticmethod
-    def from_parameters(left, right, R, T, E, F):
+        R - rotation matrix
+        T - translation vector
+        E - essential matrix
+        F - fundamental matrix
+        Q - disparity matrix
+
+    """
+    def __new__(cls, left, right, R, T, E, F, Q):
         if not isinstance(left, PinholeCamera):
             raise ValueError("Left camera must be PinholeCamera")
         if not isinstance(right, PinholeCamera):
             raise ValueError("Right camera must be PinholeCamera")
-        if left.width != right.width or left.height != right.height:
+        if left.size != right.size:
             raise ValueError("Left and Right camera width/height must match")
 
-        return StereoCamera(left, right, R, T, E, F)
+        R = np.array(R) if isinstance(R, list) else R
+        T = np.array(T) if isinstance(T, list) else T
+        E = np.array(E) if isinstance(E, list) else E
+        F = np.array(F) if isinstance(F, list) else F
+        Q = np.array(Q) if isinstance(Q, list) else Q
+        return super(StereoCamera, cls).__new__(cls, left, right, R, T, E, F, Q)
+
+    @staticmethod
+    def from_parameters(size, M1, d1, R1, P1, M2, d2, R2, P2, R, T, E, F, Q):
+        return StereoCamera(
+            PinholeCamera(size, M1, d1, R1, P1),
+            PinholeCamera(size, M2, d2, R2, P2),
+            R, T, E, F, Q)
 
 
 class CameraPairProxy(VisionBase):
@@ -40,6 +59,7 @@ class CameraPairProxy(VisionBase):
         super(CameraPairProxy, self).capture()
         left = self._left.capture()
         right = self._right.capture()
+
         if left is None or right is None:
             return None
         return left._replace(images=left.images + right.images)
@@ -66,7 +86,7 @@ class CameraPairProxy(VisionBase):
 
     @property
     def path(self):
-        return self._left.path
+        return "{} : {}".format(self._left.path, self._right.path)
 
     @property
     def description(self):
@@ -98,17 +118,16 @@ class CalibratedStereoCamera(ProcessorBase):
             left._grid_shape = grid_shape
             self._grid_shape = grid_shape
             self._camera = None
-            self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
             self.stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-5)
             self.flags = 0
-            self.flags |= cv2.CALIB_FIX_INTRINSIC
-            # self.flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-            self.flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-            self.flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-            # self.flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            #self.flags |= cv2.CALIB_FIX_INTRINSIC
+            #self.flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            #self.flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            #self.flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self.flags |= cv2.CALIB_FIX_ASPECT_RATIO
             self.flags |= cv2.CALIB_ZERO_TANGENT_DIST
             # self.flags |= cv2.CALIB_RATIONAL_MODEL
-            # self.flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            self.flags |= cv2.CALIB_SAME_FOCAL_LENGTH
             # self.flags |= cv2.CALIB_FIX_K3
             # self.flags |= cv2.CALIB_FIX_K4
             # self.flags |= cv2.CALIB_FIX_K5
@@ -122,14 +141,12 @@ class CalibratedStereoCamera(ProcessorBase):
     def setup(self):
         super(CalibratedStereoCamera, self).setup()
         if self._calibrate:
-            # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
             self.objp = np.zeros((self._grid_shape[0] * self._grid_shape[1], 3), np.float32)
             self.objp[:, :2] = np.mgrid[0:self._grid_shape[0], 0:self._grid_shape[1]].T.reshape(-1, 2)
 
-            # Arrays to store object points and image points from all the images.
-            self.objpoints = []  # 3d point in real world space
-            self.imgpoints_l = []  # 2d points in image plane.
-            self.imgpoints_r = []  # 2d points in image plane.
+            self.objpoints = []
+            self.imgpoints_l = []
+            self.imgpoints_r = []
             self.calibration_samples = 0
 
     @property
@@ -142,10 +159,18 @@ class CalibratedStereoCamera(ProcessorBase):
 
     def process(self, image):
         if self._calibrate:
-            return image
+            # Draw and display the corners
+            ret, corners = image.features
+            if self.display_results:
+                img = cv2.drawChessboardCorners(image.image, self._grid_shape, corners, ret)
+                cv2.imshow("Left" if image.source is self._vision._left else "Right", img)
         else:
             # TODO: rectified images
-            return image
+            img = image.image
+            if self.display_results:
+                cv2.imshow("Left" if image.source is self._vision._left else "Right", img)
+
+        return image
 
     def calibrate(self):
         if not self._calibrate:
@@ -166,19 +191,12 @@ class CalibratedStereoCamera(ProcessorBase):
             self.imgpoints_l.append(corners_l)
             self.imgpoints_r.append(corners_r)
 
-            # Draw and display the corners
-            if self.display_results:
-                img = cv2.drawChessboardCorners(left.image, self._grid_shape, corners_l, ret_l)
-                cv2.imshow("Left", img)
-
-                img = cv2.drawChessboardCorners(right.image, self._grid_shape, corners_r, ret_r)
-                cv2.imshow("Right", img)
-
             self.calibration_samples += 1
 
-        if self.calibration_samples > self._max_samples:
+        if self.calibration_samples >= self._max_samples:
             img_shape = left.image.shape[::-1]
-            self._finish_calibration(self.objpoints, self.imgpoints_l, self.imgpoints_r, img_shape)
+            self._camera = self._finish_calibration(self.objpoints, self.imgpoints_l, self.imgpoints_r, img_shape)
+            return self._camera
 
     def _finish_calibration(self, objpoints, imgpoints_l, imgpoints_r, shape):
         left_camera = self.source._left._finish_calibration(objpoints, imgpoints_l, shape)
@@ -192,8 +210,17 @@ class CalibratedStereoCamera(ProcessorBase):
             shape,
             criteria=self.stereocalib_criteria, flags=self.flags)
 
-        left_camera = PinholeCamera((shape[0], shape[1]), M1, d1)
-        right_camera = PinholeCamera((shape[0], shape[1]), M2, d2)
+        R1, R2, P1, P2, Q, vb1, vb2 = cv2.stereoRectify(
+            M1,
+            d1,
+            M2,
+            d2,
+            shape,
+            R,
+            T,
+            flags=cv2.CALIB_ZERO_DISPARITY)
 
-        self._camera = StereoCamera(left, right, R, T, E, F)
-        return self._camera
+        left_camera = PinholeCamera(shape, M1, d1, R1, P1)
+        right_camera = PinholeCamera(shape, M2, d2, R2, P2)
+
+        return StereoCamera(left_camera, right_camera, R, T, E, F, Q)

@@ -4,7 +4,25 @@ import numpy as np
 from .base import *
 
 
-class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion'])):
+class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion', 'rectify', 'projection'])):
+
+    """
+
+        size - (width, height)
+        matrix - camera matrix
+        distortion - camera distortion coefficients
+        rectify - rectification transform matrix
+        projection - reprojection matrix
+
+    """
+
+    def __new__(cls, size, matrix, distortion, rectify=None, projection=None):
+        matrix = np.array(matrix) if not isinstance(matrix, list) else matrix
+        distortion = np.array(distortion) if isinstance(distortion, list) else distortion
+        rectify = np.array(rectify) if isinstance(rectify, list) else rectify
+        projection = np.array(projection) if isinstance(projection, list) else projection
+
+        return super(PinholeCamera, cls).__new__(cls, size, matrix, distortion, rectify, projection)
 
     @property
     def width(self):
@@ -23,7 +41,7 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion']
         return (self.matrix[0, 2], self.matrix[1, 2])
 
     @staticmethod
-    def from_parameters(frame_size, focal_point, center, distortion):
+    def from_parameters(frame_size, focal_point, center, distortion, rectify=None, projection=None):
         if len(distortion) != 5:
             raise ValueError("distortion must be vector of length 5")
         if len(frame_size) != 2:
@@ -38,9 +56,9 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion']
         matrix[0, 2] = center[0]
         matrix[1, 2] = center[1]
         matrix[2, 2] = 1
-        d = np.zeros((1,5), np.float32)
+        d = np.zeros((1, 5), np.float32)
         d[0] = distortion
-        return PinholeCamera(frame_size, matrix, d)
+        return PinholeCamera(frame_size, matrix, d, rectify, projection)
 
 
 class CalibratedCamera(ProcessorBase):
@@ -51,6 +69,7 @@ class CalibratedCamera(ProcessorBase):
                 raise TypeError("Camera must be either PinholeCamera or tuple with (frame_size, camera_matrix, distortion)")
             self._camera = PinholeCamera._make(camera)
         else:
+            self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
             self._camera = None
             self._grid_shape = grid_shape
             self._max_samples = max_samples
@@ -61,8 +80,6 @@ class CalibratedCamera(ProcessorBase):
     def setup(self):
         super(CalibratedCamera, self).setup()
         if self._calibrate:
-            self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-
             # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
             self.objp = np.zeros((self._grid_shape[0] * self._grid_shape[1], 3), np.float32)
             self.objp[:, :2] = np.mgrid[0:self._grid_shape[0], 0:self._grid_shape[1]].T.reshape(-1, 2)
@@ -71,6 +88,15 @@ class CalibratedCamera(ProcessorBase):
             self.objpoints = []  # 3d point in real world space
             self.imgpoints = []  # 2d points in image plane.
             self.calibration_samples = 0
+        else:
+            print self.camera.rectify, self.camera.projection
+            self._mapx, self._mapy = cv2.initUndistortRectifyMap(
+                    self.camera.matrix,
+                    self.camera.distortion,
+                    self.camera.rectify,
+                    self.camera.projection,
+                    self.camera.size,
+                    cv2.CV_32FC1)
 
     @property
     def description(self):
@@ -89,14 +115,20 @@ class CalibratedCamera(ProcessorBase):
             ret, corners = cv2.findChessboardCorners(gray, self._grid_shape, None)
             if ret is True:
                 corners = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), self.criteria)
+
+            # Draw and display the corners
+            if self.display_results:
+                img = cv2.drawChessboardCorners(img, self._grid_shape, corners, ret)
+                cv2.imshow(self.name, img)
+
             return ImageWithFeatures(self, gray, (ret, corners), 'corners')
         else:
-            undistorted = cv2.undistort(image.image, self._camera.matrix, self._camera.distortion, None, self._camera.matrix)
+            mapped = cv2.remap(image.image, self._mapx, self._mapy, cv2.INTER_NEAREST)
 
             if self.display_results:
-                cv2.imshow(self.name, undistorted)
+                cv2.imshow(self.name, mapped)
 
-            return image._replace(image=undistorted)
+            return image._replace(image=mapped)
 
     def calibrate(self):
         if not self._calibrate:
@@ -106,6 +138,7 @@ class CalibratedCamera(ProcessorBase):
             return self._camera
 
         frame = self.capture()
+
         ret, corners = frame.images[0].features
         img = frame.images[0].image
 
@@ -114,18 +147,14 @@ class CalibratedCamera(ProcessorBase):
             self.objpoints.append(self.objp)
             self.imgpoints.append(corners)
 
-            # Draw and display the corners
-            if self.display_results:
-                img = cv2.drawChessboardCorners(img, self._grid_shape, corners, ret)
-                cv2.imshow(self.name, img)
             self.calibration_samples += 1
 
         if self.calibration_samples >= self._max_samples:
             shape = img.shape[::-1]
-            self._finish_calibration(self.objpoints, self.imgpoints, shape)
+            self._camera = self._finish_calibration(self.objpoints, self.imgpoints, shape)
+            return self._camera
 
     def _finish_calibration(self, objpoints, imgpoints, shape):
             ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, shape, None, None)
 
-            self._camera = PinholeCamera((shape[0], shape[1]), mtx, dist)
-            return self._camera
+            return PinholeCamera(shape, mtx, dist)
