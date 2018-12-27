@@ -6,18 +6,20 @@ import cv2
 import numpy as np
 
 
+Pose = namedtuple('Pose', ['rotation', 'translation'])
+
+
 class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
-    Pose = namedtuple('Pose', ['rotation', 'translation'])
 
     def __init__(self, vision, feature_type=None, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
         if isinstance(vision, ProcessorBase):
-            if not vision.get_source('CalibratedCamera'):
+            if vision.get_source('CalibratedCamera') is None:
                 raise TypeError("Vision must contain CalibratedCamera")
 
-            if vision.get_source('FeatureExtraction'):
+            if vision.get_source('FeatureExtraction') is not None:
                 feature_type = vision.feature_type
                 feature_extractor_provided = True
             elif not feature_type:
@@ -60,6 +62,8 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
 
     def compute(self, absolute_scale=1.0):
         frame = self.vision.capture()
+        if not frame:
+            return None
         current_image = frame.images[0]
 
         pose = self._compute_match(current_image, absolute_scale) if self._extract else self._compute_track(current_image, absolute_scale)
@@ -102,7 +106,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
                 self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
                                                 rotation=R.dot(self._pose.rotation))
             else:
-                self._pose = self.Pose(R, t)
+                self._pose = Pose(R, t)
 
         self._last_features = current_image.features
 
@@ -129,7 +133,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
                 self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
                                                 rotation=R.dot(self._pose.rotation))
             else:
-                self._pose = self.Pose(R, t)
+                self._pose = Pose(R, t)
 
             if len(self._last_kps) < self._min_features:
                 current_image = self.vision.process(current_image)
@@ -145,12 +149,9 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
 
     @pose.setter
     def pose(self, value):
-        if not isinstance(value, self.Pose) and value is not None:
+        if not isinstance(value, Pose) and value is not None:
             raise TypeError("Pose must be of type VisualOdometryEngine.Pose")
         self._pose = value
-
-    def release(self):
-        super(VisualOdometryEngine, self).release()
 
     @property
     def description(self):

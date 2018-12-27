@@ -22,7 +22,7 @@ class ProcessorBase(VisionBase):
         if not self.enabled:
             return frame
         elif frame:
-            images = tuple(self.process(img) for img in frame.images)
+            images = tuple(self.process(img)._replace(source=self) for img in frame.images)
             return frame._replace(images=images)
 
     def setup(self):
@@ -40,7 +40,7 @@ class ProcessorBase(VisionBase):
     def get_source(self, name):
         if self.__class__.__name__ == name:
             return self
-        elif isinstance(self._vision, ProcessorBase):
+        elif hasattr(self._vision, ProcessorBase):
             return self._vision.get_source(name)
         elif self._vision.name == name:
             return self._vision

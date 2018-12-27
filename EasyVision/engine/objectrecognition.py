@@ -29,12 +29,6 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
 
         super(ObjectRecognitionEngine, self).__init__(_vision, *args, **kwargs)
 
-    def setup(self):
-        super(ObjectRecognitionEngine, self).setup()
-
-    def release(self):
-        super(ObjectRecognitionEngine, self).release()
-
     def compute(self):
         frame = self.vision.capture()
         if not frame:

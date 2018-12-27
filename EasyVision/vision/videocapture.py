@@ -13,7 +13,10 @@ class VideoCapture(VisionBase):
         self._frame_index = 0
         self._width, self._height = width, height
         self._fps = fps
+        self._frame_count = -1
+        self._frame_size = None
         self._capture = None
+        self._is_open = False
         super(VideoCapture, self).__init__(*args, **kwargs)
 
     def setup(self):
