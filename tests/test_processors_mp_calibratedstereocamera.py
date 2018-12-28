@@ -44,23 +44,59 @@ as_dict = {
 @mark.complex
 def test_stereo_calibrated_mp():
     from datetime import datetime
+    from itertools import izip
 
     camera = StereoCamera(left_camera, right_camera, R, T, E, F, Q)
+    feature_type = 'SURF'
 
-    left = FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type='SURF')
-    right = FeatureExtraction(CalibratedCamera(ImagesReader(images_right), camera.right), feature_type='SURF')
+    total = 0
+    left = FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type=feature_type)
+    with left as left_:
+            print 'Single'
+            for frame in left_:
+                delta = (datetime.now() - frame.timestamp).total_seconds()
+                print delta
+                total += delta
+
+    print 'total = ', total
+    total = 0
+
+    left = FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type=feature_type)
+    right = FeatureExtraction(CalibratedCamera(ImagesReader(images_right), camera.right), feature_type=feature_type)
+    with left as left_:
+        with right as right_:
+            print 'Sequential'
+            for framea, frameb in izip(left_, right_):
+                delta = (datetime.now() - framea.timestamp).total_seconds()
+                print delta
+                total += delta
+
+    print 'total = ', total
+    total = 0
+
+    left = FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type=feature_type)
+    right = FeatureExtraction(CalibratedCamera(ImagesReader(images_right), camera.right), feature_type=feature_type)
     with CalibratedStereoCamera(left, right, camera, display_results=False) as vision:
-        print 'Sequential'
+        print 'Threaded'
         for frame in vision:
-            print (datetime.now() - frame.timestamp).total_seconds()
+            delta = (datetime.now() - frame.timestamp).total_seconds()
+            print delta
+            total += delta
             if vision.display_results:
                 cv2.waitKey(0)
 
-    left = MultiProcessing(FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type='SURF'), freerun=False)
-    right = MultiProcessing(FeatureExtraction(CalibratedCamera(ImagesReader(images_right), camera.right), feature_type='SURF'), freerun=False)
+    print 'total = ', total
+    total = 0
+
+    left = MultiProcessing(FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type=feature_type), freerun=False)
+    right = MultiProcessing(FeatureExtraction(CalibratedCamera(ImagesReader(images_right), camera.right), feature_type=feature_type), freerun=False)
     with CalibratedStereoCamera(left, right, camera, display_results=False) as vision:
         print 'Multiprocessing'
         for frame in vision:
-            print (datetime.now() - frame.timestamp).total_seconds()
+            delta = (datetime.now() - frame.timestamp).total_seconds()
+            print delta
+            total += delta
             if vision.display_results:
                 cv2.waitKey(0)
+
+    print 'total = ', total
