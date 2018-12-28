@@ -133,6 +133,8 @@ def test_stereo_calibrate():
 
 @mark.complex
 def test_stereo_calibrated():
+    from datetime import datetime
+
     camera = StereoCamera(left_camera, right_camera, R, T, E, F, Q)
 
     #left = CalibratedCamera(ImagesReader(images_left), None)
@@ -152,4 +154,5 @@ def test_stereo_calibrated():
     with CalibratedStereoCamera(left, right, camera, display_results=True) as vision:
 
         for frame in vision:
+            print (datetime.now() - frame.timestamp).total_seconds()
             cv2.waitKey(0)
