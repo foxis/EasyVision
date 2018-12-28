@@ -2,7 +2,9 @@
 import cv2
 import numpy as np
 from .base import *
+from EasyVision.exceptions import TimeoutError
 from .calibratedcamera import PinholeCamera
+import threading as mt
 
 
 class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', 'F', 'Q'])):
@@ -56,30 +58,90 @@ class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', '
             R, T, E, F, Q)
 
 
+class CaptureThread(mt.Thread):
+
+    def __init__(self, vision):
+        super(CaptureThread, self).__init__()
+        self._vision = vision
+        self._running = False
+        self._capture = mt.Event()
+        self._ready = mt.Event()
+        self.frame = None
+        self._ready.clear()
+        self._capture.clear()
+
+    def capture_prepare(self):
+        self._ready.clear()
+        self._capture.set()
+
+    def capture_finish(self):
+        if not self._running:
+            return None
+        self._ready.wait()
+        return self.frame
+
+    def __getattr__(self, name):
+        return getattr(self._vision, name)
+
+    def run(self):
+        self._running = True
+
+        try:
+            self._ready.set()
+
+            while True:
+                if self._capture.wait():
+                    if not self._running:
+                        break
+                    self.frame = self._vision.capture()
+                    self._capture.clear()
+                    self._ready.set()
+        except:
+            raise
+        finally:
+            self._running = False
+            self.frame = None
+            self._ready.set()
+
+
 class CameraPairProxy(VisionBase):
     def __init__(self, _self, left, right):
-        self._left = left
-        self._right = right
+        self._left = CaptureThread(left)
+        self._right = CaptureThread(right)
         self._self = _self
         super(CameraPairProxy, self).__init__()
 
     def setup(self):
-        self._left.setup()
-        self._right.setup()
+        self._left._vision.setup()
+        self._right._vision.setup()
+        self._left.start()
+        self._right.start()
+        if not self._left._ready.wait():
+            raise TimeoutError()
+        if not self._right._ready.wait():
+            raise TimeoutError()
         super(CameraPairProxy, self).setup()
 
     def release(self):
-        self._left.release()
-        self._right.release()
+        self._left._running = False
+        self._right._running = False
+        self._left._capture.set()
+        self._right._capture.set()
+        self._left.join()
+        self._right.join()
+        self._left._vision.release()
+        self._right._vision.release()
         super(CameraPairProxy, self).release()
 
     def capture(self):
         super(CameraPairProxy, self).capture()
-        left = self._left.capture()
-        right = self._right.capture()
+        self._left.capture_prepare()
+        self._right.capture_prepare()
+        left, right = self._left.capture_finish(), self._right.capture_finish()
 
         if left is None or right is None:
             return None
+
         return left._replace(images=left.images + right.images)
 
     @property
@@ -96,7 +158,7 @@ class CameraPairProxy(VisionBase):
 
     @property
     def name(self):
-        return "({} : {})".format(self._left.name, self._right.name)
+        return "({} : {})".format(self._left._vision.name, self._right._vision.name)
 
     @property
     def frame_count(self):
@@ -182,12 +244,12 @@ class CalibratedStereoCamera(ProcessorBase):
             ret, corners = image.features
             if self.display_results:
                 img = cv2.drawChessboardCorners(image.image, self._grid_shape, corners, ret)
-                cv2.imshow("Left" if image.source is self._vision._left else "Right", img)
+                cv2.imshow("Left" if image.source is self._vision._left._vision else "Right", img)
         else:
             # TODO: rectified images
             img = image.image
             if self.display_results:
-                cv2.imshow("Left" if image.source is self._vision._left else "Right", img)
+                cv2.imshow("Left" if image.source is self._vision._left._vision else "Right", img)
 
         return image
 

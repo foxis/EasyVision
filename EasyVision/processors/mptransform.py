@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import cv2
 import numpy as np
-import multiprocessing
+import multiprocessing as mp
 import multiprocessing.connection
 from .base import *
 from EasyVision.base import EasyVisionBase
+from EasyVision.exceptions import TimeoutError
 import functools
 import cProfile
 import cPickle
@@ -14,25 +15,24 @@ Attr = namedtuple("Attr", ['name', 'method', 'args', 'kwargs'])
 multiprocessing.connection.BUFSIZE = 32 * 1024 * 1024
 
 
-class MultiProcessing(ProcessorBase, multiprocessing.Process):
+class MultiProcessing(ProcessorBase, mp.Process):
 
-    def __init__(self, vision, freerun=True, *args, **kwargs):
+    def __init__(self, vision, freerun=True, timeout=10, *args, **kwargs):
         self._freerun = freerun
 
-        self._running = multiprocessing.Value("i", 0)
-        self._frame_in, self._frame_out = multiprocessing.Pipe(False)
-        self._ctrl_in, self._ctrl_out = multiprocessing.Pipe(False)
-        self._res_in, self._res_out = multiprocessing.Pipe(False)
+        self._timeout = timeout
+        self._running = mp.Value("i", 0)
+        self._frame_in, self._frame_out = mp.Pipe(False)
+        self._ctrl_in, self._ctrl_out = mp.Pipe(False)
+        self._res_in, self._res_out = mp.Pipe(False)
 
-        self._ctrl_sem = multiprocessing.Semaphore(0)
-        self._res_sem = multiprocessing.Semaphore(0)
+        self._ctrl_sem = mp.Semaphore(0)
+        self._res_sem = mp.Semaphore(0)
 
-        self._run_event = multiprocessing.Event()
-        self._exit_event = multiprocessing.Event()
-        self._frame_event = multiprocessing.Event()
-        self._cap_event = multiprocessing.Event()
+        self._run_event = mp.Event()
+        self._frame_event = mp.Event()
+        self._cap_event = mp.Event()
         self._run_event.clear()
-        self._exit_event.clear()
         self._frame_event.clear()
         self._cap_event.clear()
 
@@ -47,7 +47,6 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
 
         if (name.startswith('__') and name.endswith('__')) or not self._running.value:
             return super(MultiProcessing, self).__getattr__(name)
-        print self.__class__.__name__, name
         attr = getattr(self._vision, name)
         if hasattr(attr, '__call__'):
             return caller_proxy(self, name, attr)
@@ -71,11 +70,12 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
     def setup(self):
         assert(self._running.value == 0)
         self.start()
-        self._run_event.wait(10)
+        if not self._run_event.wait(self._timeout):
+            raise TimeoutError()
 
     def release(self):
         self._running.value = 0
-        self._exit_event.wait(10)
+        self.join(self._timeout)
 
     @property
     def is_open(self):
@@ -94,7 +94,8 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
 
         if not self._freerun:
             self._cap_event.set()
-        self._frame_event.wait(10)
+        if not self._frame_event.wait(self._timeout):
+            raise TimeoutError()
         frame = cPickle.loads(self._frame_in.recv_bytes())
         self._frame_event.clear()
         if isinstance(frame, Exception):
@@ -147,10 +148,10 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
             finally:
                 self._res_sem.release()
 
-    def run(self):
-        cProfile.runctx('self._run()', globals(), locals(), 'processing.profile')
+    #def run(self):
+    #    cProfile.runctx('self._run()', globals(), locals(), 'processing.profile')
 
-    def _run(self):
+    def run(self):
         super(MultiProcessing, self).setup()
         self._running.value = 1
         self._lazy_frame = None
@@ -173,12 +174,10 @@ class MultiProcessing(ProcessorBase, multiprocessing.Process):
             cv2.waitKey(0)
 
         super(MultiProcessing, self).release()
-        self._exit_event.set()
 
     def _send_frame(self, frame):
         if not self._frame_event.is_set():
             data = cPickle.dumps(frame, protocol=-1)
-            print 'sending ', len(data), bytes
             self._frame_out.send_bytes(data)
             self._frame_event.set()
 

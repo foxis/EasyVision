@@ -40,7 +40,7 @@ class ProcessorBase(VisionBase):
     def get_source(self, name):
         if self.__class__.__name__ == name:
             return self
-        elif hasattr(self._vision, ProcessorBase):
+        elif isinstance(self._vision, ProcessorBase):
             return self._vision.get_source(name)
         elif self._vision.name == name:
             return self._vision
@@ -56,7 +56,9 @@ class ProcessorBase(VisionBase):
 
     @enabled.setter
     def enabled(self, value):
-        self._enabled = value
+        lastenabled, self._enabled = self._enabled, value
+        if lastenabled != value and hasattr(self, 'enabled_changed'):
+            self.enabled_changed(lastenabled, value)
 
     @property
     def is_open(self):

@@ -103,7 +103,6 @@ class CalibratedCamera(ProcessorBase):
             self.imgpoints = []  # 2d points in image plane.
             self.calibration_samples = 0
         else:
-            print self.camera.rectify, self.camera.projection
             self._mapx, self._mapy = cv2.initUndistortRectifyMap(
                     self.camera.matrix,
                     self.camera.distortion,

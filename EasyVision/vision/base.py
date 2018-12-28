@@ -86,10 +86,10 @@ class VisionBase(EasyVisionBase):
 
     def next(self):
         super(VisionBase, self).next()
-        if self.is_open:
-            return self.capture()
-        else:
+        frame = self.capture()
+        if not self.is_open or frame is None:
             raise StopIteration()
+        return frame
 
     @abstractmethod
     def capture(self):
