@@ -17,7 +17,7 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
     """
 
     def __new__(cls, size, matrix, distortion, rectify=None, projection=None):
-        matrix = np.array(matrix) if not isinstance(matrix, list) else matrix
+        matrix = np.array(matrix) if isinstance(matrix, list) else matrix
         distortion = np.array(distortion) if isinstance(distortion, list) else distortion
         rectify = np.array(rectify) if isinstance(rectify, list) else rectify
         projection = np.array(projection) if isinstance(projection, list) else projection
@@ -39,6 +39,20 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
     @property
     def center(self):
         return (self.matrix[0, 2], self.matrix[1, 2])
+
+    @staticmethod
+    def fromdict(as_dict):
+        return PinholeCamera(**as_dict)
+
+    def todict(self):
+        d = {
+            "size": self.size,
+            "matrix": self.matrix.tolist(),
+            "distortion": self.distortion.tolist(),
+            "rectify": self.rectify.tolist() if self.rectify is not None else None,
+            "projection": self.projection.tolist() if self.projection is not None else None
+        }
+        return d
 
     @staticmethod
     def from_parameters(frame_size, focal_point, center, distortion, rectify=None, projection=None):
@@ -81,8 +95,8 @@ class CalibratedCamera(ProcessorBase):
         super(CalibratedCamera, self).setup()
         if self._calibrate:
             # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-            self.objp = np.zeros((self._grid_shape[0] * self._grid_shape[1], 3), np.float32)
-            self.objp[:, :2] = np.mgrid[0:self._grid_shape[0], 0:self._grid_shape[1]].T.reshape(-1, 2)
+            self.objp = np.zeros((np.prod(self._grid_shape), 3), np.float32)
+            self.objp[:, :2] = np.indices(self._grid_shape).T.reshape(-1, 2)
 
             # Arrays to store object points and image points from all the images.
             self.objpoints = []  # 3d point in real world space

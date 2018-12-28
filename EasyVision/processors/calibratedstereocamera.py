@@ -31,6 +31,24 @@ class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', '
         return super(StereoCamera, cls).__new__(cls, left, right, R, T, E, F, Q)
 
     @staticmethod
+    def fromdict(as_dict):
+        left = PinholeCamera.fromdict(as_dict.pop('left'))
+        right = PinholeCamera.fromdict(as_dict.pop('right'))
+        return StereoCamera(left, right, **as_dict)
+
+    def todict(self):
+        d = {
+            "left": self.left.todict(),
+            "right": self.right.todict(),
+            "R": self.R.tolist(),
+            "T": self.T.tolist(),
+            "E": self.E.tolist(),
+            "F": self.F.tolist(),
+            "Q": self.Q.tolist(),
+        }
+        return d
+
+    @staticmethod
     def from_parameters(size, M1, d1, R1, P1, M2, d2, R2, P2, R, T, E, F, Q):
         return StereoCamera(
             PinholeCamera(size, M1, d1, R1, P1),
@@ -99,7 +117,7 @@ class CameraPairProxy(VisionBase):
 
 class CalibratedStereoCamera(ProcessorBase):
 
-    def __init__(self, left, right, camera, grid_shape=(7, 6), max_samples=20, debug=False, display_results=False, enabled=True, *args, **kwargs):
+    def __init__(self, left, right, camera, grid_shape=(9, 6), max_samples=20, debug=False, display_results=False, enabled=True, *args, **kwargs):
         calibrate = camera is None
         if not isinstance(left, ProcessorBase) or not isinstance(right, ProcessorBase) or \
            left.get_source('CalibratedCamera') is None or right.get_source('CalibratedCamera') is None:
@@ -116,6 +134,7 @@ class CalibratedStereoCamera(ProcessorBase):
             if not left._calibrate or not right._calibrate:
                 raise ValueError("Left and Right cameras must be set to calibrate mode")
             left._grid_shape = grid_shape
+            right._grid_shape = grid_shape
             self._grid_shape = grid_shape
             self._camera = None
             self.stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-5)
@@ -141,8 +160,8 @@ class CalibratedStereoCamera(ProcessorBase):
     def setup(self):
         super(CalibratedStereoCamera, self).setup()
         if self._calibrate:
-            self.objp = np.zeros((self._grid_shape[0] * self._grid_shape[1], 3), np.float32)
-            self.objp[:, :2] = np.mgrid[0:self._grid_shape[0], 0:self._grid_shape[1]].T.reshape(-1, 2)
+            self.objp = np.zeros((np.prod(self._grid_shape), 3), np.float32)
+            self.objp[:, :2] = np.indices(self._grid_shape).T.reshape(-1, 2)
 
             self.objpoints = []
             self.imgpoints_l = []

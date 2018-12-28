@@ -6,24 +6,56 @@ from pytest import raises, approx, mark
 from EasyVision.vision import *
 from EasyVision.processors import *
 import cv2
+import numpy as np
 
 
 images = ["test_data/left{:02d}.jpg".format(i + 1) for i in range(14) if i != 9]
-fp = (5.3591573396163199e+02, 5.3591573396163199e+02)
-cp = (3.4228315473308373e+02, 2.3557082909788173e+02)
-d = [-2.96548154e-01, 1.13868006e-01, 1.44476302e-03, 2.94839956e-04, 4.73668193e-02]
+fp = (535.5289137817749, 535.3112518132406)
+cp = (333.9556024187135, 241.22736353333593)
+d = [-0.29426670830681295, 0.11409183502487143, 0.0, 0.0, -0.023222122638183858]
+
+M_left =  [[535.5289137817749, 0.0, 333.9556024187135], [0.0, 535.3112518132406, 241.22736353333593], [0.0, 0.0, 1.0]]
+d_left =  [[-0.29426670830681295, 0.11409183502487143, 0.0, 0.0, -0.023222122638183858]]
+
+as_dict = {
+    "size": (640, 480),
+    "matrix": M_left,
+    "distortion": d_left
+}
 
 
-def test_camera():
-    camera = PinholeCamera.from_parameters(
-        (640, 480),
-        fp,
-        cp,
-        d)
-    assert(camera.size[0] == 640)
+def _assert_camera(camera):
+    assert(camera.size == (640, 480))
     assert(camera.focal_point[0] == approx(fp[0]))
     assert(camera.center[0] == approx(cp[0]))
     assert(camera.distortion[0][0] == approx(d[0]))
+    assert(isinstance(camera.matrix, np.ndarray))
+    assert(isinstance(camera.distortion, np.ndarray))
+
+
+def test_camera_from_parameters():
+    camera = PinholeCamera.from_parameters((640, 480), fp, cp, d)
+    _assert_camera(camera)
+
+
+def test_camera():
+    camera = PinholeCamera((640, 480), M_left, d_left)
+    _assert_camera(camera)
+
+
+def test_camera_fromdict():
+    camera = PinholeCamera.fromdict(as_dict)
+    _assert_camera(camera)
+
+
+def test_camera_todict():
+    camera = PinholeCamera((640, 480), M_left, d_left)
+    as_d = camera.todict()
+
+    test_d = {"rectify": None, "projection": None}
+    test_d.update(as_dict)
+
+    assert(as_d == test_d)
 
 
 @mark.slow
