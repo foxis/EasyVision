@@ -38,7 +38,7 @@ def _test_match_images(feature_type, display=False):
             assert(isinstance(frame, Frame))
             assert(frame.images[0].image is not None)
 
-            if frame.index == 3:
+            if frame.index == 2:
                 assert(len(matches) == 2)
                 assert(matches[0].model.name == 'obj1' or matches[0].model.name == 'obj2')
                 assert(matches[1].model.name == 'obj1' or matches[1].model.name == 'obj2')
@@ -46,7 +46,6 @@ def _test_match_images(feature_type, display=False):
                 assert(len(matches) == 0)
         if display:
             cv2.waitKey(0)
-
 
         assert(frame_count == len(images))
 

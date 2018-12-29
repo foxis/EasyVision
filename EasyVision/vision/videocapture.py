@@ -28,31 +28,36 @@ class VideoCapture(VisionBase):
         if self._fps:
             self._capture.set(cv2.CAP_PROP_FPS, self._fps)
 
-        if not self._capture.isOpened():
+        self._is_open = self._capture.isOpened()
+        if not self._is_open:
             raise DeviceNotFound()
 
         self._frame_size = (self._capture.get(cv2.CAP_PROP_FRAME_WIDTH), self._capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self._fps = self._capture.get(cv2.CAP_PROP_FPS)
         self._frame_count = self._capture.get(cv2.CAP_PROP_FRAME_COUNT)
 
+        self._frame_index = 0
+
     def release(self):
         if self._capture:
             self._capture.release()
             self._is_open = False
             self._capture = None
-            if self.debug:
-                cv2.destroyWindow(self.name)
         super(VideoCapture, self).release()
 
     def capture(self):
+        super(VideoCapture, self).capture()
         if not self.is_open:
             return None
 
-        self._is_open, frame = self._capture.read()
+        self._is_open, image = self._capture.read()
+        if not self._is_open:
+            return None
         timestamp = datetime.now()
-        if self.debug:
-            cv2.imshow(self.name, frame)
-        return Frame(timestamp, self._frame_index, (Image(self, frame), ))
+        if self.display_results:
+            cv2.imshow(self.name, image)
+        self._frame_index += 1
+        return Frame(timestamp, self._frame_index - 1, (Image(self, image), ))
 
     @property
     def frame_size(self):
@@ -68,8 +73,7 @@ class VideoCapture(VisionBase):
 
     @property
     def is_open(self):
-        assert(self._capture is not None)
-        return self._capture.isOpened()
+        return self._is_open
 
     @property
     def name(self):
@@ -87,7 +91,7 @@ class VideoCapture(VisionBase):
     def devices(self):
         return ()
 
-    def debug_changed(self, last, current):
+    def display_results_changed(self, last, current):
         if current:
             cv2.namedWindow(self.name, cv2.WINDOW_NORMAL)
         else:

@@ -45,6 +45,10 @@ def test_import_multiprocessing():
     from EasyVision.processors import MultiProcessing
 
 
+def test_import_multiconsumers():
+    from EasyVision.processors import MultiConsumers
+
+
 def test_import_processors():
     import EasyVision.processors
 

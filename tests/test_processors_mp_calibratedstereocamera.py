@@ -41,7 +41,7 @@ as_dict = {
 }
 
 
-@mark.complex
+@mark.long
 def test_stereo_calibrated_mp():
     from datetime import datetime
     from itertools import izip
@@ -50,7 +50,7 @@ def test_stereo_calibrated_mp():
     feature_type = 'SURF'
 
     total = 0
-    left = FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type=feature_type)
+    left = FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_left), ocl=True), camera.left), feature_type=feature_type)
     with left as left_:
             print 'Single'
             for frame in left_:
@@ -61,8 +61,8 @@ def test_stereo_calibrated_mp():
     print 'total = ', total
     total = 0
 
-    left = FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type=feature_type)
-    right = FeatureExtraction(CalibratedCamera(ImagesReader(images_right), camera.right), feature_type=feature_type)
+    left = FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_left), ocl=True), camera.left), feature_type=feature_type)
+    right = FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_right), ocl=True), camera.right), feature_type=feature_type)
     with left as left_:
         with right as right_:
             print 'Sequential'
@@ -74,8 +74,8 @@ def test_stereo_calibrated_mp():
     print 'total = ', total
     total = 0
 
-    left = FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type=feature_type)
-    right = FeatureExtraction(CalibratedCamera(ImagesReader(images_right), camera.right), feature_type=feature_type)
+    left = FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_left), ocl=True), camera.left), feature_type=feature_type)
+    right = FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_right), ocl=True), camera.right), feature_type=feature_type)
     with CalibratedStereoCamera(left, right, camera, display_results=False) as vision:
         print 'Threaded'
         for frame in vision:
@@ -88,8 +88,8 @@ def test_stereo_calibrated_mp():
     print 'total = ', total
     total = 0
 
-    left = MultiProcessing(FeatureExtraction(CalibratedCamera(ImagesReader(images_left), camera.left), feature_type=feature_type), freerun=False)
-    right = MultiProcessing(FeatureExtraction(CalibratedCamera(ImagesReader(images_right), camera.right), feature_type=feature_type), freerun=False)
+    left = MultiProcessing(FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_left), ocl=True), camera.left), feature_type=feature_type), freerun=False)
+    right = MultiProcessing(FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_right), ocl=True), camera.right), feature_type=feature_type), freerun=False)
     with CalibratedStereoCamera(left, right, camera, display_results=False) as vision:
         print 'Multiprocessing'
         for frame in vision:

@@ -11,7 +11,7 @@ import cv2
 import numpy as np
 
 
-camera = PinholeCamera.from_parameters((1241.0, 376.0), (718.8560, 718.8560), (607.1928, 185.2157), [0.0, 0.0, 0.0, 0.0, 0.0])
+camera = PinholeCamera.from_parameters((1241, 376), (718.8560, 718.8560), (607.1928, 185.2157), [0.0, 0.0, 0.0, 0.0, 0.0])
 camera1 = PinholeCamera.from_parameters((1920, 1080), (1920/2, 1080/2), (1920/2, 1080/2), [0.0, 0.0, 0.0, 0.0, 0.0])
 camera2 = PinholeCamera.from_parameters((1280, 1024),
     (1280 * 0.535719308086809, 1024 * 0.669566858850269),

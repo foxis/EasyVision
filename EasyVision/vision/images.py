@@ -17,23 +17,21 @@ class ImagesReader(VisionBase):
 
     def setup(self):
         super(ImagesReader, self).setup()
+        self._frame_index = 0
 
     def release(self):
-        if self._images:
-            self._images = None
-            if self.debug:
-                cv2.destroyWindow(self.name)
+        super(ImagesReader, self).release()
 
     def capture(self):
-        if not self.is_open:
+        super(ImagesReader, self).capture()
+        if not self._frame_index < self._frame_count:
             return None
-
-        frame = ImagesReader.load_image(self._paths[self._frame_index], _self=self, img_args=self._img_args)
+        image = ImagesReader.load_image(self._paths[self._frame_index], _self=self, img_args=self._img_args)
         self._frame_index += 1
         timestamp = datetime.now()
         if self.display_results:
-            cv2.imshow(self.name, frame.image)
-        return Frame(timestamp, self._frame_index, (frame, ))
+            cv2.imshow(self.name, image.image)
+        return Frame(timestamp, self._frame_index - 1, (image, ))
 
     @staticmethod
     def load_image(image_path, mask_path=None, _self=None, img_args=()):
@@ -45,7 +43,7 @@ class ImagesReader(VisionBase):
             mask = cv2.imread(mask_path)
             if mask is None:
                 raise IOError("Could not read the mask image: " + mask_path)
-        return ImageWithMask(_self, image, path) if mask else Image(_self, image)
+        return ImageWithMask(_self, image, mask) if mask else Image(_self, image)
 
     @property
     def frame_size(self):
