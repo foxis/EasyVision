@@ -100,6 +100,8 @@ class MultiProcessing(ProcessorBase, mp.Process):
         self._frame_event.clear()
         if isinstance(frame, Exception):
             raise frame
+        if isinstance(frame, Frame):
+            frame = frame._replace(images=tuple(i._replace(source=self) for i in frame.images))
         return frame
 
     def _send_ctrl(self, ctrl, lock=True):
@@ -177,6 +179,8 @@ class MultiProcessing(ProcessorBase, mp.Process):
 
     def _send_frame(self, frame):
         if not self._frame_event.is_set():
+            if isinstance(frame, Frame):
+                frame = frame._replace(images=tuple(i._replace(source=None) for i in frame.images))
             data = cPickle.dumps(frame, protocol=-1)
             self._frame_out.send_bytes(data)
             self._frame_event.set()

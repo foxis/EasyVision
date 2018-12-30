@@ -99,17 +99,20 @@ class ProcessorB(ProcessorBase):
         return image._replace(source=self, image=new_image)
 
 
+@pytest.mark.main
 def test_abstract():
     with raises(TypeError):
         ProcessorBase()
 
 
+@pytest.mark.main
 def test_implementation():
     source = Subclass()
     pr = ProcessorA(source)
     assert(pr.source is source)
 
 
+@pytest.mark.main
 def test_capture():
     vision = Subclass(0)
 
@@ -120,6 +123,7 @@ def test_capture():
         assert(img.images[0].image == "AN IMAGE")
 
 
+@pytest.mark.main
 def test_capture_incorrect():
     vision = Subclass(0)
     processor = ProcessorA(vision)
@@ -128,6 +132,7 @@ def test_capture_incorrect():
         processor.capture()
 
 
+@pytest.mark.main
 def test_capture_stacked_incorrect():
     vision = Subclass(0)
     processorA = ProcessorA(vision)
@@ -139,6 +144,7 @@ def test_capture_stacked_incorrect():
         processorB.capture()
 
 
+@pytest.mark.main
 def test_capture_stacked():
     vision = Subclass(0)
     processorA = ProcessorA(vision)
@@ -157,6 +163,7 @@ def test_capture_stacked():
         assert(processorB.get_source('Test no') is None)
 
 
+@pytest.mark.main
 def test_method_resolution():
     vision = Subclass(0)
     processorA = ProcessorA(vision)

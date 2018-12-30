@@ -33,21 +33,25 @@ def _assert_camera(camera):
     assert(isinstance(camera.distortion, np.ndarray))
 
 
+@pytest.mark.main
 def test_camera_from_parameters():
     camera = PinholeCamera.from_parameters((640, 480), fp, cp, d)
     _assert_camera(camera)
 
 
+@pytest.mark.main
 def test_camera():
     camera = PinholeCamera((640, 480), M_left, d_left)
     _assert_camera(camera)
 
 
+@pytest.mark.main
 def test_camera_fromdict():
     camera = PinholeCamera.fromdict(as_dict)
     _assert_camera(camera)
 
 
+@pytest.mark.main
 def test_camera_todict():
     camera = PinholeCamera((640, 480), M_left, d_left)
     as_d = camera.todict()

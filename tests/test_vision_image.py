@@ -9,6 +9,7 @@ import cPickle
 import numpy as np
 
 
+@pytest.mark.main
 def test_load_images():
     with ImagesReader(["test_data/34838518832_fd00147042_k.jpg", "test_data/2732011028_f0f033e678_b.jpg", "test_data/4472701625_6b23da9a23_b.jpg"]) as vision:
         frame_count = 0
@@ -22,12 +23,14 @@ def test_load_images():
         assert(frame_count == 3)
 
 
+@pytest.mark.main
 def test_load_image():
     image = ImagesReader.load_image("test_data/34838518832_fd00147042_k.jpg")
     assert(image.source is None)
     assert(image.image is not None)
 
 
+@pytest.mark.main
 def test_load_image_fail():
     with raises(IOError):
         ImagesReader.load_image("no-such-file.jpg")
@@ -48,6 +51,7 @@ def test_load_and_display_images():
         assert(frame_count == 3)
 
 
+@pytest.mark.main
 def test_images_capture_debug(mocker):
     mocker.patch('cv2.namedWindow', autospec=True)
     mocker.patch('cv2.destroyWindow', autospec=True)
@@ -68,6 +72,7 @@ def test_images_capture_debug(mocker):
     cv2.imshow.assert_called_with(name, image)
 
 
+@pytest.mark.main
 def test_pickle_image():
     _image = ImagesReader.load_image("test_data/34838518832_fd00147042_k.jpg")
     tmp = cPickle.dumps(_image, -1)

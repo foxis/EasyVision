@@ -52,13 +52,14 @@ class ObjectModel(ModelBase):
     def from_processed_image(name, image, **kwargs):
         if not isinstance(image, Image):
             raise TypeError("Image must be Image type")
-        if not hasattr(image, "features"):
-            raise ValueError("Image must implement features")
-        if not hasattr(image, "feature_type"):
-            raise ValueError("Image must implement feature_type")
+        if not image.features:
+            raise ValueError("Image must have features")
+        if not image.feature_type:
+            raise ValueError("Image must have feature_type")
 
-        if hasattr(image, "mask"):
+        if image.mask:
             #calculate outline
+            raise NotImplementedError()
             pass
         else:
             h, w, _ = image.image.shape

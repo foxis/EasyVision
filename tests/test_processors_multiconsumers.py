@@ -74,6 +74,7 @@ class Subclass(VisionBase):
         pass
 
 
+@pytest.mark.main
 def test_capture_multiconsumers():
     vision = Subclass(0)
     processor = MultiConsumers(vision)
@@ -87,6 +88,7 @@ def test_capture_multiconsumers():
                     break
 
 
+@pytest.mark.main
 def test_capture_multiconsumers_fail():
     vision = Subclass(0)
     processor = MultiConsumers(vision)

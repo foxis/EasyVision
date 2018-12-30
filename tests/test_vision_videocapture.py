@@ -29,11 +29,13 @@ def VideoCaptureMock(dev):
     return VideoCaptureMockClass(dev)
 
 
+@pytest.mark.main
 def test_monocular_vision(mocker):
     mocker.patch('cv2.VideoCapture', VideoCaptureMock)
     vision = VideoCapture(0)
 
 
+@pytest.mark.main
 def test_monocular_vision_devicenotfound(mocker):
     mocker.patch('cv2.VideoCapture', VideoCaptureMock)
     with raises(DeviceNotFound):
@@ -41,6 +43,7 @@ def test_monocular_vision_devicenotfound(mocker):
             pass
 
 
+@pytest.mark.main
 def test_monocular_vision_capture_incorrect(mocker):
     mocker.patch('cv2.VideoCapture', VideoCaptureMock)
     vision = VideoCapture(0)
@@ -49,6 +52,7 @@ def test_monocular_vision_capture_incorrect(mocker):
         img = vision.capture()
 
 
+@pytest.mark.main
 def test_monocular_vision_capture(mocker):
     mocker.patch('cv2.VideoCapture', VideoCaptureMock)
     with VideoCapture(0) as vision:
@@ -56,6 +60,7 @@ def test_monocular_vision_capture(mocker):
         assert(isinstance(img, Frame))
 
 
+@pytest.mark.main
 def test_monocular_vision_capture_debug(mocker):
     mocker.patch('cv2.namedWindow', autospec=True)
     mocker.patch('cv2.destroyWindow', autospec=True)

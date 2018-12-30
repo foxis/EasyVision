@@ -61,15 +61,18 @@ class Subclass(VisionBase):
         pass
 
 
+@pytest.mark.main
 def test_abstract_vision_abstract():
     with raises(TypeError):
         VisionBase()
 
 
+@pytest.mark.main
 def test_abstract_vision_implementation():
     Subclass()
 
 
+@pytest.mark.main
 def test_abstract_vision_implementation_nosetup():
     s = Subclass()
     with raises(AssertionError):
@@ -77,6 +80,7 @@ def test_abstract_vision_implementation_nosetup():
             break
 
 
+@pytest.mark.main
 def test_abstract_vision_implementation_context():
     s = Subclass()
     with s as ss:
@@ -84,6 +88,7 @@ def test_abstract_vision_implementation_context():
             break
 
 
+@pytest.mark.main
 def test_abstract_vision_implementation_setup():
     s = Subclass()
     s.setup()
@@ -92,18 +97,21 @@ def test_abstract_vision_implementation_setup():
     s.release()
 
 
+@pytest.mark.main
 def test_image():
     img = Image(Subclass(), "Some frame")
     assert(isinstance(img.source, Subclass))
     assert(img.image == "Some frame")
 
 
+@pytest.mark.main
 def test_image_make():
     img = Image._make([Subclass(), "Some frame"])
     assert(isinstance(img.source, Subclass))
     assert(img.image == "Some frame")
 
 
+@pytest.mark.main
 def test_image_replace():
     img = Image(Subclass(), "Some frame")
     img1 = img._replace(image="Some other frame")
@@ -111,56 +119,20 @@ def test_image_replace():
     assert(img1.image == "Some other frame")
 
 
-def test_image_mask():
-    img = ImageWithMask(Subclass(), "Some frame", ("Some mask", ))
-    assert(isinstance(img.source, Subclass))
-    assert(img.image == "Some frame")
-    assert(img.mask == ("Some mask", ))
-
-
-def test_image_mask_make():
-    img = ImageWithMask._make([Subclass(), "Some frame", ("Some mask", )])
-    assert(isinstance(img.source, Subclass))
-    assert(img.image == "Some frame")
-    assert(img.mask == ("Some mask", ))
-
-
-def test_image_mask_replace():
-    img = ImageWithMask(Subclass(), "Some frame", ("Some mask", ))
-    img1 = img._replace(image="Some other frame")
-    assert(isinstance(img1.source, Subclass))
-    assert(img1.image == "Some other frame")
-    assert(img1.mask == ("Some mask", ))
-
-
-def test_image_features():
-    img = ImageWithFeatures(Subclass(), "Some frame", "features", "type")
-    assert(isinstance(img.source, Subclass))
-    assert(img.image == "Some frame")
-    assert(img.features == "features")
-    assert(img.feature_type == "type")
-
-
-def test_image_features_mask():
-    img = ImageWithMaskAndFeatures(Subclass(), "Some frame", ("Some mask", ), "features", "type")
-    assert(isinstance(img.source, Subclass))
-    assert(img.image == "Some frame")
-    assert(img.features == "features")
-    assert(img.feature_type == "type")
-    assert(img.mask == ("Some mask", ))
-
-
+@pytest.mark.main
 def test_image_no_source():
     img = Image(None, "Some frame")
     assert(img.source is None)
     assert(img.image == "Some frame")
 
 
+@pytest.mark.main
 def test_image_fail():
     with raises(TypeError):
         Image("fake object", "some frame")
 
 
+@pytest.mark.main
 def test_frame():
     frame = Frame(datetime.now(), 0, (Image(Subclass(), "some frame"), ))
     assert(isinstance(frame.timestamp, datetime))
@@ -169,21 +141,25 @@ def test_frame():
     assert(isinstance(frame.images[0], Image))
 
 
+@pytest.mark.main
 def test_frame_fail_timestamp():
     with raises(TypeError):
         Frame("", 0, (Image(Subclass(), "some frame"), ))
 
 
+@pytest.mark.main
 def test_frame_fail_index():
     with raises(TypeError):
         Frame(datetime.now(), "", (Image(Subclass(), "some frame"), ))
 
 
+@pytest.mark.main
 def test_frame_fail_image():
     with raises(TypeError):
         Frame(datetime.now(), 0, "")
 
 
+@pytest.mark.main
 def test_frame_get_image():
     sourceA = Subclass("A")
     sourceB = Subclass("B")

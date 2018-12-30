@@ -51,6 +51,7 @@ def _assert_camera(camera):
     assert(isinstance(camera.Q, np.ndarray))
 
 
+@pytest.mark.main
 def test_stereo_camera():
     camera = StereoCamera(
         left_camera,
@@ -63,6 +64,7 @@ def test_stereo_camera():
     _assert_camera(camera)
 
 
+@pytest.mark.main
 def test_stereo_camera_todict():
     camera = StereoCamera(
         left_camera,
@@ -75,6 +77,7 @@ def test_stereo_camera_todict():
     assert(as_dict == camera.todict())
 
 
+@pytest.mark.main
 def test_stereo_camera_fromdict():
     camera = StereoCamera.fromdict(as_dict)
     _assert_camera(camera)

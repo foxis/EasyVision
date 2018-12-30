@@ -126,6 +126,7 @@ class ProcessorA(ProcessorBase):
         return image._replace(source=self, image=new_image)
 
 
+@pytest.mark.main
 def test_capture_mp_freerun():
     vision = Subclass(0)
     processor = ProcessorA(vision)
@@ -138,6 +139,7 @@ def test_capture_mp_freerun():
                 break
 
 
+@pytest.mark.main
 def test_capture_mp_get():
     vision = Subclass(0)
     processor = ProcessorA(vision)
@@ -148,6 +150,7 @@ def test_capture_mp_get():
         assert(mp.test_remote_get == 'success')
 
 
+@pytest.mark.main
 def test_capture_mp_set_getter():
     vision = Subclass(0)
     processor = ProcessorA(vision)
@@ -156,6 +159,7 @@ def test_capture_mp_set_getter():
             mp.remote_set('test_remote_getter_only', 0)
 
 
+@pytest.mark.main
 def test_capture_mp_set():
     vision = Subclass(0)
     processor = ProcessorA(vision)
@@ -173,6 +177,7 @@ def test_capture_mp_set():
         assert(processor._some_field == 3)
 
 
+@pytest.mark.main
 def test_capture_mp_call():
     vision = Subclass(0)
     processor = ProcessorA(vision)
@@ -191,6 +196,7 @@ def test_capture_mp_call():
         assert(mp.process(Image(None, 'testing')).image == 'TESTING')
 
 
+@pytest.mark.main
 def test_capture_mp_call_exception():
     vision = Subclass(0)
     processor = ProcessorA(vision)
@@ -199,6 +205,7 @@ def test_capture_mp_call_exception():
             mp.remote_call('test_remote_exception', 2, 5, kwarg_test=7)
 
 
+@pytest.mark.main
 def test_capture_mp_noattr():
     vision = Subclass(0)
     processor = ProcessorA(vision)
@@ -213,6 +220,7 @@ def test_capture_mp_noattr():
             _ = mp.remote_set('test_remote_exception_no_such_attr', 0)
 
 
+@pytest.mark.main
 def test_capture_mp_lazy():
     vision = Subclass(0)
     processor = ProcessorA(vision)

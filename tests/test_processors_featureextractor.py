@@ -31,7 +31,7 @@ def test_load_image():
     vision = ImagesReader(images)
     with FeatureExtraction(vision, 'ORB') as vision:
         result = vision.process(image)
-        assert(isinstance(result, ImageWithFeatures))
+        assert(isinstance(result, Image))
         assert(result.image is image.image)
         assert(hasattr(result.features, 'points'))
         assert(hasattr(result.features, 'descriptors'))

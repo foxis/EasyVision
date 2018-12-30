@@ -79,15 +79,18 @@ class VisionSubclass(VisionBase):
         pass
 
 
+@pytest.mark.main
 def test_abstract_vision_abstract():
     with raises(TypeError):
         _ = EngineBase(None)
 
 
+@pytest.mark.main
 def test_abstract_vision_implementation():
     _ = Subclass(VisionSubclass())
 
 
+@pytest.mark.main
 def test_abstract_vision_implementation_bar_arg():
     class BadVision(object):
         pass
@@ -96,6 +99,7 @@ def test_abstract_vision_implementation_bar_arg():
         _ = Subclass(BadVision())
 
 
+@pytest.mark.main
 def test_iterator():
     with Subclass(VisionSubclass()) as engine:
         count = 0

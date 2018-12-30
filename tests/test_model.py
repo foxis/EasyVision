@@ -25,17 +25,20 @@ class Subclass(ModelBase):
         pass
 
 
+@pytest.mark.main
 def test_abstract():
     with raises(TypeError):
         ModelBase()
 
 
+@pytest.mark.main
 def test_implementation():
     model = Subclass('empty model', [])
     assert(not len(model))
     assert(model.name == 'empty model')
 
 
+@pytest.mark.main
 def test_model_view():
     view = ModelView('image', 'mask', 'features', 'feature type')
     assert(view.image == 'image')
@@ -44,11 +47,14 @@ def test_model_view():
     assert(view.feature_type == 'feature type')
 
 
+@pytest.mark.main
 def test_add_model_view():
     model = Subclass('empty model', [])
     model.update(ModelView('image', 'outline', 'features', 'feature type'))
     assert(len(model))
 
+
+@pytest.mark.main
 def test_add_model():
     model = Subclass('model', [ModelView('image', 'outline', 'features', 'feature type')])
     model2 = Subclass('new model', [ModelView('image1', 'outline1', 'features1', 'feature type')])

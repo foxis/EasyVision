@@ -90,14 +90,10 @@ class FeatureExtraction(ProcessorBase):
         return self._feature_type
 
     def process(self, image):
-        mask = None
-        if isinstance(image, ImageWithMask):
-            mask = self._make_mask(image.mask)
-
         if not self._detector:
-            keypoints, descriptors = self._descriptor.detect(image.image, mask), None
+            keypoints, descriptors = self._descriptor.detect(image.image, image.mask), None
         else:
-            keypoints, descriptors = self._detector.detect(image.image, mask), None
+            keypoints, descriptors = self._detector.detect(image.image, image.mask), None
 
         if self._extract:
             keypoints, descriptors = self._descriptor.compute(image.image, keypoints)
@@ -105,13 +101,7 @@ class FeatureExtraction(ProcessorBase):
         if self.display_results:
             self._draw_keypoints(image.image, keypoints)
 
-        if mask:
-            return ImageWithMaskAndFeatures(self, image.image, image.mask, Features._make(keypoints, descriptors), self._feature_type)
-        else:
-            return ImageWithFeatures(self, image.image, Features._make(keypoints, descriptors), self._feature_type)
-
-    def _make_mask(self, mask):
-        raise NotImplementedError()
+        return image._replace(features=Features._make(keypoints, descriptors), feature_type=self._feature_type)
 
     def _draw_keypoints(self, image, keypoints):
         img = cv2.drawKeypoints(image, keypoints, np.array([]), color=(0, 0, 255),

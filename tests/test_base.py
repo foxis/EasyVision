@@ -69,16 +69,19 @@ class SubclassOverload(Subclass):
         self.display_changed_called_current = current
 
 
+@pytest.mark.main
 def test_abstract_base_abstract():
     with raises(TypeError):
         EasyVisionBase()
 
 
+@pytest.mark.main
 def test_implementation():
     tmp = Subclass()
     assert(tmp.name == 'Subclass')
 
 
+@pytest.mark.main
 def test_implementation_context():
     sub = Subclass()
     with sub as s:
@@ -86,6 +89,7 @@ def test_implementation_context():
     assert(s.release_called)
 
 
+@pytest.mark.main
 def test_iterator():
     with Subclass() as vis:
         count = 0
@@ -96,6 +100,7 @@ def test_iterator():
         assert(count == 10)
 
 
+@pytest.mark.main
 def test_setup_release():
     vis = Subclass()
     vis.setup()
@@ -108,6 +113,7 @@ def test_setup_release():
     vis.release()
 
 
+@pytest.mark.main
 def test_debug():
     vis = Subclass()
     assert(not vis.debug)
@@ -119,6 +125,7 @@ def test_debug():
     assert(not vis.debug)
 
 
+@pytest.mark.main
 def test_display():
     vis = Subclass()
     assert(not vis.display_results)
@@ -130,18 +137,21 @@ def test_display():
     assert(not vis.display_results)
 
 
+@pytest.mark.main
 def test_debug_init():
     vis = Subclass(debug=True)
     assert(vis.debug)
     assert(not vis.display_results)
 
 
+@pytest.mark.main
 def test_display_init():
     vis = Subclass(display_results=True)
     assert(not vis.debug)
     assert(vis.display_results)
 
 
+@pytest.mark.main
 def test_debug_changed():
     vis = SubclassOverload()
     assert(not vis.debug_changed_called)
@@ -158,6 +168,7 @@ def test_debug_changed():
     assert(not vis.display_changed_called)
 
 
+@pytest.mark.main
 def test_debug_changed_init():
     vis = SubclassOverload(debug=True)
     assert(vis.name == 'SubclassOverload')
@@ -165,6 +176,7 @@ def test_debug_changed_init():
     assert(not vis.display_changed_called)
 
 
+@pytest.mark.main
 def test_display_changed_init():
     vis = SubclassOverload(display_results=True)
     assert(not vis.debug_changed_called)

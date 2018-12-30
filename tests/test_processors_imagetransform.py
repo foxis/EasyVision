@@ -11,7 +11,8 @@ import cv2
 images = ["test_data/left{:02d}.jpg".format(i + 1) for i in range(14) if i != 9]
 
 
-def test_calibrate():
+@pytest.mark.main
+def test_image_transform():
     vision = ImagesReader(images)
     with ImageTransform(vision, ocl=True, color=cv2.COLOR_BGR2GRAY, operator=None) as vision:
         for i in vision:

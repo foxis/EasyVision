@@ -50,26 +50,26 @@ def _test_match_images(feature_type, display=False):
         assert(frame_count == len(images))
 
 
-@mark.slow
+@mark.long
 def test_match_images_ORB():
     _test_match_images('ORB')
 
 
-@mark.slow
+@mark.long
 def test_match_images_KAZE():
     _test_match_images('KAZE')
 
 
-@mark.slow
+@mark.long
 def test_match_images_AKAZE():
     _test_match_images('AKAZE')
 
 
-@mark.slow
+@mark.long
 def test_match_images_SURF():
     _test_match_images('SURF')
 
 
-@mark.slow
+@mark.long
 def test_match_images_SIFT():
     _test_match_images('SIFT')

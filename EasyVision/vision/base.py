@@ -5,50 +5,30 @@ from datetime import datetime
 from operator import itemgetter
 
 
-_Image = namedtuple('_Image', ['source', 'image'])
+_Image = namedtuple('_Image', ['source', 'image', 'original', 'mask', 'features', 'feature_type'])
 
 
 class Image(NamedTupleExtendHelper, _Image):
     __slots__ = ()
 
-    def __new__(cls, source, *args):
+    def __new__(cls, source, image, original=None, mask=None, features=None, feature_type=None):
         if source is not None and not isinstance(source, VisionBase):
             raise TypeError("Source must be VisionBase")
-        return tuple.__new__(cls, (source, ) + args)
+        return tuple.__new__(cls, (source, image, original, mask, features, feature_type))
 
+    def tobytes(self):
+        raise NotImplementedError()
 
-class ImageWithMask(Image):
-    __slots__ = ()
-    _fields = Image._fields + ('mask', )
+    @staticmethod
+    def frombytes(data):
+        raise NotImplementedError()
 
-    def __new__(cls, source, image, mask, *args):
-        if mask is not None and not isinstance(mask, tuple):
-            raise TypeError("mask must be either a tuple of points or an image")
-        return super(ImageWithMask, cls).__new__(cls, *((source, image, mask) + args))
+    def tobuffer(self):
+        raise NotImplementedError()
 
-    mask = property(itemgetter(2), doc='Alias for field number 2')
-
-
-class ImageWithFeatures(Image):
-    __slots__ = ()
-    _fields = Image._fields + ('features', 'feature_type')
-
-    def __new__(cls, source, image, features, feature_type, *args):
-        return super(ImageWithFeatures, cls).__new__(cls, *((source, image, features, feature_type) + args))
-
-    features = property(itemgetter(2), doc='Alias for field number 2')
-    feature_type = property(itemgetter(3), doc='Alias for field number 3')
-
-
-class ImageWithMaskAndFeatures(ImageWithMask):
-    __slots__ = ()
-    _fields = ImageWithMask._fields + ('features', 'feature_type')
-
-    def __new__(cls, source, image, mask, features, feature_type, *args):
-        return super(ImageWithMaskAndFeatures, cls).__new__(cls, *((source, image, mask, features, feature_type) + args))
-
-    features = property(itemgetter(3), doc='Alias for field number 3')
-    feature_type = property(itemgetter(4), doc='Alias for field number 4')
+    @staticmethod
+    def frombuffer(data):
+        raise NotImplementedError()
 
 
 class Frame(NamedTupleExtendHelper, namedtuple('Frame', ['timestamp', 'index', 'images'])):

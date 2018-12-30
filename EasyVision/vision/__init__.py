@@ -2,6 +2,6 @@
 # -*- coding: utf-8 -*-
 from .videocapture import VideoCapture
 from .images import ImagesReader
-from .base import Image, ImageWithMask, ImageWithFeatures, ImageWithMaskAndFeatures, Frame
+from .base import Image, Frame
 from .exceptions import *
 
