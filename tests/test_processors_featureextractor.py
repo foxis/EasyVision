@@ -37,7 +37,7 @@ def test_load_image():
         assert(hasattr(result.features, 'descriptors'))
 
 
-@mark.long
+@mark.complex
 def test_load_and_display_images():
     vision = ImagesReader(images, display_results=True)
     with FeatureExtraction(vision, 'ORB', display_results=True) as vision:
