@@ -17,7 +17,7 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
     """
 
     def __new__(cls, size, matrix, distortion, rectify=None, projection=None):
-        if not isinstance(size, tuple) or len(size) != 2 or not all(isinstance(i, int) and i > 0 for i in size):
+        if not isinstance(size, tuple) or len(size) != 2 or not all((isinstance(i, int) or isinstance(i, long)) and i > 0 for i in size):
             raise TypeError('Frame size must be a tuple consisting of two positive integers')
         matrix = np.array(matrix) if isinstance(matrix, list) else matrix
         distortion = np.array(distortion) if isinstance(distortion, list) else distortion
