@@ -179,7 +179,7 @@ class CameraPairProxy(VisionBase):
 
 class CalibratedStereoCamera(ProcessorBase):
 
-    def __init__(self, left, right, camera, grid_shape=(9, 6), max_samples=20, debug=False, display_results=False, enabled=True, *args, **kwargs):
+    def __init__(self, left, right, camera, grid_shape=(9, 6), max_samples=20, *args, **kwargs):
         calibrate = camera is None
         if not isinstance(left, ProcessorBase) or not isinstance(right, ProcessorBase) or \
            left.get_source('CalibratedCamera') is None or right.get_source('CalibratedCamera') is None:
@@ -217,10 +217,9 @@ class CalibratedStereoCamera(ProcessorBase):
         vision = CameraPairProxy(self, left, right)
 
         self._calibrate = calibrate
-        super(CalibratedStereoCamera, self).__init__(vision, debug=debug, display_results=display_results, enabled=enabled, *args, **kwargs)
+        super(CalibratedStereoCamera, self).__init__(vision, *args, **kwargs)
 
     def setup(self):
-        super(CalibratedStereoCamera, self).setup()
         if self._calibrate:
             self.objp = np.zeros((np.prod(self._grid_shape), 3), np.float32)
             self.objp[:, :2] = np.indices(self._grid_shape).T.reshape(-1, 2)
@@ -229,6 +228,7 @@ class CalibratedStereoCamera(ProcessorBase):
             self.imgpoints_l = []
             self.imgpoints_r = []
             self.calibration_samples = 0
+        super(CalibratedStereoCamera, self).setup()
 
     @property
     def description(self):

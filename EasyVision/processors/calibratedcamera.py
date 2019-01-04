@@ -78,7 +78,7 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
 
 
 class CalibratedCamera(ProcessorBase):
-    def __init__(self, vision, camera, grid_shape=(7, 6), max_samples=20, debug=False, display_results=False, enabled=True, *args, **kwargs):
+    def __init__(self, vision, camera, grid_shape=(7, 6), max_samples=20, *args, **kwargs):
         calibrate = camera is None
         if not calibrate:
             if not isinstance(camera, PinholeCamera) and not (isinstance(camera, tuple) and len(camera) == 3):
@@ -91,10 +91,9 @@ class CalibratedCamera(ProcessorBase):
             self._max_samples = max_samples
 
         self._calibrate = calibrate
-        super(CalibratedCamera, self).__init__(vision, debug=debug, display_results=display_results, enabled=enabled, *args, **kwargs)
+        super(CalibratedCamera, self).__init__(vision, *args, **kwargs)
 
     def setup(self):
-        super(CalibratedCamera, self).setup()
         if self._calibrate:
             # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
             self.objp = np.zeros((np.prod(self._grid_shape), 3), np.float32)
@@ -112,6 +111,7 @@ class CalibratedCamera(ProcessorBase):
                     self.camera.projection,
                     self.camera.size,
                     cv2.CV_32FC1)
+        super(CalibratedCamera, self).setup()
 
     @property
     def description(self):

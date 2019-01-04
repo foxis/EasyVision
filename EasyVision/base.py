@@ -26,12 +26,12 @@ class EasyVisionBase(object):
     __metaclass__ = ABCMeta
     __slots__ = ('_debug', '_display_results', '__setup_called')
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, debug=False, display_results=False, *args, **kwargs):
         self._debug = False
-        self.debug = kwargs.get('debug', False)
         self._display_results = False
         self.__setup_called = False
-        self.display_results = kwargs.get('display_results', False)
+        self.debug = debug
+        self.display_results = display_results
         super(EasyVisionBase, self).__init__()
 
     def __enter__(self):

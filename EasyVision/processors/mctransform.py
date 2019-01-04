@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
-import cv2
 from .base import *
-from EasyVision.base import EasyVisionBase
 
 
 class MultiConsumers(ProcessorBase):

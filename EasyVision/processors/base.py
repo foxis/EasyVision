@@ -5,11 +5,13 @@ import cv2
 
 class ProcessorBase(VisionBase):
 
-    def __init__(self, vision, enabled=True, *args, **kwargs):
+    def __init__(self, vision, processor_mask=None, enabled=True, *args, **kwargs):
         if not isinstance(vision, VisionBase):
             raise TypeError("Vision object must be of type VisionBase")
         self._vision = vision
-        self._enabled = enabled
+        self._processor_mask = Frame.tidy_processor_mask(processor_mask)
+        self._enabled = True
+        self.enabled = enabled
         super(ProcessorBase, self).__init__(*args, **kwargs)
 
     @abstractmethod
@@ -22,7 +24,10 @@ class ProcessorBase(VisionBase):
         if not self.enabled:
             return frame
         elif frame:
-            images = tuple(self.process(img)._replace(source=self) for img in frame.images)
+            processor_mask = frame.processor_mask if frame.processor_mask else self._processor_mask
+            if not processor_mask:
+                processor_mask = "1" * len(frame.images)
+            images = tuple((m == "0" and img or self.process(img))._replace(source=self) for m, img in zip(processor_mask, frame.images))
             return frame._replace(images=images)
 
     def setup(self):

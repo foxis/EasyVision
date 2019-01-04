@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 import cv2
-import numpy as np
 from .base import *
 
 
 class ImageTransform(ProcessorBase):
-    def __init__(self, vision, ocl=False, color=None, operator=None, debug=False, display_results=False, enabled=True, *args, **kwargs):
+    def __init__(self, vision, ocl=False, color=None, operator=None, *args, **kwargs):
         self._color = color
         self._ocl = ocl
         self._operator = operator
 
-        super(ImageTransform, self).__init__(vision, debug=debug, display_results=display_results, enabled=enabled, *args, **kwargs)
+        super(ImageTransform, self).__init__(vision, *args, **kwargs)
 
     @property
     def description(self):

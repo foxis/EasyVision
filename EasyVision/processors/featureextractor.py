@@ -118,7 +118,6 @@ class FeatureMatchingMixin(object):
         super(FeatureMatchingMixin, self).__init__(*args, **kwargs)
 
     def setup(self):
-        super(FeatureMatchingMixin, self).setup()
         FLANN_INDEX_LSH = 6
         index_params = dict(algorithm=FLANN_INDEX_LSH,
                             table_number=6,
@@ -131,6 +130,7 @@ class FeatureMatchingMixin(object):
         index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
         search_params = dict(checks=50)   # or pass empty dictionary
         self._matcher_l = cv2.FlannBasedMatcher(index_params, search_params)
+        super(FeatureMatchingMixin, self).setup()
 
     def _match_features(self, descriptorsA, descriptorsB, feature_type, ratio=0.7, distance_thresh=30, min_matches=10):
         if feature_type in ['ORB', 'AKAZE', 'FREAK', 'BRISK']:

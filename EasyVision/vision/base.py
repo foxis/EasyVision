@@ -5,16 +5,13 @@ from datetime import datetime
 from operator import itemgetter
 
 
-_Image = namedtuple('_Image', ['source', 'image', 'original', 'mask', 'features', 'feature_type'])
-
-
-class Image(NamedTupleExtendHelper, _Image):
+class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'original', 'mask', 'features', 'feature_type'])):
     __slots__ = ()
 
     def __new__(cls, source, image, original=None, mask=None, features=None, feature_type=None):
         if source is not None and not isinstance(source, VisionBase):
             raise TypeError("Source must be VisionBase")
-        return tuple.__new__(cls, (source, image, original, mask, features, feature_type))
+        return super(Image, cls).__new__(cls, source, image, original, mask, features, feature_type, processor_mask)
 
     def tobytes(self):
         raise NotImplementedError()
@@ -31,17 +28,17 @@ class Image(NamedTupleExtendHelper, _Image):
         raise NotImplementedError()
 
 
-class Frame(NamedTupleExtendHelper, namedtuple('Frame', ['timestamp', 'index', 'images'])):
+class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 'images', 'processor_mask'])):
     __slots__ = ()
 
-    def __new__(cls, timestamp, index, images):
+    def __new__(cls, timestamp, index, images, processor_mask=None):
         if not isinstance(timestamp, datetime):
             raise TypeError("Timestamp must be datetime object")
         if not isinstance(index, int):
             raise TypeError("Index must be integer")
         if not isinstance(images, tuple) or not all(isinstance(i, Image) for i in images):
             raise TypeError("Images must be a tuple of Image objects")
-        return super(Frame, cls).__new__(cls, timestamp, index, tuple(images))
+        return super(Frame, cls).__new__(cls, timestamp, index, tuple(images), Frame.tidy_processor_mask(processor_mask))
 
     def get_image(self, source):
         if isinstance(source, VisionBase):
@@ -55,6 +52,12 @@ class Frame(NamedTupleExtendHelper, namedtuple('Frame', ['timestamp', 'index', '
         else:
             raise TypeError("Only either VisionBase or string are supported")
         return None
+
+    @staticmethod
+    def tidy_processor_mask(mask):
+        if not isinstance(processor_mask, tuple) or not isinstance(processor_mask, str):
+            raise TypeError("Processor mask must be either a tuple of booleans or a string of 1 and 0")
+        return "".join(i and "1" or "0" for i in processor_mask) if isinstance(processor_mask, tuple) else processor_mask
 
 
 class VisionBase(EasyVisionBase):
