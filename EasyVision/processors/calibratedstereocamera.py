@@ -179,7 +179,8 @@ class CameraPairProxy(VisionBase):
 
 class CalibratedStereoCamera(ProcessorBase):
 
-    def __init__(self, left, right, camera, grid_shape=(9, 6), max_samples=20, *args, **kwargs):
+    def __init__(self, left, right, camera, calculate_disparity=True, num_disparities=32, block_size=15,
+                 grid_shape=(9, 6), max_samples=20, *args, **kwargs):
         calibrate = camera is None
         if not isinstance(left, ProcessorBase) or not isinstance(right, ProcessorBase) or \
            left.get_source('CalibratedCamera') is None or right.get_source('CalibratedCamera') is None:
@@ -217,6 +218,9 @@ class CalibratedStereoCamera(ProcessorBase):
         vision = CameraPairProxy(self, left, right)
 
         self._calibrate = calibrate
+        self._calculate_disparity = calculate_disparity
+        self._num_disparities = num_disparities
+        self._block_size = block_size
         super(CalibratedStereoCamera, self).__init__(vision, *args, **kwargs)
 
     def setup(self):
@@ -228,6 +232,8 @@ class CalibratedStereoCamera(ProcessorBase):
             self.imgpoints_l = []
             self.imgpoints_r = []
             self.calibration_samples = 0
+        if self._calculate_disparity:
+            self._stereoBM = cv2.createStereoBM(self._num_disparities, self._block_size)
         super(CalibratedStereoCamera, self).setup()
 
     @property
@@ -237,6 +243,14 @@ class CalibratedStereoCamera(ProcessorBase):
     @property
     def camera(self):
         return self._camera
+
+    def capture(self):
+        frame = super(CalibratedStereoCamera, self).capture()
+        if frame and self._calculate_disparity:
+            disparity = self._stereoBM.compute(frame.images[0], frame.images[1])
+            img = Image(self, disparity)
+            frame = frame._replace(images=frame.images + (img,), processor_map="110")
+        return frame
 
     def process(self, image):
         if self._calibrate:
