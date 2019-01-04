@@ -27,7 +27,7 @@ class ProcessorBase(VisionBase):
             processor_mask = frame.processor_mask if frame.processor_mask else self._processor_mask
             if not processor_mask:
                 processor_mask = "1" * len(frame.images)
-            images = tuple((m == "0" and img or self.process(img))._replace(source=self) for m, img in zip(processor_mask, frame.images))
+            images = tuple(m == "0" and img or self.process(img)._replace(source=self) for m, img in zip(processor_mask, frame.images))
             return frame._replace(images=images)
 
     def setup(self):
