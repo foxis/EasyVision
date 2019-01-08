@@ -21,8 +21,13 @@ def test_import_engine_objectrecognition():
 
 
 @pytest.mark.main
-def test_import_engine_visualodometry():
-    from EasyVision.engine import VisualOdometryEngine
+def test_import_engine_visualodometry2d():
+    from EasyVision.engine import VisualOdometry2DEngine
+
+
+@pytest.mark.main
+def test_import_engine_visualodometry3d2d():
+    from EasyVision.engine import VisualOdometry3D2DEngine
 
 
 @pytest.mark.main

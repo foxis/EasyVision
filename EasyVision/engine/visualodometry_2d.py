@@ -9,9 +9,9 @@ import numpy as np
 Pose = namedtuple('Pose', ['rotation', 'translation'])
 
 
-class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
+class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
+    def __init__(self, vision, feature_type=None, pose=None, min_features=500, reproj_thresh=0.3, debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -45,6 +45,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
         _vision = FeatureExtraction(vision, feature_type=feature_type, extract=self._extract, **defaults) if not feature_extractor_provided else vision
 
         self._min_features = min_features
+        self._reproj_thresh = reproj_thresh
 
         self._lk_params = dict(
             winSize=(21, 21),
@@ -58,7 +59,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
         self._last_features = None
         self.pose = pose
 
-        super(VisualOdometryEngine, self).__init__(_vision, debug=debug, display_results=display_results, *args, **kwargs)
+        super(VisualOdometry2DEngine, self).__init__(_vision, debug=debug, display_results=display_results, *args, **kwargs)
 
     def compute(self, absolute_scale=1.0):
         frame = self.vision.capture()
@@ -99,7 +100,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
 
             E, mask = cv2.findEssentialMat(current, last,
                                            focal=self.camera.focal_point[0], pp=self.camera.center,
-                                           method=cv2.RANSAC, prob=0.999, threshold=1.0)
+                                           method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
             _, R, t, mask = cv2.recoverPose(E, current, last,
                                             focal=self.camera.focal_point[0], pp=self.camera.center)
             if self._pose:
@@ -109,8 +110,6 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
                 self._pose = Pose(R, t)
 
         self._last_features = current_image.features
-
-
         return self._pose
 
     def _compute_track(self, current_image, absolute_scale):
@@ -126,7 +125,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
 
             E, mask = cv2.findEssentialMat(cur_kps, self._last_kps,
                                            focal=self.camera.focal_point[0], pp=self.camera.center,
-                                           method=cv2.RANSAC, prob=0.999, threshold=1.0)
+                                           method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
             _, R, t, mask = cv2.recoverPose(E, cur_kps, self._last_kps,
                                             focal=self.camera.focal_point[0], pp=self.camera.center)
             if self._pose:
@@ -155,7 +154,7 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
 
     @property
     def description(self):
-        return "Visual Odometry inspired by https://github.com/uoip/monoVO-python"
+        return "Monocular Visual Odometry inspired by https://github.com/uoip/monoVO-python (2D-2D)"
 
     @property
     def capabilities(self):
@@ -172,11 +171,11 @@ class VisualOdometryEngine(FeatureMatchingMixin, EngineBase):
 
         return kp1, kp2
 
-    def _match_features(self, featuresA, featuresB, ratio=0.7, reprojThresh=5.0, distance_thresh=30, min_matches=5):
+    def _match_features(self, featuresA, featuresB, ratio=0.7, distance_thresh=30, min_matches=5):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = featuresB
 
-        matches = super(VisualOdometryEngine, self)._match_features(descriptorsA, descriptorsB, self._feature_type, ratio, distance_thresh, min_matches)
+        matches = super(VisualOdometry2DEngine, self)._match_features(descriptorsA, descriptorsB, self._feature_type, ratio, distance_thresh, min_matches)
 
         if matches is None or not matches:
             return None

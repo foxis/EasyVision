@@ -11,7 +11,7 @@ class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'or
     def __new__(cls, source, image, original=None, mask=None, features=None, feature_type=None):
         if source is not None and not isinstance(source, VisionBase):
             raise TypeError("Source must be VisionBase")
-        return super(Image, cls).__new__(cls, source, image, original, mask, features, feature_type, processor_mask)
+        return super(Image, cls).__new__(cls, source, image, original, mask, features, feature_type)
 
     def tobytes(self):
         raise NotImplementedError()
@@ -54,8 +54,8 @@ class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 
         return None
 
     @staticmethod
-    def tidy_processor_mask(mask):
-        if not isinstance(processor_mask, tuple) or not isinstance(processor_mask, str):
+    def tidy_processor_mask(processor_mask):
+        if processor_mask is not None and not isinstance(processor_mask, tuple) and not isinstance(processor_mask, str):
             raise TypeError("Processor mask must be either a tuple of booleans or a string of 1 and 0")
         return "".join(i and "1" or "0" for i in processor_mask) if isinstance(processor_mask, tuple) else processor_mask
 

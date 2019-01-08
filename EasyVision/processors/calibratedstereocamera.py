@@ -233,7 +233,7 @@ class CalibratedStereoCamera(ProcessorBase):
             self.imgpoints_r = []
             self.calibration_samples = 0
         if self._calculate_disparity:
-            self._stereoBM = cv2.createStereoBM(self._num_disparities, self._block_size)
+            self._stereoBM = cv2.StereoBM_create(self._num_disparities, self._block_size)
         super(CalibratedStereoCamera, self).setup()
 
     @property
@@ -247,9 +247,9 @@ class CalibratedStereoCamera(ProcessorBase):
     def capture(self):
         frame = super(CalibratedStereoCamera, self).capture()
         if frame and self._calculate_disparity:
-            disparity = self._stereoBM.compute(frame.images[0], frame.images[1])
+            disparity = self._stereoBM.compute(frame.images[0].image, frame.images[1].image)
             img = Image(self, disparity)
-            frame = frame._replace(images=frame.images + (img,), processor_map="110")
+            frame = frame._replace(images=frame.images + (img,), processor_mask="110")
         return frame
 
     def process(self, image):

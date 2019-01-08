@@ -65,9 +65,10 @@ as_dict_stereo = {
     "Q": Q
 }
 
-
 # KITTI/note9/tum database
 camera_kitti = PinholeCamera.from_parameters((1241, 376), (718.8560, 718.8560), (607.1928, 185.2157), [0.0, 0.0, 0.0, 0.0, 0.0])
+camera_kitti_right = PinholeCamera.from_parameters((1241, 376), (718.8560, 718.8560), (607.1928, 185.2157), [0.0, 0.0, 0.0, 0.0, 0.0])
+T_kitti =  [[-386.1448], [0], [0]]
 camera_note9 = PinholeCamera.from_parameters((1920, 1080), (1920/2, 1080/2), (1920/2, 1080/2), [0.0, 0.0, 0.0, 0.0, 0.0])
 camera_tum = PinholeCamera.from_parameters((1280, 1024),
     (1280 * 0.535719308086809, 1024 * 0.669566858850269),
@@ -75,9 +76,6 @@ camera_tum = PinholeCamera.from_parameters((1280, 1024),
     [0.897966326944875 , 0.0, 0.0, 0.0, 0.0])
 
 NUM_IMAGES = 1591
-pose = "00"
-images_kitti = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in xrange(NUM_IMAGES)]
-gt_path_kitti = "d:/datasets/data_odometry_gray/dataset/poses/{}.txt".format(pose)
 
 sequence_tum = 'd:/datasets/vision.in.tum.de/sequence_50/'
 dataset_note9 = "d:\datasets\VID_20181217_163202.mp4"
@@ -141,8 +139,13 @@ def common_test_match_images(feature_type, display=False, mp=False):
         assert(frame_count == len(images_obj))
 
 
-def common_test_visual_odometry_kitti(feature_type, mp=False, ocl=True, color=cv2.COLOR_BGR2GRAY):
+def common_test_visual_odometry_kitti(feature_type, mp=False, ocl=True, debug=False, color=cv2.COLOR_BGR2GRAY, odometry_class=VisualOdometry2DEngine,
+                                      pose="00"):
     traj = np.zeros((600, 600, 3), dtype=np.uint8)
+
+
+    images_kitti = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in xrange(NUM_IMAGES)]
+    gt_path_kitti = "d:/datasets/data_odometry_gray/dataset/poses/{}.txt".format(pose)
 
     with open(gt_path_kitti) as f:
         ground_truth = [[float(i) for i in line.split()] for line in f.readlines()]
@@ -150,7 +153,7 @@ def common_test_visual_odometry_kitti(feature_type, mp=False, ocl=True, color=cv
     error = 0
     cam = CalibratedCamera(ImageTransform(ImagesReader(images_kitti), ocl=ocl, color=color, enabled=True), camera_kitti, display_results=False, enabled=False)
     cam = MultiProcessing(cam, freerun=False) if mp else cam
-    with VisualOdometryEngine(cam, display_results=True, debug=False, feature_type=feature_type) as engine:
+    with odometry_class(cam, display_results=True, debug=debug, feature_type=feature_type) as engine:
         for img_id, _ in enumerate(images_kitti):
             true_x = ground_truth[img_id][3]
             true_y = ground_truth[img_id][7]
@@ -164,27 +167,25 @@ def common_test_visual_odometry_kitti(feature_type, mp=False, ocl=True, color=cv
                 x_prev, y_prev, z_prev = true_x, true_y, true_z
 
             frame, pose = engine.compute(absolute_scale=scale)
-            if not pose:
-                continue
+            if pose:
+                t = pose.translation
 
-            t = pose.translation
+                error += np.sqrt((true_x - t[0]) ** 2 + 0 * (true_y - t[1]) ** 2 + (true_z - t[2]) ** 2)
 
-            error += np.sqrt((true_x - t[0]) ** 2 + 0 * (true_y - t[1]) ** 2 + (true_z - t[2]) ** 2)
+                draw_x, draw_y = int(t[0]) + 290, int(t[2]) + 90
+                dtrue_x, dtrue_y = int(true_x) + 290, int(true_z) + 90
 
-            draw_x, draw_y = int(t[0]) + 290, int(t[2]) + 90
-            dtrue_x, dtrue_y = int(true_x) + 290, int(true_z) + 90
-
-            cv2.circle(traj, (draw_x, draw_y), 1, (img_id * 255 / 4540, 255 - img_id * 255 / 4540, 0))
-            cv2.circle(traj, (dtrue_x, dtrue_y), 1, (0, 0, 255))
-            cv2.rectangle(traj, (0, 0), (600, 60), (0, 0, 0), -1)
-            text = "pose: x=%2fm y=%2fm z=%2fm" % (t[0], t[1], t[2])
-            cv2.putText(traj, text, (20, 11), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
-            text = "true: x=%2fm y=%2fm z=%2fm" % (true_x, true_y, true_z)
-            cv2.putText(traj, text, (20, 22), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
-            text = "scale: %2f" % scale
-            cv2.putText(traj, text, (20, 33), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
-            text = "cumulative error: %2f " % error
-            cv2.putText(traj, text, (20, 44), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                cv2.circle(traj, (draw_x, draw_y), 1, (img_id * 255 / 4540, 255 - img_id * 255 / 4540, 0))
+                cv2.circle(traj, (dtrue_x, dtrue_y), 1, (0, 0, 255))
+                cv2.rectangle(traj, (0, 0), (600, 60), (0, 0, 0), -1)
+                text = "pose: x=%2fm y=%2fm z=%2fm" % (t[0], t[1], t[2])
+                cv2.putText(traj, text, (20, 11), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                text = "true: x=%2fm y=%2fm z=%2fm" % (true_x, true_y, true_z)
+                cv2.putText(traj, text, (20, 22), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                text = "scale: %2f" % scale
+                cv2.putText(traj, text, (20, 33), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                text = "cumulative error: %2f " % error
+                cv2.putText(traj, text, (20, 44), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
 
             cv2.imshow('Trajectory', traj)
             cv2.waitKey(1)
