@@ -8,99 +8,9 @@ from EasyVision.processors.base import *
 from EasyVision.processors import MultiProcessing
 from EasyVision.vision import *
 from collections import namedtuple
-
+from .common import VisionSubclass, MyException
 
 Payload = namedtuple('Payload', ('a', 'b'))
-
-
-class MyException(Exception):
-    pass
-
-
-class Subclass(VisionBase):
-
-    def __init__(self, name="", *args, **kwargs):
-        super(Subclass, self).__init__(*args, **kwargs)
-        self.frame = 0
-        self.frames = 10
-        self._name = name
-        self._camera_called = False
-        self._test_remote_get = 'success'
-
-    def capture(self):
-        from datetime import datetime
-        self.frame += 1
-        return Frame(datetime.now(), self.frame - 1, (Image(self, 'an image'),))
-
-    def setup(self):
-        super(Subclass, self).setup()
-
-    def release(self):
-        super(Subclass, self).release()
-
-    def camera(self):
-        self._camera_called = True
-        return True
-
-    @property
-    def camera_called(self):
-        return self._camera_called
-
-    @property
-    def is_open(self):
-        return self.frame < self.frames
-
-    @property
-    def name(self):
-        return 'Test'
-
-    @property
-    def description(self):
-        pass
-
-    @property
-    def path(self):
-        pass
-
-    @property
-    def frame_size(self):
-        pass
-
-    @property
-    def fps(self):
-        pass
-
-    @property
-    def frame_count(self):
-        return self.frames
-
-    @property
-    def devices(self):
-        """
-        :return: [{name:, description:, path:, etc:}]
-        """
-        pass
-
-    @property
-    def test_remote_getter_only(self):
-        return 'some_constant'
-
-    @property
-    def test_remote_get(self):
-        print 'remote get', self, self._test_remote_get
-        return self._test_remote_get
-
-    @test_remote_get.setter
-    def test_remote_get(self, value):
-        print 'remote set', self, value
-        self._test_remote_get = value
-
-    def test_remote_call(self, a, b, kwarg_test=0):
-        print 'remote call', self, self._test_remote_get, a, b, kwarg_test
-        return (self._test_remote_get, a, b, kwarg_test)
-
-    def test_remote_exception(self, a, b, kwarg_test=0):
-        raise MyException()
 
 
 class ProcessorA(ProcessorBase):
@@ -128,7 +38,7 @@ class ProcessorA(ProcessorBase):
 
 @pytest.mark.main
 def test_capture_mp_freerun():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor) as mp:
         for index, img in enumerate(mp):
@@ -141,7 +51,7 @@ def test_capture_mp_freerun():
 
 @pytest.mark.main
 def test_capture_mp_get():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor) as mp:
         assert(mp.remote_get('test_remote_get') == 'success')
@@ -152,7 +62,7 @@ def test_capture_mp_get():
 
 @pytest.mark.main
 def test_capture_mp_set_getter():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor) as mp:
         with raises(AttributeError):
@@ -161,7 +71,7 @@ def test_capture_mp_set_getter():
 
 @pytest.mark.main
 def test_capture_mp_set():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor) as mp:
         mp.remote_set('test_remote_get', 1)
@@ -179,7 +89,7 @@ def test_capture_mp_set():
 
 @pytest.mark.main
 def test_capture_mp_call():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor) as mp:
         assert(mp.remote_call('test_remote_call', 2, 5, kwarg_test=7) == ('success', 2, 5, 7))
@@ -198,7 +108,7 @@ def test_capture_mp_call():
 
 @pytest.mark.main
 def test_capture_mp_call_exception():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor) as mp:
         with raises(MyException):
@@ -207,7 +117,7 @@ def test_capture_mp_call_exception():
 
 @pytest.mark.main
 def test_capture_mp_noattr():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor) as mp:
         with raises(AttributeError):
@@ -222,7 +132,7 @@ def test_capture_mp_noattr():
 
 @pytest.mark.main
 def test_capture_mp_lazy():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
     processor = ProcessorA(vision)
     with MultiProcessing(processor, freerun=False) as mp:
         for index, img in enumerate(mp):
@@ -255,3 +165,40 @@ def test_capture_mp_camera():
             assert(isinstance(img, Frame))
             if i > 30:
                 break
+
+@pytest.mark.main
+def test_mp_properties():
+    vision = VisionSubclass("Test")
+
+    with MultiProcessing(vision, freerun=False) as s:
+        assert(s.autoexposure is None)
+        assert(s.autofocus is None)
+        assert(s.autowhitebalance is None)
+        assert(s.autogain is None)
+        assert(s.exposure is None)
+        assert(s.focus is None)
+        assert(s.whitebalance is None)
+
+        s.autoexposure = 1
+        s.autofocus = 2
+        s.autowhitebalance = 3
+        s.autogain = 4
+        s.exposure = 5
+        s.focus = 6
+        s.whitebalance = 7
+
+        assert(s.autoexposure == 1)
+        assert(s.autofocus == 2)
+        assert(s.autowhitebalance == 3)
+        assert(s.autogain == 4)
+        assert(s.exposure == 5)
+        assert(s.focus == 6)
+        assert(s.whitebalance == 7)
+
+        assert(vision.autoexposure is None)
+        assert(vision.autofocus is None)
+        assert(vision.autowhitebalance is None)
+        assert(vision.autogain is None)
+        assert(vision.exposure is None)
+        assert(vision.focus is None)
+        assert(vision.whitebalance is None)

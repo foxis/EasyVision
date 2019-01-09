@@ -119,3 +119,34 @@ def test_stereo_calibrated():
         for frame in vision:
             print (datetime.now() - frame.timestamp).total_seconds()
             cv2.waitKey(0)
+
+
+@pytest.mark.main
+def test_stereo_properties():
+    camera = StereoCamera(left_camera, right_camera, R, T, E, F, Q)
+    left = CalibratedCamera(VisionSubclass(), camera.left)
+    right = CalibratedCamera(VisionSubclass(), camera.right)
+    with CalibratedStereoCamera(left, right, camera) as s:
+        assert(s.autoexposure == (None, None))
+        assert(s.autofocus == (None, None))
+        assert(s.autowhitebalance == (None, None))
+        assert(s.autogain == (None, None))
+        assert(s.exposure == (None, None))
+        assert(s.focus == (None, None))
+        assert(s.whitebalance == (None, None))
+
+        s.autoexposure = 1
+        s.autofocus = 2
+        s.autowhitebalance = 3
+        s.autogain = 4
+        s.exposure = 5
+        s.focus = 6
+        s.whitebalance = 7
+
+        assert(s.autoexposure == (1, 1))
+        assert(s.autofocus == (2, 2))
+        assert(s.autowhitebalance == (3, 3))
+        assert(s.autogain == (4, 4))
+        assert(s.exposure == (5, 5))
+        assert(s.focus == (6, 6))
+        assert(s.whitebalance == (7, 7))

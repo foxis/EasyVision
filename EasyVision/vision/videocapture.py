@@ -96,3 +96,68 @@ class VideoCapture(VisionBase):
             cv2.namedWindow(self.name, cv2.WINDOW_NORMAL)
         else:
             cv2.destroyWindow(self.name)
+
+    @property
+    def autoexposure(self):
+        return self._capture.get(cv2.CAP_PROP_AUTO_EXPOSURE)
+
+    @property
+    def autofocus(self):
+        return self._capture.get(cv2.CAP_PROP_AUTOFOCUS)
+
+    @property
+    def autowhitebalance(self):
+        return self._capture.get(cv2.CAP_PROP_XI_AUTO_WB)
+
+    @property
+    def autogain(self):
+        return self._capture.get(cv2.CAP_PROP_XI_GAIN_SELECTOR)
+
+    @property
+    def exposure(self):
+        return self._capture.get(cv2.CAP_PROP_EXPOSURE)
+
+    @property
+    def focus(self):
+        return self._capture.get(cv2.CAP_PROP_FOCUS)
+
+    @property
+    def whitebalance(self):
+        return self._capture.get(cv2.CAP_PROP_WHITE_BALANCE_BLUE_U), self._capture.get(cv2.CAP_PROP_WHITE_BALANCE_RED_V)
+
+    @property
+    def gain(self):
+        return self._capture.get(cv2.CAP_PROP_GAIN)
+
+    @autoexposure.setter
+    def autoexposure(self, value):
+        self._capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, value)
+
+    @autofocus.setter
+    def autofocus(self, value):
+        self._capture.set(cv2.CAP_PROP_AUTO_FOCUS, value)
+
+    @autowhitebalance.setter
+    def autowhitebalance(self, value):
+        self._capture.set(cv2.CAP_PROP_XI_AUTO_WB, value)
+
+    @autogain.setter
+    def autogain(self, value):
+        self._capture.set(cv2.CAP_PROP_XI_GAIN_SELECTOR, value)
+
+    @exposure.setter
+    def exposure(self, value):
+        self._capture.set(cv2.CAP_PROP_EXPOSURE, value)
+
+    @focus.setter
+    def focus(self, value):
+        self._capture.set(cv2.CAP_PROP_FOCUS, value)
+
+    @whitebalance.setter
+    def whitebalance(self, value):
+        self._capture.set(cv2.CAP_PROP_WHITE_BALANCE_BLUE_U, value[0])
+        self._capture.set(cv2.CAP_PROP_WHITE_BALANCE_RED_V, value[1])
+
+    @gain.setter
+    def gain(self, value):
+        self._capture.set(cv2.CAP_PROP_GAIN, value)

@@ -4,61 +4,7 @@
 import pytest
 from pytest import raises, approx
 from EasyVision.vision.base import *
-
-
-class Subclass(VisionBase):
-
-    def __init__(self, name="", *args, **kwargs):
-        super(Subclass, self).__init__(*args, **kwargs)
-        self.frame = 0
-        self.frames = 10
-        self._name = name
-
-    def setup(self):
-        super(Subclass, self).setup()
-
-    def capture(self):
-        from datetime import datetime
-        self.frame += 1
-        return (datetime.now, ('an image',))
-
-    def release(self):
-        super(Subclass, self).release()
-
-    @property
-    def is_open(self):
-        return self.frame < self.frames
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def description(self):
-        pass
-
-    @property
-    def path(self):
-        pass
-
-    @property
-    def frame_size(self):
-        pass
-
-    @property
-    def fps(self):
-        pass
-
-    @property
-    def frame_count(self):
-        return self.frames
-
-    @property
-    def devices(self):
-        """
-        :return: [{name:, description:, path:, etc:}]
-        """
-        pass
+from .common import VisionSubclass
 
 
 @pytest.mark.main
@@ -69,12 +15,12 @@ def test_abstract_vision_abstract():
 
 @pytest.mark.main
 def test_abstract_vision_implementation():
-    Subclass()
+    VisionSubclass()
 
 
 @pytest.mark.main
 def test_abstract_vision_implementation_nosetup():
-    s = Subclass()
+    s = VisionSubclass()
     with raises(AssertionError):
         for _ in s:
             break
@@ -82,7 +28,7 @@ def test_abstract_vision_implementation_nosetup():
 
 @pytest.mark.main
 def test_abstract_vision_implementation_context():
-    s = Subclass()
+    s = VisionSubclass()
     with s as ss:
         for _ in ss:
             break
@@ -90,7 +36,7 @@ def test_abstract_vision_implementation_context():
 
 @pytest.mark.main
 def test_abstract_vision_implementation_setup():
-    s = Subclass()
+    s = VisionSubclass()
     s.setup()
     for _ in s:
         break
@@ -98,24 +44,52 @@ def test_abstract_vision_implementation_setup():
 
 
 @pytest.mark.main
+def test_abstract_vision_implementation_properties():
+    with VisionSubclass() as s:
+        assert(s.autoexposure is None)
+        assert(s.autofocus is None)
+        assert(s.autowhitebalance is None)
+        assert(s.autogain is None)
+        assert(s.exposure is None)
+        assert(s.focus is None)
+        assert(s.whitebalance is None)
+
+        s.autoexposure = 1
+        s.autofocus = 2
+        s.autowhitebalance = 3
+        s.autogain = 4
+        s.exposure = 5
+        s.focus = 6
+        s.whitebalance = 7
+
+        assert(s.autoexposure == 1)
+        assert(s.autofocus == 2)
+        assert(s.autowhitebalance == 3)
+        assert(s.autogain == 4)
+        assert(s.exposure == 5)
+        assert(s.focus == 6)
+        assert(s.whitebalance == 7)
+
+
+@pytest.mark.main
 def test_image():
-    img = Image(Subclass(), "Some frame")
-    assert(isinstance(img.source, Subclass))
+    img = Image(VisionSubclass(), "Some frame")
+    assert(isinstance(img.source, VisionSubclass))
     assert(img.image == "Some frame")
 
 
 @pytest.mark.main
 def test_image_make():
-    img = Image._make([Subclass(), "Some frame"])
-    assert(isinstance(img.source, Subclass))
+    img = Image._make([VisionSubclass(), "Some frame"])
+    assert(isinstance(img.source, VisionSubclass))
     assert(img.image == "Some frame")
 
 
 @pytest.mark.main
 def test_image_replace():
-    img = Image(Subclass(), "Some frame")
+    img = Image(VisionSubclass(), "Some frame")
     img1 = img._replace(image="Some other frame")
-    assert(isinstance(img1.source, Subclass))
+    assert(isinstance(img1.source, VisionSubclass))
     assert(img1.image == "Some other frame")
 
 
@@ -134,7 +108,7 @@ def test_image_fail():
 
 @pytest.mark.main
 def test_frame():
-    frame = Frame(datetime.now(), 0, (Image(Subclass(), "some frame"), ))
+    frame = Frame(datetime.now(), 0, (Image(VisionSubclass(), "some frame"), ))
     assert(isinstance(frame.timestamp, datetime))
     assert(frame.index == 0)
     assert(len(frame.images) == 1)
@@ -144,13 +118,13 @@ def test_frame():
 @pytest.mark.main
 def test_frame_fail_timestamp():
     with raises(TypeError):
-        Frame("", 0, (Image(Subclass(), "some frame"), ))
+        Frame("", 0, (Image(VisionSubclass(), "some frame"), ))
 
 
 @pytest.mark.main
 def test_frame_fail_index():
     with raises(TypeError):
-        Frame(datetime.now(), "", (Image(Subclass(), "some frame"), ))
+        Frame(datetime.now(), "", (Image(VisionSubclass(), "some frame"), ))
 
 
 @pytest.mark.main
@@ -161,9 +135,9 @@ def test_frame_fail_image():
 
 @pytest.mark.main
 def test_frame_get_image():
-    sourceA = Subclass("A")
-    sourceB = Subclass("B")
-    sourceC = Subclass("C")
+    sourceA = VisionSubclass("A")
+    sourceB = VisionSubclass("B")
+    sourceC = VisionSubclass("C")
 
     imgA = Image(sourceA, "some image")
     imgB = Image(sourceB, "some other image")

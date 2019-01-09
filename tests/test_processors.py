@@ -5,70 +5,7 @@ import pytest
 from pytest import raises, approx
 from EasyVision.vision.base import *
 from EasyVision.processors.base import *
-
-
-class Subclass(VisionBase):
-
-    def __init__(self, name="", *args, **kwargs):
-        super(Subclass, self).__init__(*args, **kwargs)
-        self.frame = 0
-        self.frames = 10
-        self._name = name
-        self._camera_called = False
-
-    def capture(self):
-        from datetime import datetime
-        self.frame += 1
-        return Frame(datetime.now(), self.frame - 1, (Image(self, 'an image'),))
-
-    def setup(self):
-        pass
-
-    def release(self):
-        pass
-
-    def camera(self):
-        self._camera_called = True
-        return True
-
-    @property
-    def camera_called(self):
-        return self._camera_called
-
-    @property
-    def is_open(self):
-        return self.frame < self.frames
-
-    @property
-    def name(self):
-        return 'Test'
-
-    @property
-    def description(self):
-        pass
-
-    @property
-    def path(self):
-        pass
-
-    @property
-    def frame_size(self):
-        pass
-
-    @property
-    def fps(self):
-        pass
-
-    @property
-    def frame_count(self):
-        return self.frames
-
-    @property
-    def devices(self):
-        """
-        :return: [{name:, description:, path:, etc:}]
-        """
-        pass
+from .common import VisionSubclass
 
 
 class ProcessorA(ProcessorBase):
@@ -107,14 +44,14 @@ def test_abstract():
 
 @pytest.mark.main
 def test_implementation():
-    source = Subclass()
+    source = VisionSubclass()
     pr = ProcessorA(source)
     assert(pr.source is source)
 
 
 @pytest.mark.main
 def test_capture():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
 
     with ProcessorA(vision) as processor:
         img = processor.capture()
@@ -125,7 +62,7 @@ def test_capture():
 
 @pytest.mark.main
 def test_capture_incorrect():
-    vision = Subclass(0)
+    vision = VisionSubclass(0)
     processor = ProcessorA(vision)
 
     with raises(AssertionError):
@@ -134,7 +71,7 @@ def test_capture_incorrect():
 
 @pytest.mark.main
 def test_capture_stacked_incorrect():
-    vision = Subclass(0)
+    vision = VisionSubclass("Test")
     processorA = ProcessorA(vision)
     processorB = ProcessorB(processorA)
 
@@ -146,7 +83,7 @@ def test_capture_stacked_incorrect():
 
 @pytest.mark.main
 def test_capture_stacked():
-    vision = Subclass(0)
+    vision = VisionSubclass("Test")
     processorA = ProcessorA(vision)
     processorB = ProcessorB(processorA)
 
@@ -165,7 +102,7 @@ def test_capture_stacked():
 
 @pytest.mark.main
 def test_method_resolution():
-    vision = Subclass(0)
+    vision = VisionSubclass("Test")
     processorA = ProcessorA(vision)
     processorB = ProcessorB(processorA)
 
@@ -175,3 +112,34 @@ def test_method_resolution():
     assert(processorB.camera())
     assert(processorB.camera_called)
     assert(vision.camera_called)
+
+@pytest.mark.main
+def test_processor_properties():
+    vision = VisionSubclass("Test")
+    processorA = ProcessorA(vision)
+    processorB = ProcessorB(processorA)
+
+    with processorB as s:
+        assert(s.autoexposure is None)
+        assert(s.autofocus is None)
+        assert(s.autowhitebalance is None)
+        assert(s.autogain is None)
+        assert(s.exposure is None)
+        assert(s.focus is None)
+        assert(s.whitebalance is None)
+
+        s.autoexposure = 1
+        s.autofocus = 2
+        s.autowhitebalance = 3
+        s.autogain = 4
+        s.exposure = 5
+        s.focus = 6
+        s.whitebalance = 7
+
+        assert(s.autoexposure == 1)
+        assert(s.autofocus == 2)
+        assert(s.autowhitebalance == 3)
+        assert(s.autogain == 4)
+        assert(s.exposure == 5)
+        assert(s.focus == 6)
+        assert(s.whitebalance == 7)

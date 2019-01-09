@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from EasyVision.vision.base import *
 from EasyVision.vision import *
 from EasyVision.processors import *
 from EasyVision.engine import *
@@ -90,6 +91,166 @@ images_obj = [
 ]
 image_obj1 = "test_data/4472701625_6b23da9a23_b_crop1.jpg"
 image_obj2 = "test_data/4472701625_6b23da9a23_b_crop2.jpg"
+
+
+class MyException(Exception): pass
+
+
+class VisionSubclass(VisionBase):
+
+    def __init__(self, name="", *args, **kwargs):
+        super(VisionSubclass, self).__init__(*args, **kwargs)
+        self.frame = 0
+        self.frames = 10
+        self._name = name
+        self._camera_called = False
+        self._test_remote_get = 'success'
+        self._autoexposure = None
+        self._autofocus = None
+        self._autowhitebalance = None
+        self._autogain = None
+        self._exposure = None
+        self._focus = None
+        self._whitebalance = None
+
+    def capture(self):
+        from datetime import datetime
+        self.frame += 1
+        return Frame(datetime.now(), self.frame - 1, (Image(self, 'an image'),))
+
+    def setup(self):
+        super(VisionSubclass, self).setup()
+
+    def release(self):
+        super(VisionSubclass, self).release()
+
+    def camera(self):
+        self._camera_called = True
+        return True
+
+    @property
+    def camera_called(self):
+        return self._camera_called
+
+    @property
+    def is_open(self):
+        return self.frame < self.frames
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def description(self):
+        pass
+
+    @property
+    def path(self):
+        pass
+
+    @property
+    def frame_size(self):
+        pass
+
+    @property
+    def fps(self):
+        pass
+
+    @property
+    def frame_count(self):
+        return self.frames
+
+    @property
+    def devices(self):
+        """
+        :return: [{name:, description:, path:, etc:}]
+        """
+        pass
+
+    @property
+    def autoexposure(self):
+        return self._autoexposure
+
+    @property
+    def autofocus(self):
+        return self._autofocus
+
+    @property
+    def autowhitebalance(self):
+        return self._autowhitebalance
+
+    @property
+    def autogain(self):
+        return self._autogain
+
+    @property
+    def exposure(self):
+        return self._exposure
+
+    @property
+    def focus(self):
+        return self._focus
+
+    @property
+    def whitebalance(self):
+        return self._whitebalance
+
+    @property
+    def gain(self):
+        return self._gain
+
+    @autoexposure.setter
+    def autoexposure(self, value):
+        self._autoexposure = value
+
+    @autofocus.setter
+    def autofocus(self, value):
+        self._autofocus = value
+
+    @autowhitebalance.setter
+    def autowhitebalance(self, value):
+        self._autowhitebalance = value
+
+    @autogain.setter
+    def autogain(self, value):
+        self._autogain = value
+
+    @exposure.setter
+    def exposure(self, value):
+        self._exposure = value
+
+    @focus.setter
+    def focus(self, value):
+        self._focus = value
+
+    @whitebalance.setter
+    def whitebalance(self, value):
+        self._whitebalance = value
+
+    @gain.setter
+    def gain(self, value):
+        self._gain = value
+
+    @property
+    def test_remote_getter_only(self):
+        return 'some_constant'
+
+    @property
+    def test_remote_get(self):
+        print 'remote get', self, self._test_remote_get
+        return self._test_remote_get
+
+    @test_remote_get.setter
+    def test_remote_get(self, value):
+        print 'remote set', self, value
+        self._test_remote_get = value
+
+    def test_remote_call(self, a, b, kwarg_test=0):
+        print 'remote call', self, self._test_remote_get, a, b, kwarg_test
+        return (self._test_remote_get, a, b, kwarg_test)
+
+    def test_remote_exception(self, a, b, kwarg_test=0):
+        raise MyException()
 
 
 def assert_camera(camera):

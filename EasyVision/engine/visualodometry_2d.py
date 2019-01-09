@@ -11,7 +11,7 @@ Pose = namedtuple('Pose', ['rotation', 'translation'])
 
 class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, min_features=500, reproj_thresh=0.3, debug=False, display_results=False, *args, **kwargs):
+    def __init__(self, vision, feature_type=None, pose=None, num_features=10000, min_features=1000, reproj_thresh=0.3, debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -36,7 +36,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
             defaults = dict()
 
         if feature_type == 'ORB':
-            defaults['nfeatures'] = 10000
+            defaults['nfeatures'] = num_features
             #defaults['scoreType'] = cv2.ORB_FAST_SCORE
             defaults['nlevels'] = 16
             defaults.update(kwargs)

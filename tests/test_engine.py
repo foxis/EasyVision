@@ -78,6 +78,38 @@ class VisionSubclass(VisionBase):
         """
         pass
 
+    @property
+    def autoexposure(self):
+        pass
+
+    @property
+    def autofocus(self):
+        pass
+
+    @property
+    def autowhitebalance(self):
+        pass
+
+    @property
+    def autogain(self):
+        pass
+
+    @property
+    def exposure(self):
+        pass
+
+    @property
+    def focus(self):
+        pass
+
+    @property
+    def whitebalance(self):
+        pass
+
+    @property
+    def gain(self):
+        pass
+
 
 @pytest.mark.main
 def test_abstract_vision_abstract():

@@ -201,11 +201,66 @@ class MultiProcessing(ProcessorBase, mp.Process):
                 self._send_frame(None)
                 self.running.value = 0
 
-    #def enabled_changed(self, last, current):
-    #    self.remote_set('enabled', current)
+    @property
+    def autoexposure(self):
+        return self.remote_get("autoexposure")
 
-    #def debug_changed(self, last, current):
-    #    self.remote_set('debug', current)
+    @property
+    def autofocus(self):
+        return self.remote_get("autofocus")
 
-    #def display_results_changed(self, last, current):
-    #    self.remote_set('display_results', current)
+    @property
+    def autowhitebalance(self):
+        return self.remote_get("autowhitebalance")
+
+    @property
+    def autogain(self):
+        return self.remote_get("autogain")
+
+    @property
+    def exposure(self):
+        return self.remote_get("exposure")
+
+    @property
+    def focus(self):
+        return self.remote_get("focus")
+
+    @property
+    def whitebalance(self):
+        return self.remote_get("whitebalance")
+
+    @property
+    def gain(self):
+        return self.remote_get("gain")
+
+    @autoexposure.setter
+    def autoexposure(self, value):
+        self.remote_set("autoexposure", value)
+
+    @autofocus.setter
+    def autofocus(self, value):
+        self.remote_set("autofocus", value)
+
+    @autowhitebalance.setter
+    def autowhitebalance(self, value):
+        self.remote_set("autowhitebalance", value)
+
+    @autogain.setter
+    def autogain(self, value):
+        self.remote_set("autogain", value)
+
+    @exposure.setter
+    def exposure(self, value):
+        self.remote_set("exposure", value)
+
+    @focus.setter
+    def focus(self, value):
+        self.remote_set("focus", value)
+
+    @whitebalance.setter
+    def whitebalance(self, value):
+        self.remote_set("whitebalance", value)
+
+    @gain.setter
+    def gain(self, value):
+        self.remote_set("gain", value)

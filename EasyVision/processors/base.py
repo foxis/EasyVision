@@ -98,3 +98,67 @@ class ProcessorBase(VisionBase):
             cv2.namedWindow(self.name, cv2.WINDOW_NORMAL)
         else:
             cv2.destroyWindow(self.name)
+
+    @property
+    def autoexposure(self):
+        return self._vision.autoexposure
+
+    @property
+    def autofocus(self):
+        return self._vision.autofocus
+
+    @property
+    def autowhitebalance(self):
+        return self._vision.autowhitebalance
+
+    @property
+    def autogain(self):
+        return self._vision.autogain
+
+    @property
+    def exposure(self):
+        return self._vision.exposure
+
+    @property
+    def focus(self):
+        return self._vision.focus
+
+    @property
+    def whitebalance(self):
+        return self._vision.whitebalance
+
+    @property
+    def gain(self):
+        return self._vision.gain
+
+    @autoexposure.setter
+    def autoexposure(self, value):
+        self._vision.autoexposure = value
+
+    @autofocus.setter
+    def autofocus(self, value):
+        self._vision.autofocus = value
+
+    @autowhitebalance.setter
+    def autowhitebalance(self, value):
+        self._vision.autowhitebalance = value
+
+    @autogain.setter
+    def autogain(self, value):
+        self._vision.autogain = value
+
+    @exposure.setter
+    def exposure(self, value):
+        self._vision.exposure = value
+
+    @focus.setter
+    def focus(self, value):
+        self._vision.focus = value
+
+    @whitebalance.setter
+    def whitebalance(self, value):
+        self._vision.whitebalance = value
+
+    @gain.setter
+    def gain(self, value):
+        self._vision.gain = value

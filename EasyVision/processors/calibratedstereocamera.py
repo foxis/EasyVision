@@ -176,6 +176,78 @@ class CameraPairProxy(VisionBase):
     def devices(self):
         return self._left.devices
 
+    @property
+    def autoexposure(self):
+        return self._left.autoexposure, self._right.autoexposure
+
+    @property
+    def autofocus(self):
+        return self._left.autofocus, self._right.autofocus
+
+    @property
+    def autowhitebalance(self):
+        return self._left.autowhitebalance, self._right.autowhitebalance
+
+    @property
+    def autogain(self):
+        return self._left.autogain, self._right.autogain
+
+    @property
+    def exposure(self):
+        return self._left.exposure, self._right.exposure
+
+    @property
+    def focus(self):
+        return self._left.focus, self._right.focus
+
+    @property
+    def whitebalance(self):
+        return self._left.whitebalance, self._right.whitebalance
+
+    @property
+    def gain(self):
+        return self._left.gain, self._right.gain
+
+    @autoexposure.setter
+    def autoexposure(self, value):
+        self._left.autoexposure = value
+        self._right.autoexposure = value
+
+    @autofocus.setter
+    def autofocus(self, value):
+        self._left.autofocus = value
+        self._right.autofocus = value
+
+    @autowhitebalance.setter
+    def autowhitebalance(self, value):
+        self._left.autowhitebalance = value
+        self._right.autowhitebalance = value
+
+    @autogain.setter
+    def autogain(self, value):
+        self._left.autogain = value
+        self._right.autogain = value
+
+    @exposure.setter
+    def exposure(self, value):
+        self._left.exposure = value
+        self._right.exposure = value
+
+    @focus.setter
+    def focus(self, value):
+        self._left.focus = value
+        self._right.focus = value
+
+    @whitebalance.setter
+    def whitebalance(self, value):
+        self._left.whitebalance = value
+        self._right.whitebalance = value
+
+    @gain.setter
+    def gain(self, value):
+        self._left.gain = value
+        self._right.gain = value
+
 
 class CalibratedStereoCamera(ProcessorBase):
 
