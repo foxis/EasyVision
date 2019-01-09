@@ -7,12 +7,13 @@ import cv2
 import numpy as np
 
 
-class TopologicalSLAMEngine(FeatureMatchingMixin, BOWMatchingMixin, EngineBase):
-    Keyframe = namedtuple('Keyframe', ['image', 'points', 'descriptors', 'bow'])
-    Pose = namedtuple('Pose', ['rotation', 'translation'])
-    Node = namedtuple('Node', ['keyframe', 'transitions'])
-    Transition = namedtuple('transition', ['current', 'target', 'pose', 'control'])
+Keyframe = namedtuple('Keyframe', ['image', 'points', 'descriptors', 'bow'])
+Pose = namedtuple('Pose', ['rotation', 'translation'])
+Node = namedtuple('Node', ['keyframe', 'transitions'])
+Transition = namedtuple('transition', ['current', 'target', 'pose', 'control'])
 
+
+class TopologicalSLAMEngine(FeatureMatchingMixin, BOWMatchingMixin, EngineBase):
     def __init__(self, vision, vocabulary, feature_type, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
