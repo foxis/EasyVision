@@ -251,7 +251,7 @@ class CameraPairProxy(VisionBase):
 
 class CalibratedStereoCamera(ProcessorBase):
 
-    def __init__(self, left, right, camera=None, calculate_disparity=True, num_disparities=128, block_size=15,
+    def __init__(self, left, right, camera=None, calculate_disparity=False, num_disparities=255, block_size=15,
                  grid_shape=(9, 6), max_samples=20, frame_delay=1, *args, **kwargs):
         calibrate = camera is None
         if not isinstance(left, ProcessorBase) or not isinstance(right, ProcessorBase) or \
@@ -321,8 +321,12 @@ class CalibratedStereoCamera(ProcessorBase):
     def capture(self):
         frame = super(CalibratedStereoCamera, self).capture()
         if frame and self._calculate_disparity and not self._calibrate:
-            left = cv2.cvtColor(frame.images[0].image, cv2.COLOR_BGR2GRAY)
-            right = cv2.cvtColor(frame.images[1].image, cv2.COLOR_BGR2GRAY)
+            try:
+                left = cv2.cvtColor(frame.images[0].image, cv2.COLOR_BGR2GRAY)
+                right = cv2.cvtColor(frame.images[1].image, cv2.COLOR_BGR2GRAY)
+            except cv2.error:
+                left = frame.images[0].image
+                right = frame.images[1].image
             disparity = self._stereoBM.compute(left, right)
             if self.display_results:
                 disp = cv2.normalize(disparity, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)

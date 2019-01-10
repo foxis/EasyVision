@@ -22,6 +22,8 @@ class ImageTransform(ProcessorBase):
         img = image.image
         if self._ocl:
             img = cv2.UMat(img)
+        elif isinstance(img, cv2.UMat):
+            img = img.get()
         if self._color:
             img = cv2.cvtColor(img, self._color)
         if self._operator:

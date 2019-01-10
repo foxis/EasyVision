@@ -18,6 +18,8 @@ if __name__ == "__main__":
     parser.add_argument("-N", type=int, default=30, help="Number of samples to gather")
     parser.add_argument("-t", "--test", const=True, default=False, action='store_const',
                         help="Test camera calibration file")
+    parser.add_argument("-d", "--disparity", const=True, default=False, action='store_const',
+                        help="Calculate Disparity Map")
 
     args = parser.parse_args()
     grid = tuple(int(i) for i in args.grid.split(','))
@@ -46,7 +48,9 @@ if __name__ == "__main__":
             ImageTransform, Args(ocl=args.test),
             CalibratedCamera, Args(None if camera_model is None else camera_model.right)
         ),
-        CalibratedStereoCamera, Args(camera_model, max_samples=args.N, grid_shape=grid, width=size[0], height=size[1], fps=int(args.fps), display_results=True)
+        CalibratedStereoCamera, Args(camera_model, max_samples=args.N, grid_shape=grid,
+                                     width=size[0], height=size[1], fps=int(args.fps),
+                                     calculate_disparity=args.disparity, display_results=True)
     )
 
     if args.test:
