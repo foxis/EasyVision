@@ -31,12 +31,12 @@ class ProcessorBase(VisionBase):
             return frame._replace(images=images)
 
     def setup(self):
-        if self._vision:
+        if self._vision is not None:
             self._vision.setup()
         super(ProcessorBase, self).setup()
 
     def release(self):
-        if self._vision:
+        if self._vision is not None:
             self._vision.release()
         super(ProcessorBase, self).release()
 

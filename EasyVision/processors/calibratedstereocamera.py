@@ -8,7 +8,7 @@ import threading as mt
 
 
 class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', 'F', 'Q'])):
-    """
+    """Stereo camera model that contains two pinhole cameras and transformation matrices between them.
 
         R - rotation matrix
         T - translation vector
@@ -251,8 +251,8 @@ class CameraPairProxy(VisionBase):
 
 class CalibratedStereoCamera(ProcessorBase):
 
-    def __init__(self, left, right, camera, calculate_disparity=True, num_disparities=32, block_size=15,
-                 grid_shape=(9, 6), max_samples=20, *args, **kwargs):
+    def __init__(self, left, right, camera=None, calculate_disparity=True, num_disparities=128, block_size=15,
+                 grid_shape=(9, 6), max_samples=20, frame_delay=1, *args, **kwargs):
         calibrate = camera is None
         if not isinstance(left, ProcessorBase) or not isinstance(right, ProcessorBase) or \
            left.get_source('CalibratedCamera') is None or right.get_source('CalibratedCamera') is None:
@@ -270,6 +270,7 @@ class CalibratedStereoCamera(ProcessorBase):
                 raise ValueError("Left and Right cameras must be set to calibrate mode")
             left._grid_shape = grid_shape
             right._grid_shape = grid_shape
+            self._frame_delay = frame_delay
             self._grid_shape = grid_shape
             self._camera = None
             self.stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-5)
@@ -286,6 +287,7 @@ class CalibratedStereoCamera(ProcessorBase):
             # self.flags |= cv2.CALIB_FIX_K4
             # self.flags |= cv2.CALIB_FIX_K5
             self._max_samples = max_samples
+            self._last_timestamp = None
 
         vision = CameraPairProxy(self, left, right)
 
@@ -318,8 +320,13 @@ class CalibratedStereoCamera(ProcessorBase):
 
     def capture(self):
         frame = super(CalibratedStereoCamera, self).capture()
-        if frame and self._calculate_disparity:
-            disparity = self._stereoBM.compute(frame.images[0].image, frame.images[1].image)
+        if frame and self._calculate_disparity and not self._calibrate:
+            left = cv2.cvtColor(frame.images[0].image, cv2.COLOR_BGR2GRAY)
+            right = cv2.cvtColor(frame.images[1].image, cv2.COLOR_BGR2GRAY)
+            disparity = self._stereoBM.compute(left, right)
+            if self.display_results:
+                disp = cv2.normalize(disparity, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                cv2.imshow("Disparity", disp)
             img = Image(self, disparity)
             frame = frame._replace(images=frame.images + (img,), processor_mask="110")
         return frame
@@ -330,6 +337,8 @@ class CalibratedStereoCamera(ProcessorBase):
             ret, corners = image.features
             if self.display_results:
                 img = cv2.drawChessboardCorners(image.image, self._grid_shape, corners, ret)
+                cv2.putText(img, "Samples added: {}/{}".format(self.calibration_samples, self._max_samples),
+                            (20, 11), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 1, 8)
                 cv2.imshow("Left" if image.source is self._vision._left._vision else "Right", img)
         else:
             # TODO: rectified images
@@ -353,12 +362,16 @@ class CalibratedStereoCamera(ProcessorBase):
         ret_l, corners_l = left.features
         ret_r, corners_r = right.features
 
-        if ret_l is True and ret_r is True:
+        if self._last_timestamp is None:
+            self._last_timestamp = frame.timestamp
+
+        if ret_l is True and ret_r is True and (frame.timestamp - self._last_timestamp).total_seconds() > self._frame_delay:
             self.objpoints.append(self.objp)
             self.imgpoints_l.append(corners_l)
             self.imgpoints_r.append(corners_r)
 
             self.calibration_samples += 1
+            self._last_timestamp = frame.timestamp
 
         if self.calibration_samples >= self._max_samples:
             img_shape = left.image.shape[::-1]

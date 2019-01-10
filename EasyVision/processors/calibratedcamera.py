@@ -5,9 +5,9 @@ from .base import *
 
 
 class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion', 'rectify', 'projection'])):
+    """Pinhole Camera model for calibrated camera processor.
 
-    """
-
+    Contains these fields:
         size - (width, height)
         matrix - camera matrix
         distortion - camera distortion coefficients
@@ -17,6 +17,8 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
     """
 
     def __new__(cls, size, matrix, distortion, rectify=None, projection=None):
+        if isinstance(size, list):
+            size = tuple(size)
         if not isinstance(size, tuple) or len(size) != 2 or not all((isinstance(i, int) or isinstance(i, long)) and i > 0 for i in size):
             raise TypeError('Frame size must be a tuple consisting of two positive integers')
         matrix = np.array(matrix) if isinstance(matrix, list) else matrix
@@ -78,7 +80,7 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
 
 
 class CalibratedCamera(ProcessorBase):
-    def __init__(self, vision, camera, grid_shape=(7, 6), max_samples=20, *args, **kwargs):
+    def __init__(self, vision, camera, grid_shape=(7, 6), grid_size=1, max_samples=20, frame_delay=1, *args, **kwargs):
         calibrate = camera is None
         if not calibrate:
             if not isinstance(camera, PinholeCamera) and not (isinstance(camera, tuple) and len(camera) == 3):
@@ -88,7 +90,10 @@ class CalibratedCamera(ProcessorBase):
             self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
             self._camera = None
             self._grid_shape = grid_shape
+            self._grid_size = grid_size
             self._max_samples = max_samples
+            self._frame_delay = frame_delay
+            self._last_timestamp = None
 
         self._calibrate = calibrate
         super(CalibratedCamera, self).__init__(vision, *args, **kwargs)
@@ -134,6 +139,8 @@ class CalibratedCamera(ProcessorBase):
             # Draw and display the corners
             if self.display_results:
                 img = cv2.drawChessboardCorners(img, self._grid_shape, corners, ret)
+                cv2.putText(img, "Samples added: {}/{}".format(self.calibration_samples, self._max_samples),
+                            (20, 11), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 1, 8)
                 cv2.imshow(self.name, img)
 
             return Image(self, gray, features=(ret, corners), feature_type='corners')
@@ -154,17 +161,20 @@ class CalibratedCamera(ProcessorBase):
 
         frame = self.capture()
 
-        ret, corners = frame.images[0].features
-        img = frame.images[0].image
+        if self._last_timestamp is None:
+            self._last_timestamp = frame.timestamp
 
-        # If found, add object points, image points (after refining them)
-        if ret is True:
-            self.objpoints.append(self.objp)
-            self.imgpoints.append(corners)
+        if (frame.timestamp - self._last_timestamp).total_seconds() > self._frame_delay:
+            ret, corners = frame.images[0].features
+            if ret is True:
+                self.objpoints.append(self.objp)
+                self.imgpoints.append(corners)
 
-            self.calibration_samples += 1
+                self.calibration_samples += 1
+                self._last_timestamp = frame.timestamp
 
         if self.calibration_samples >= self._max_samples:
+            img = frame.images[0].image
             shape = img.shape[::-1]
             self._camera = self._finish_calibration(self.objpoints, self.imgpoints, shape)
             return self._camera
