@@ -76,6 +76,16 @@ def test_import_featureextractor():
 
 
 @pytest.mark.main
+def test_import_histogrambackprojection():
+    from EasyVision.processors import HistogramBackprojection
+
+
+@pytest.mark.main
+def test_import_blobextractor():
+    from EasyVision.processors import BlobExtraction
+
+
+@pytest.mark.main
 def test_import_featureextractor():
     from EasyVision.processors import CalibratedCamera
 
