@@ -6,7 +6,7 @@ import cv2
 class ProcessorBase(VisionBase):
 
     def __init__(self, vision, processor_mask=None, enabled=True, *args, **kwargs):
-        if not isinstance(vision, VisionBase):
+        if not isinstance(vision, VisionBase) and vision is not None:
             raise TypeError("Vision object must be of type VisionBase")
         self._vision = vision
         self._processor_mask = Frame.tidy_processor_mask(processor_mask)
@@ -31,11 +31,13 @@ class ProcessorBase(VisionBase):
             return frame._replace(images=images)
 
     def setup(self):
-        self._vision.setup()
+        if self._vision:
+            self._vision.setup()
         super(ProcessorBase, self).setup()
 
     def release(self):
-        self._vision.release()
+        if self._vision:
+            self._vision.release()
         super(ProcessorBase, self).release()
 
     @property

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from EasyVision.vision.base import *
 from EasyVision.vision import *
+from EasyVision.processors.base import *
 from EasyVision.processors import *
 from EasyVision.engine import *
 import numpy as np
@@ -98,7 +99,7 @@ class MyException(Exception): pass
 
 class VisionSubclass(VisionBase):
 
-    def __init__(self, name="", *args, **kwargs):
+    def __init__(self, name="", keyword_argument=None, *args, **kwargs):
         super(VisionSubclass, self).__init__(*args, **kwargs)
         self.frame = 0
         self.frames = 10
@@ -112,6 +113,7 @@ class VisionSubclass(VisionBase):
         self._exposure = None
         self._focus = None
         self._whitebalance = None
+        self.keyword_argument = keyword_argument
 
     def capture(self):
         from datetime import datetime
@@ -251,6 +253,92 @@ class VisionSubclass(VisionBase):
 
     def test_remote_exception(self, a, b, kwarg_test=0):
         raise MyException()
+
+    def display_results_changed(self, last, current):
+        pass
+
+
+class ProcessorA(ProcessorBase):
+
+    def __init__(self, vision, camera=None, color=None, *args, **kwargs):
+        super(ProcessorA, self).__init__(vision, *args, **kwargs)
+        self.camera = camera
+        self.color = color
+
+    @property
+    def description(self):
+        return "Simple processor"
+
+    def process(self, image):
+        new_image = image.image.upper()
+        return image._replace(source=self, image=new_image)
+
+    def display_results_changed(self, last, current):
+        pass
+
+
+class ProcessorB(ProcessorBase):
+
+    def __init__(self, vision, camera=None, color=None, *args, **kwargs):
+        super(ProcessorB, self).__init__(vision, *args, **kwargs)
+        self.camera = camera
+        self.color = color
+
+    @property
+    def description(self):
+        return "Simple processor 2"
+
+    def process(self, image):
+        new_image = image.image.title()
+        return image._replace(source=self, image=new_image)
+
+    def display_results_changed(self, last, current):
+        pass
+
+
+
+class ProcessorC(ProcessorBase):
+
+    def __init__(self, a, b, camera=None, color=None, *args, **kwargs):
+        self.a = a
+        self.b = b
+        self.camera = camera
+        a.camera = 'left camera %s' % camera
+        b.camera = 'right camera %s' % camera
+        self.color = color
+        super(ProcessorC, self).__init__(None, *args, **kwargs)
+
+    @property
+    def description(self):
+        return "Simple processor 2"
+
+    def setup(self):
+        self.a.setup()
+        self.b.setup()
+        super(ProcessorBase, self).setup()
+
+    def release(self):
+        self.a.release()
+        self.b.release()
+        super(ProcessorBase, self).release()
+
+    def display_results_changed(self, last, current):
+        pass
+
+    def capture(self):
+        a = self.a.capture()
+        b = self.a.capture()
+        if a is None or b is None:
+            return None
+
+        return a._replace(images=a.images + b.images)
+
+    def process(self, image):
+        raise NotImplemented()
+
+    @property
+    def name(self):
+        return "{} : {}".format(self.a.name, self.b.name)
 
 
 def assert_camera(camera):

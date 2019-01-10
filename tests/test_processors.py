@@ -5,35 +5,7 @@ import pytest
 from pytest import raises, approx
 from EasyVision.vision.base import *
 from EasyVision.processors.base import *
-from .common import VisionSubclass
-
-
-class ProcessorA(ProcessorBase):
-
-    def __init__(self, vision, *args, **kwargs):
-        super(ProcessorA, self).__init__(vision, *args, **kwargs)
-
-    @property
-    def description(self):
-        return "Simple processor"
-
-    def process(self, image):
-        new_image = image.image.upper()
-        return image._replace(source=self, image=new_image)
-
-
-class ProcessorB(ProcessorBase):
-
-    def __init__(self, vision, *args, **kwargs):
-        super(ProcessorB, self).__init__(vision, *args, **kwargs)
-
-    @property
-    def description(self):
-        return "Simple processor 2"
-
-    def process(self, image):
-        new_image = image.image.title()
-        return image._replace(source=self, image=new_image)
+from .common import VisionSubclass, ProcessorA, ProcessorB
 
 
 @pytest.mark.main

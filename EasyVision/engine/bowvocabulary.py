@@ -6,14 +6,14 @@ from EasyVision.processors import FeatureExtraction
 import cv2
 import numpy as np
 
-__dbow_available = False
+dbow_available = False
 try:
     import pyDBoW3 as bow
-    __dbow_available = True
+    dbow_available = True
 except:
     try:
         import pyDBoW3_32 as bow
-        __dbow_available = True
+        dbow_available = True
     except:
         pass
 
@@ -31,7 +31,7 @@ class BOWVocabularyBuilderEngine(EngineBase):
         if not dbow3_trainer and feature_type not in ['SIFT', 'SURF']:
             raise NotImplementedError("OpenCV KMeans trainer only supports floating point features. Use DBoW3 instead.")
 
-        if dbow3_trainer and not __dbow_available:
+        if dbow3_trainer and not dbow_available:
             raise NotImplementedError("pyDBoW3 library not imported")
 
         self._feature_type = feature_type
