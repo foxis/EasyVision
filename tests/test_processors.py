@@ -81,7 +81,7 @@ def test_method_resolution():
     assert(processorB.name == "ProcessorB <- ProcessorA <- Test")
 
     assert(not vision.camera_called)
-    assert(processorB.camera())
+    assert(processorB.camera_())
     assert(processorB.camera_called)
     assert(vision.camera_called)
 

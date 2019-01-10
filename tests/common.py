@@ -126,7 +126,7 @@ class VisionSubclass(VisionBase):
     def release(self):
         super(VisionSubclass, self).release()
 
-    def camera(self):
+    def camera_(self):
         self._camera_called = True
         return True
 
@@ -294,7 +294,6 @@ class ProcessorB(ProcessorBase):
 
     def display_results_changed(self, last, current):
         pass
-
 
 
 class ProcessorC(ProcessorBase):
