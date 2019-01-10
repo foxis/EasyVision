@@ -14,9 +14,13 @@ from .common import *
 
 @mark.complex
 def test_visual_odometry_3d2d_kitti():
-    common_test_visual_odometry_kitti('FREAK', mp=False, ocl=False, debug=False, color=cv2.COLOR_BGR2GRAY, odometry_class=VisualOdometry3D2DEngine)
+    common_test_visual_odometry_kitti('FREAK', mp=False, ocl=True, debug=False, color=cv2.COLOR_BGR2GRAY, odometry_class=VisualOdometry3D2DEngine)
 
 
 @mark.complex
-def test_visual_odometry_3d2d_kitti_debug():
+def test_visual_odometry_3d2d_debug_kitti():
     common_test_visual_odometry_kitti('FREAK', mp=True, ocl=False, debug=True, color=cv2.COLOR_BGR2GRAY, odometry_class=VisualOdometry3D2DEngine, pose="00")
+
+
+if __name__ == "__main__":
+    common_test_visual_odometry_kitti('FREAK', mp=False, ocl=True, debug=False, color=cv2.COLOR_BGR2GRAY, odometry_class=VisualOdometry3D2DEngine)

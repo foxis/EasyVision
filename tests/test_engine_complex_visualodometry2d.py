@@ -13,8 +13,8 @@ from .common import *
 
 
 @mark.complex
-def test_visual_odometry_kitti():
-    common_test_visual_odometry_kitti('ORB', mp=False, ocl=False, color=cv2.COLOR_BGR2GRAY)
+def test_visual_odometry_kitti_2d():
+    common_test_visual_odometry_kitti('FREAK', mp=False, ocl=True, color=cv2.COLOR_BGR2GRAY)
 
 
 @mark.complex

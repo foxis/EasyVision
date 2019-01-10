@@ -101,6 +101,8 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
             E, mask = cv2.findEssentialMat(current, last,
                                            focal=self.camera.focal_point[0], pp=self.camera.center,
                                            method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
+            #last = np.float32([kp for m, kp in zip(mask, last) if m])
+            #current = np.float32([kp for m, kp in zip(mask, current) if m])
             _, R, t, mask = cv2.recoverPose(E, current, last,
                                             focal=self.camera.focal_point[0], pp=self.camera.center)
             if self._pose:
@@ -126,7 +128,9 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
             E, mask = cv2.findEssentialMat(cur_kps, self._last_kps,
                                            focal=self.camera.focal_point[0], pp=self.camera.center,
                                            method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
-            _, R, t, mask = cv2.recoverPose(E, cur_kps, self._last_kps,
+            last_kps = np.float32([kp for m, kp in zip(mask, self._last_kps) if m])
+            cur_kps = np.float32([kp for m, kp in zip(mask, cur_kps) if m])
+            _, R, t, mask = cv2.recoverPose(E, cur_kps, last_kps,
                                             focal=self.camera.focal_point[0], pp=self.camera.center)
             if self._pose:
                 self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
@@ -163,8 +167,11 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
     def _track_features(self, image_ref, image_cur, px_ref):
         kp2, st, err = cv2.calcOpticalFlowPyrLK(image_ref, image_cur, px_ref, None, **self._lk_params)  # shape: [k,2] [k,1] [k,1]
 
-        if isinstance(st, cv2.UMat):
+        umat = isinstance(st, cv2.UMat)
+        if umat:
             st = st.get()
+            kp2 = kp2.get()
+
         st = st.reshape(st.shape[0])
         kp1 = px_ref[st == 1]
         kp2 = kp2[st == 1]

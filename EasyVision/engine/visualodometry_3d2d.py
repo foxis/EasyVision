@@ -124,9 +124,15 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, EngineBase):
         if matches is None or not matches:
             return None, None, None
 
+        umat_descriptors = isinstance(descriptorsA, cv2.UMat)
+        if umat_descriptors:
+            descriptorsA = descriptorsA.get()
+            descriptorsB = descriptorsB.get()
+
         kpsA = [kpsA[m.queryIdx] for m in matches]
-        dA = [descriptorsA[m.queryIdx] for m in matches]
         kpsB = [kpsB[m.trainIdx] for m in matches]
+
+        dA = [descriptorsA[m.queryIdx] for m in matches]
         dB = [descriptorsB[m.trainIdx] for m in matches]
 
         current = np.float32([kp.pt for kp in kpsB])
@@ -136,8 +142,8 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, EngineBase):
                                        method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
 
         kpsA = [kp for m, kp in zip(mask, kpsA) if m]
-        dA = np.array([d for m, d in zip(mask, dA) if m])
         kpsB = [kp for m, kp in zip(mask, kpsB) if m]
+        dA = np.array([d for m, d in zip(mask, dA) if m])
         dB = np.array([d for m, d in zip(mask, dB) if m])
 
         last = np.float32([kp.pt for kp in kpsA])
@@ -149,8 +155,8 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, EngineBase):
             return None, None, None
 
         kpsA = [kp for m, kp in zip(mask, kpsA) if m]
-        dA = np.array([d for m, d in zip(mask, dA) if m])
         kpsB = [kp for m, kp in zip(mask, kpsB) if m]
+        dA = np.array([d for m, d in zip(mask, dA) if m])
         dB = np.array([d for m, d in zip(mask, dB) if m])
 
         last = np.float32([kp.pt for kp in kpsA])
@@ -172,6 +178,10 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, EngineBase):
             for p in point_3d:
                 cv2.circle(self.features, (300 + int(300 * p[0] / scale), 600 - int(600 * p[2] / scale)), 1, (0, 0, 255 - int(200 * p[1] / yscale)))
             cv2.imshow("3D points", self.features)
+
+        if umat_descriptors:
+            dA = cv2.UMat(dA)
+            dB = cv2.UMat(dB)
 
         return Features(kpsA, dA), Features(kpsB, dB), Features(point_3d, dB)
 
