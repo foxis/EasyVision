@@ -54,7 +54,6 @@ def test_blobextraction_robotuintelektas_green():
             print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
             assert(isinstance(frame.images[0].original, np.ndarray))
-            assert(isinstance(frame.images[0].mask, np.ndarray))
             cv2.waitKey(0)
 
 
@@ -72,7 +71,6 @@ def test_blobextraction_robotuintelektas_blue():
             print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
             assert(isinstance(frame.images[0].original, np.ndarray))
-            assert(isinstance(frame.images[0].mask, np.ndarray))
             cv2.waitKey(0)
 
 
@@ -85,9 +83,7 @@ def test_blobextraction_robotuintelektas_combined():
     subject = cv2.imread('test_data/ri/frame5_crop.PNG')
     histogram2 = HistogramBackprojection.calculate_histogram(subject)
 
-    histogram = (histogram1 + histogram2) / 2
-
-    with BlobExtraction(ImagesReader(images, display_results=True), histogram, display_results=True) as vision:
+    with BlobExtraction(ImagesReader(images, display_results=True), (histogram1, histogram2), display_results=True) as vision:
         frame_count = 0
         for frame in vision:
             frame_count += 1
@@ -95,5 +91,4 @@ def test_blobextraction_robotuintelektas_combined():
             print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
             assert(isinstance(frame.images[0].original, np.ndarray))
-            assert(isinstance(frame.images[0].mask, np.ndarray))
             cv2.waitKey(0)

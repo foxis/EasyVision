@@ -80,12 +80,18 @@ class BlobExtraction(ProcessorBase):
         return 'blobs'
 
     def process(self, image):
-        mask = 255 - image.mask
-        mask = cv2.blur(mask, self._blur_size)
-        _, mask = cv2.threshold(mask, 50, 255, 0)
-        keypoints = self._detector.detect(mask)
+        keypoints = []
+
+        for i, mask in enumerate(image.mask):
+            mask = 255 - mask
+            mask = cv2.blur(mask, self._blur_size)
+            _, mask = cv2.threshold(mask, 50, 255, 0)
+            kps = self._detector.detect(mask)
+            keypoints += kps
+            if self.display_results:
+                cv2.imshow("Mask%i" % i, mask)
+
         if self.display_results:
-            cv2.imshow("Mask", mask)
             self._draw_keypoints(image.original, keypoints)
 
         return image._replace(features=Blobs._make(keypoints, None), feature_type='blobs')
