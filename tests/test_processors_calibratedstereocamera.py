@@ -47,7 +47,7 @@ def test_stereo_camera_fromdict():
 def test_stereo_calibrate():
     left = CalibratedCamera(ImagesReader(images_left), None)
     right = CalibratedCamera(ImagesReader(images_right), None)
-    with CalibratedStereoCamera(left, right, None, max_samples=8) as vision:
+    with CalibratedStereoCamera(left, right, None, max_samples=8, frame_delay=0) as vision:
 
         for i in range(15):
             cam = vision.calibrate()

@@ -42,7 +42,7 @@ def test_camera_todict():
 @mark.slow
 def test_calibrate():
     vision = ImagesReader(images_left)
-    with CalibratedCamera(vision, None, max_samples=len(images_left) - 3) as vision:
+    with CalibratedCamera(vision, None, max_samples=len(images_left) - 3, frame_delay=0) as vision:
 
         for i in range(15):
             cam = vision.calibrate()
