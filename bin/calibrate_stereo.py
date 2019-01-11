@@ -39,24 +39,24 @@ if __name__ == "__main__":
 
     builder = Builder(
         Builder(
-            VideoCapture, Args(left),
+            VideoCapture, Args(left, width=size[0], height=size[1], fps=int(args.fps)),
             ImageTransform, Args(ocl=args.test),
             CalibratedCamera, Args(None if camera_model is None else camera_model.left)
         ),
         Builder(
-            VideoCapture, Args(right),
+            VideoCapture, Args(right, width=size[0], height=size[1], fps=int(args.fps)),
             ImageTransform, Args(ocl=args.test),
             CalibratedCamera, Args(None if camera_model is None else camera_model.right)
         ),
         CalibratedStereoCamera, Args(camera_model, max_samples=args.N, grid_shape=grid,
-                                     width=size[0], height=size[1], fps=int(args.fps),
                                      calculate_disparity=args.disparity, display_results=True)
     )
 
     if args.test:
         with builder.build() as vision:
             for frame in vision:
-                cv2.waitKey(1)
+                if cv2.waitKey(1) == 27:
+                    break
     else:
         with builder.build() as vision:
             cam = None

@@ -33,14 +33,15 @@ if __name__ == "__main__":
             camera_model = PinholeCamera.fromdict(json.load(f))
 
     builder = Builder(
-        VideoCapture, Args(camera),
-        CalibratedCamera, Args(camera_model, max_samples=args.N, grid_shape=grid, width=size[0], height=size[1], fps=int(args.fps), display_results=True)
+        VideoCapture, Args(camera, width=size[0], height=size[1], fps=int(args.fps)),
+        CalibratedCamera, Args(camera_model, max_samples=args.N, grid_shape=grid, display_results=True)
     )
 
     if args.test:
         with builder.build() as vision:
             for frame in vision:
-                cv2.waitKey(1)
+                if cv2.waitKey(1) == 27:
+                    break
     else:
         with builder.build() as vision:
             cam = None
