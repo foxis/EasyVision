@@ -64,5 +64,4 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
 
     def _match_models(self, frame):
         results = (model.compute(frame, self) for model in self._models.values())
-        results = [i for i in results if i]
-        return sorted(results, key=lambda x: x.score, reverse=False)[0:self._max_matches]
+        return sum(tuple(i for i in results if i), ())

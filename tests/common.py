@@ -87,6 +87,7 @@ images_obj = [
     "test_data/34838518832_fd00147042_k.jpg",
     "test_data/2732011028_f0f033e678_b.jpg",
     "test_data/4472701625_6b23da9a23_b.jpg",
+    "test_data/4472701625_6b23da9a23_b - Copy.jpg",
     "test_data/13669656965_86a0146858_k.jpg",
     "test_data/21503937795_a9f41f428a_k.jpg"
 ]
@@ -376,9 +377,15 @@ def common_test_match_images(feature_type, display=False, mp=False):
             assert(frame.images[0].image is not None)
 
             if frame.index == 2:
+                if display and len(matches) != 2:
+                    cv2.waitKey(0)
                 assert(len(matches) == 2)
                 assert(matches[0].model.name == 'obj1' or matches[0].model.name == 'obj2')
                 assert(matches[1].model.name == 'obj1' or matches[1].model.name == 'obj2')
+            elif frame.index == 3:
+                if display and len(matches) != 3:
+                    cv2.waitKey(0)
+                assert(len(matches) == 3)
             else:
                 assert(len(matches) == 0)
         if display:

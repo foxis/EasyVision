@@ -10,6 +10,13 @@ class ModelView(NamedTupleExtendHelper, namedtuple('ModelView', ['image', 'outli
     def __new__(cls, image, outline, features, feature_type):
         return super(ModelView, cls).__new__(cls, image, outline, features, feature_type)
 
+    def todict(self):
+        pass
+
+    @staticmethod
+    def fromdict():
+        pass
+
 
 class ModelBase(EasyVisionBase):
     __slots__ = ('_name', '_views', '_view_index')
