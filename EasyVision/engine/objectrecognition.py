@@ -15,7 +15,7 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
         if isinstance(vision, ProcessorBase):
-            if vision.get_source('FeatureExtraction'):
+            if vision.get_source('FeatureExtraction') is not None:
                 feature_type = vision.feature_type
                 feature_extractor_provided = True
             elif not feature_type:
@@ -36,16 +36,24 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
         return frame, self._match_models(frame)
 
     def enroll(self, name, image, model=None, add=False, **kwargs):
-        if not image.features or not image.feature_type:
-            image = self.vision.process(image)
+        if model is None:
+            model = self._models.get(name, None)
+
+        if model is not None and not isinstance(image, Frame):
+            raise TypeError("Updating model requires a frame")
+        elif model is None and isinstance(image, Frame):
+            image = image.images[0]
+            if not image.features or not image.feature_type:
+                image = self.vision.process(image)
 
         if model is not None:
-            return mode.update(image, self)
+            return model.update_from_processed_frame(image, self, **kwargs)
 
-        model = ObjectModel.from_processed_image(name, image, **kwargs)
+        model = ObjectModel.create_from_processed_image(name, image, **kwargs)
         if model is None:
             return None
         if add:
+            print "model added"
             if name in self._models:
                 self._models[name].update(model)
             else:

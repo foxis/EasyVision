@@ -33,7 +33,7 @@ if __name__ == "__main__":
     if args.test:
         with open(args.file) as f:
             pass
-            #camera_model = PinholeCamera.fromdict(json.load(f))
+            object_model = ObjectModel.fromdict(json.load(f))
     try:
         with open(args.camera) as f:
             camera_model = PinholeCamera.fromdict(json.load(f))
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     if args.test:
         builder = Builder(
             VideoCapture, Args(camera, width=size[0], height=size[1], fps=int(args.fps)),
-            CalibratedCamera, Args(camera_model),
+            CalibratedCamera, Args(camera_model, enabled=camera_model is not None),
             FeatureExtraction, Args(feature_type=args.feature_type),
             ObjectRecognitionEngine, Args(feature_type=args.feature_type, display_results=True)
         )
@@ -54,14 +54,22 @@ if __name__ == "__main__":
     else:
         builder = Builder(
             VideoCapture, Args(camera, width=size[0], height=size[1], fps=int(args.fps)),
-            CalibratedCamera, Args(camera_model),
+            CalibratedCamera, Args(camera_model, enabled=camera_model is not None),
             BackgroundSeparation, Args(algorithm="MOG"),
-            FeatureExtraction, Args(feature_type=args.feature_type, display_results=True)
+            FeatureExtraction, Args(feature_type=args.feature_type, display_results=True),
+            ObjectRecognitionEngine, Args(feature_type=args.feature_type, display_results=True)
         )
         with builder.build() as vision:
-            for frame in vision:
-                if cv2.waitKey(1) == 27:
-                    break
+            for frame, obj in vision:
 
-            #with open(args.file, "w") as f:
-            #    f.write(json.dumps(cam.todict(), indent=4))
+                model = vision.enroll("object", frame, add=True, display_results=True)
+                if model:
+                    object_model = model
+                ch = cv2.waitKey(1)
+                if ch == 27:
+                    break
+                elif ch == 32:
+                    vision.vision.background_num = 0
+
+            with open(args.file, "w") as f:
+                f.write(json.dumps(object_model.todict(), indent=4))

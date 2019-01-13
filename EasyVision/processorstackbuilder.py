@@ -188,7 +188,7 @@ class Builder(object):
         for pos, arg in enumerate(self.args):
             if isinstance(arg, Builder):
                 args += (arg.build(),)
-            elif issubclass(arg, VisionBase):
+            elif issubclass(arg, VisionBase) or issubclass(arg, EngineBase):
                 if index and not (issubclass(arg, ProcessorBase) or issubclass(arg, EngineBase)):
                     raise TypeError("Class at position %i must be either a subclass of ProcessorBase or EngineBase" % pos)
                 cls = arg
@@ -205,7 +205,7 @@ class Builder(object):
             else:
                 raise ValueError("Invalid arguments at position: %i" % pos)
         assert(len(args) == 1)
-        assert(isinstance(args[0], VisionBase) or isinstance(args[1], EngineBase))
+        assert(isinstance(args[0], VisionBase) or isinstance(args[0], EngineBase))
         return args[0]
 
     def todict(self):

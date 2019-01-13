@@ -41,7 +41,7 @@ class ObjectModel(ModelBase):
     def todict(self):
         d = {
             'name': self.name,
-            'views': [v.todict() for v in self.views]
+            'views': [v.todict() for v in self._views]
         }
         return d
 
@@ -60,16 +60,25 @@ class ObjectModel(ModelBase):
 
         # Isolate largest contour
         contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
+        if not contour_sizes:
+            return None
         return max(contour_sizes, key=lambda x: x[0])[1]
 
     @staticmethod
     def _get_outline(image):
         if image.mask is not None:
             mask = image.mask.copy()
-            outline = ObjectModel._calculate_outline(mask).reshape((-1, 1, 2))
+            outline = ObjectModel._calculate_outline(mask)
+            if outline is None:
+                return None, None, None
             mask = cv2.merge(tuple(mask for i in range(image.image.shape[2])))
             thumb = cv2.bitwise_and(image.image, mask)
+            outline = outline.reshape((-1, 1, 2))
             x, y, w, h = cv2.boundingRect(outline)
+
+            if w < 100 or h < 100:
+                return None, None, None
+
             thumb = thumb[y:y + h, x:x + w]
             outline = np.float32([(i[0][0] - x, i[0][1] - y) for i in outline])
             kp = [p._replace(pt=(p.pt[0] - x, p.pt[1] - y)) for p in image.features.points]
@@ -87,15 +96,20 @@ class ObjectModel(ModelBase):
         return outline, thumb, features
 
     @staticmethod
-    def from_processed_image(name, image, display_results=False, **kwargs):
+    def create_from_processed_image(name, image, display_results=False, **kwargs):
         if not isinstance(image, Image):
             raise TypeError("Image must be Image type")
         if not image.features or len(image.features.points) < 5:
-            raise ValueError("Image must have features")
+            return None
         if not image.feature_type:
-            raise ValueError("Image must have feature_type")
+            return None
+
+        if display_results:
+            cv2.imshow("%s mask" % name, image.mask)
 
         outline, thumb, features = ObjectModel._get_outline(image)
+        if outline is None:
+            return None
 
         if display_results:
             img = cv2.drawKeypoints(thumb, features.keypoints, np.array([]), color=(0, 0, 255),
@@ -106,25 +120,41 @@ class ObjectModel(ModelBase):
         view = ModelView(thumb, outline, features, image.feature_type)
         return ObjectModel(name, [view], display_results=display_results, **kwargs)
 
-    def update(image, matcher, **kwargs):
-        if not image.features:
-            raise ValueError("Image must implement features")
+    def update_from_processed_frame(self, frame, matcher, **kwargs):
+        if not isinstance(frame, Frame):
+            raise TypeError("Image must be Frame type")
+        image = frame.images[0]
+        if not image.features or len(image.features.points) < 5:
+            return None
         if not image.feature_type:
-            raise ValueError("Image must implement feature_type")
+            return None
 
         if len(image.features.points) < self._min_matches:
             return None
 
+        image = frame.images[0]
         outline, thumb, features = ObjectModel._get_outline(image)
+
+        if outline is None:
+            return None
+
+        if kwargs.get('display_results', False):
+            img = cv2.drawKeypoints(thumb, features.keypoints, np.array([]), color=(0, 0, 255),
+                                     flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+            img = cv2.polylines(img, [np.int32(outline)], True, [255, 0, 0], 3, 8)
+            cv2.imshow(self.name, img)
+            cv2.imshow("%s mask" % self.name, image.mask)
+
+        return None
 
         views = (self._match_view(frame, view, matcher, **kwargs) for view in self)
         views = sum((v for v in views if v), ())
         if not views:
-            self.views += [ModelView(image, outline, features. image.feature_type)]
+            self._views += [ModelView(thumb, outline, features, image.feature_type)]
             return self
         N = max(views, key=lambda x: len(x.matches))
         if N <= len(image.features.points) / 3:
-            self.views += [ModelView(thumb, outline, features. image.feature_type)]
+            self.views += [ModelView(thumb, outline, features, image.feature_type)]
             return self
 
     def _match_view(self, frame, view, matcher, **kwargs):
@@ -136,7 +166,7 @@ class ObjectModel(ModelBase):
 
         return view_matches if view_matches else None
 
-    def _match_features(self, image, view, matcher, **kwargs):
+    def _match_features(self, image, view, matcher, display_results=False, **kwargs):
         kpsA, descriptorsA = image.features
         kpsB, descriptorsB = view.features
         outline = view.outline
