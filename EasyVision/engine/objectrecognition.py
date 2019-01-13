@@ -53,7 +53,6 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
         if model is None:
             return None
         if add:
-            print "model added"
             if name in self._models:
                 self._models[name].update(model)
             else:

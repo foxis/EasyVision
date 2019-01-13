@@ -33,9 +33,9 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
         return d
 
     @staticmethod
-    def fromdict(d):
-        points = [Keypoint.fromdict(pt) for pt in d['points']]
-        descriptors = np.array(d['descriptors'])
+    def fromdict(d, descriptor_type=np.uint8):
+        points = [KeyPoint.fromdict(pt) for pt in d['points']]
+        descriptors = descriptor_type(d['descriptors'])
         return Features(points, descriptors)
 
 

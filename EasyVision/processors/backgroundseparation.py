@@ -5,7 +5,7 @@ from .base import *
 
 class BackgroundSeparation(ProcessorBase):
     def __init__(self, vision, algorithm='MOG', *args, **kwargs):
-        if algorithm not in ('MOG', 'MOG2', 'GMG', 'grabCut', 'diff'):
+        if algorithm not in ('MOG', 'MOG2', 'GMG'):
             raise ValueError("Algorithm must be one of MOG/MOG2/GMG")
         self._algorithm = algorithm
         self._background_num = 0
@@ -14,17 +14,12 @@ class BackgroundSeparation(ProcessorBase):
         super(BackgroundSeparation, self).__init__(vision, *args, **kwargs)
 
     def setup(self):
-        if self._algorithm == 'grabCut':
-            bgdModel = np.zeros((1,65),np.float64)
-            fgdModel = np.zeros((1,65),np.float64)
-        elif self._algorithm == 'diff':
-            pass
-        else:
-            self._subtractor = {
-                'MOG': cv2.bgsegm.createBackgroundSubtractorMOG,
-                'MOG2': cv2.createBackgroundSubtractorMOG2,
-                'GMG': cv2.bgsegm.createBackgroundSubtractorGMG
-            }[self._algorithm](history=self._max_background_num)
+        self._subtractor = {
+            'MOG': cv2.bgsegm.createBackgroundSubtractorMOG,
+            'MOG2': cv2.createBackgroundSubtractorMOG2,
+            'GMG': cv2.bgsegm.createBackgroundSubtractorGMG
+        }[self._algorithm](history=self._max_background_num)
+        self._disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
         super(BackgroundSeparation, self).setup()
 
     def release(self):
@@ -43,27 +38,13 @@ class BackgroundSeparation(ProcessorBase):
         self._background_num = value
 
     def process(self, image):
-        if self._algorithm == 'grabCut':
-            return self._process_grabCut(image)
-        elif self._algorithm == 'diff':
-            return self._process_diff(image)
-        else:
-            lr = 0 if self._background_num > self._max_background_num else -1
-            mask = self._subtractor.apply(image.image, learningRate=lr)
-            self._background_num += 1
-            return image._replace(mask=mask)
-
-    def _process_grabCut(image):
-        cv2.grabCut(img,mask,rect,bgdModel,fgdModel,5,cv2.GC_INIT_WITH_RECT)
-
-    def _process_diff(image):
-        if self._background is None:
-            self._background = image.image
-            self._mask = np.zeros(img.shape[:2],np.uint8)
-
-        if self._background_num < self._max_background:
-            self._background = (self._background + image.image) / 2
-            return image._replace(mask=self._mask)
-
-        mask = image.image - self._background
-        mask = cv2.inRange(mask, (40, 40, 40), (255, 255, 255))
+        lr = 0 if self._background_num > self._max_background_num else .9
+        mask = self._subtractor.apply(image.image, learningRate=lr)
+        mask = cv2.filter2D(mask, -1, self._disc)
+        _, mask = cv2.threshold(mask, 100, 255, 0)
+        if image.mask is not None:
+            mask = cv2.bitwise_and(mask, image.mask)
+        self._background_num += 1
+        if self.display_results:
+             cv2.imshow("%s" % self.name, mask)
+        return image._replace(mask=mask)

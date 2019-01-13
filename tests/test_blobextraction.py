@@ -53,7 +53,6 @@ def test_blobextraction_robotuintelektas_green():
             assert(isinstance(frame, Frame))
             print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
-            assert(isinstance(frame.images[0].original, np.ndarray))
             cv2.waitKey(0)
 
 
@@ -70,7 +69,6 @@ def test_blobextraction_robotuintelektas_blue():
             assert(isinstance(frame, Frame))
             print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
-            assert(isinstance(frame.images[0].original, np.ndarray))
             cv2.waitKey(0)
 
 
@@ -90,5 +88,4 @@ def test_blobextraction_robotuintelektas_combined():
             assert(isinstance(frame, Frame))
             print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
-            assert(isinstance(frame.images[0].original, np.ndarray))
             cv2.waitKey(0)

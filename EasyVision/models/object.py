@@ -12,7 +12,7 @@ MatchResult = namedtuple('MatchResult', 'model view image matches homography out
 class ObjectModel(ModelBase):
     __slots__ = ('_min_matches', '_reproj_thresh')
 
-    def __init__(self, name, views, min_matches=5, reproj_thresh=5, *args, **kwargs):
+    def __init__(self, name, views, min_matches=10, reproj_thresh=5.0, *args, **kwargs):
         self._min_matches = min_matches
         self._reproj_thresh = reproj_thresh
         super(ObjectModel, self).__init__(name, views, *args, **kwargs)
@@ -145,8 +145,6 @@ class ObjectModel(ModelBase):
             cv2.imshow(self.name, img)
             cv2.imshow("%s mask" % self.name, image.mask)
 
-        return None
-
         views = (self._match_view(frame, view, matcher, **kwargs) for view in self)
         views = sum((v for v in views if v), ())
         if not views:
@@ -188,7 +186,7 @@ class ObjectModel(ModelBase):
             if H is None:
                 return results
 
-            if sum(inliers) < self._min_matches:
+            if sum(inliers) < self._min_matches or sum(inliers) < len(descriptorsB) * .01:
                 return results
 
             __outline = cv2.perspectiveTransform(_outline, H)

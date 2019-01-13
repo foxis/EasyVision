@@ -92,7 +92,7 @@ class BlobExtraction(ProcessorBase):
                 cv2.imshow("Mask%i" % i, mask)
 
         if self.display_results:
-            self._draw_keypoints(image.original, keypoints)
+            self._draw_keypoints(image.image, keypoints)
 
         return image._replace(features=Blobs._make(keypoints, None), feature_type='blobs')
 
