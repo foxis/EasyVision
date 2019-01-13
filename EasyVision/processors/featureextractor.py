@@ -5,23 +5,6 @@ from .base import *
 from collections import namedtuple
 
 
-KeyPoint = namedtuple('KeyPoint', ['pt', 'size', 'angle', 'response', 'octave', 'class_id'])
-
-
-class Features(namedtuple('Features', ['points', 'descriptors'])):
-    __slots__ = ()
-
-    @property
-    def keypoints(self):
-        return [cv2.KeyPoint(x=pt.pt[0], y=pt.pt[1], _size=pt.size, _angle=pt.angle,
-                             _response=pt.response, _octave=pt.octave, _class_id=pt.class_id) for pt in self.points]
-
-    @classmethod
-    def _make(cls, keypoints, descriptors):
-        points = [KeyPoint(pt.pt, pt.size, pt.angle, pt.response, pt.octave, pt.class_id) for pt in keypoints]
-        return super(Features, cls)._make((points, descriptors))
-
-
 class FeatureExtraction(ProcessorBase):
 
     def __init__(self, vision, feature_type, extract=True, *args, **kwargs):
@@ -101,7 +84,7 @@ class FeatureExtraction(ProcessorBase):
         if self.display_results:
             self._draw_keypoints(image.image, keypoints)
 
-        return image._replace(features=Features._make(keypoints, descriptors), feature_type=self._feature_type)
+        return image._replace(features=Features(keypoints, descriptors), feature_type=self._feature_type)
 
     def _draw_keypoints(self, image, keypoints):
         img = cv2.drawKeypoints(image, keypoints, np.array([]), color=(0, 0, 255),

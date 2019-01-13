@@ -1,6 +1,42 @@
 # -*- coding: utf-8 -*-
 from EasyVision.vision.base import *
 import cv2
+import numpy as np
+
+
+class KeyPoint(namedtuple('KeyPoint', ['pt', 'size', 'angle', 'response', 'octave', 'class_id'])):
+    def todict(self):
+        return self._asdict()
+
+    @staticmethod
+    def fromdict(d):
+        return KeyPoint(**d)
+
+
+class Features(namedtuple('Features', ['points', 'descriptors'])):
+    __slots__ = ()
+
+    def __new__(cls, points, descriptors):
+        points = [KeyPoint(pt.pt, pt.size, pt.angle, pt.response, pt.octave, pt.class_id) for pt in points]
+        return super(Features, cls).__new__(cls, points, descriptors)
+
+    @property
+    def keypoints(self):
+        return [cv2.KeyPoint(x=pt.pt[0], y=pt.pt[1], _size=pt.size, _angle=pt.angle,
+                             _response=pt.response, _octave=pt.octave, _class_id=pt.class_id) for pt in self.points]
+
+    def todict(self):
+        d = {
+            'points': [pt.todict() for pt in self.points],
+            'descriptors': self.descriptors.tolist()
+        }
+        return d
+
+    @staticmethod
+    def fromdict(d):
+        points = [Keypoint.fromdict(pt) for pt in d['points']]
+        descriptors = np.array(d['descriptors'])
+        return Features(points, descriptors)
 
 
 class ProcessorBase(VisionBase):

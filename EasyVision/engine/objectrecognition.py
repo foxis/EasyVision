@@ -35,9 +35,14 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
             return None
         return frame, self._match_models(frame)
 
-    def enroll(self, name, image, add=False, **kwargs):
-        processed = self.vision.process(image)
-        model = ObjectModel.from_processed_image(name, processed, **kwargs)
+    def enroll(self, name, image, model=None, add=False, **kwargs):
+        if not image.features or not image.feature_type:
+            image = self.vision.process(image)
+
+        if model is not None:
+            return mode.update(image, self)
+
+        model = ObjectModel.from_processed_image(name, image, **kwargs)
         if model is None:
             return None
         if add:

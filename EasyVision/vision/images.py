@@ -40,10 +40,10 @@ class ImagesReader(VisionBase):
             raise IOError("Could not read the image: " + image_path)
         mask = None
         if mask_path:
-            mask = cv2.imread(mask_path)
+            mask = cv2.cvtColor(cv2.imread(mask_path), cv2.COLOR_BGR2GRAY)
             if mask is None:
                 raise IOError("Could not read the mask image: " + mask_path)
-        return ImageWithMask(_self, image, mask) if mask else Image(_self, image)
+        return Image(_self, image, mask=mask)
 
     @property
     def frame_size(self):

@@ -91,8 +91,10 @@ images_obj = [
     "test_data/13669656965_86a0146858_k.jpg",
     "test_data/21503937795_a9f41f428a_k.jpg"
 ]
-image_obj1 = "test_data/4472701625_6b23da9a23_b_crop1.jpg"
-image_obj2 = "test_data/4472701625_6b23da9a23_b_crop2.jpg"
+image_obj1 = "test_data/4472701625_6b23da9a23_b.jpg"
+image_obj1_crop = "test_data/4472701625_6b23da9a23_b_crop1.jpg"
+image_obj1_mask = "test_data/4472701625_6b23da9a23_b - mask.jpg"
+image_obj2_crop = "test_data/4472701625_6b23da9a23_b_crop2.jpg"
 
 
 class MyException(Exception): pass
@@ -367,8 +369,8 @@ def common_test_match_images(feature_type, display=False, mp=False):
     with ObjectRecognitionEngine(extractor, feature_type, display_results=display) as engine:
         frame_count = 0
 
-        assert(engine.enroll("obj1", ImagesReader.load_image(image_obj1), add=True, display_results=display) is not None)
-        assert(engine.enroll("obj2", ImagesReader.load_image(image_obj2), add=True, display_results=display) is not None)
+        assert(engine.enroll("obj1", ImagesReader.load_image(image_obj1, image_obj1_mask), add=True, display_results=display) is not None)
+        assert(engine.enroll("obj2", ImagesReader.load_image(image_obj2_crop), add=True, display_results=display) is not None)
         assert(len(engine.models) == 2)
 
         for frame, matches in engine:

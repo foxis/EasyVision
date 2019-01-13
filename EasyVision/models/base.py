@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from EasyVision.base import *
 from EasyVision.exceptions import *
+from EasyVision.processors import Features
 from collections import namedtuple
+import numpy as np
 
 
 class ModelView(NamedTupleExtendHelper, namedtuple('ModelView', ['image', 'outline', 'features', 'feature_type'])):
@@ -11,11 +13,20 @@ class ModelView(NamedTupleExtendHelper, namedtuple('ModelView', ['image', 'outli
         return super(ModelView, cls).__new__(cls, image, outline, features, feature_type)
 
     def todict(self):
-        pass
+        d = {
+            'image': self.image.tolist(),
+            'outline': self.outline.tolist(),
+            'features': self.features.todict(),
+            'feature_type': self.feature_type
+        }
+        return d
 
     @staticmethod
-    def fromdict():
-        pass
+    def fromdict(d):
+        image = None if d['image'] is None else np.array(d['image'])
+        features = Features.fromdict(d['features'])
+        outline = np.array(d['outline'])
+        return ModelView(image, outline, features, d['feature_type'])
 
 
 class ModelBase(EasyVisionBase):
