@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
-from .base import EngineBase
+from .base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin
 import cv2
 import numpy as np
 
 
-Pose = namedtuple('Pose', ['rotation', 'translation'])
-
-
-class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
+class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
     def __init__(self, vision, feature_type=None, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
@@ -157,7 +154,11 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
 
     @property
     def capabilities(self):
-        return {}
+        return EngineCapabilities(
+                (ProcessorBase, FeatureExtraction),
+                (Frame, Pose),
+                {}
+            )
 
     def _track_features(self, image_ref, image_cur, px_ref):
         kp2, st, err = cv2.calcOpticalFlowPyrLK(image_ref, image_cur, px_ref, None, **self._lk_params)  # shape: [k,2] [k,1] [k,1]

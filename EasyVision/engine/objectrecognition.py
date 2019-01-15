@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
-from .base import EngineBase
+from .base import *
 from EasyVision.models import ObjectModel, ModelView
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction
 from EasyVision.processors import FeatureMatchingMixin
 import cv2
 import numpy as np
+from collections import namedtuple
+
+
+class MatchResults(namedtuple('MatchResults', 'results')):
+    """Container for object matching results"""
+
+    pass
 
 
 class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
@@ -61,7 +68,7 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
 
     @property
     def description(self):
-        return "Object Recognition Engine using SIFT/AKAZE/ORB"
+        return "Object Recognition Engine using various feature extractors"
 
     @property
     def models(self):
@@ -69,11 +76,12 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
 
     @property
     def capabilities(self):
-        return {
-            "models": (ObjectModel, ),
-            "feature_types": ('ORB', 'KAZE', 'AKAZE')
-        }
+        return EngineCapabilities(
+                (ProcessorBase, FeatureExtraction, ObjectModel),
+                (Frame, MatchResults),
+                {'feature_type': ('FREAK', 'SURF', 'SIFT', 'ORB', 'KAZE', 'AKAZE')}
+            )
 
     def _match_models(self, frame):
         results = (model.compute(frame, self) for model in self._models.values())
-        return sum(tuple(i for i in results if i), ())
+        return MatchResults(sum(tuple(i for i in results if i), ()))

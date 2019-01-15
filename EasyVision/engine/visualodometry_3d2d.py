@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
-from .base import EngineBase
+from .base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin, Features
 import cv2
 import numpy as np
 
 
-Pose = namedtuple('Pose', ['rotation', 'translation'])
-
-
-class VisualOdometry3D2DEngine(FeatureMatchingMixin, EngineBase):
+class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
     def __init__(self, vision, feature_type=None, pose=None, num_features=10000, reproj_thresh=0.3, *args, **kwargs):
         feature_extractor_provided = False
@@ -45,7 +42,8 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, EngineBase):
         self._last_image = None
         self._last_kps = None
         self._last_features = None
-        self.pose = pose
+        self._pose = pose
+        self._last_pose = None
         self._images = []
 
         super(VisualOdometry3D2DEngine, self).__init__(_vision, *args, **kwargs)
@@ -83,6 +81,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, EngineBase):
                                                      rotation=R.dot(self._pose.rotation))
                 else:
                     self._pose = Pose(R, t)
+                self._last_pose = Pose(R, t)
 
         if self.display_results and featuresA is not None and featuresB is not None:
             for i, img in enumerate(self._images):
@@ -98,6 +97,10 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, EngineBase):
         return frame, self._pose
 
     @property
+    def feature_type(self):
+        return self._feature_type
+
+    @property
     def pose(self):
         return self._pose
 
@@ -107,13 +110,30 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, EngineBase):
             raise TypeError("Pose must be of type VisualOdometryEngine.Pose")
         self._pose = value
 
+
+    @property
+    def relative_pose(self):
+        return self._last_pose
+
+    @property
+    def camera_orientation(self):
+        pass
+
+    @camera_orientation.setter
+    def camera_orientation(self, value):
+        pass
+
     @property
     def description(self):
         return "Monocular Visual Odometry (3D-2D)"
 
     @property
     def capabilities(self):
-        return {}
+        return EngineCapabilities(
+                (ProcessorBase, FeatureExtraction),
+                (Frame, Pose),
+                {}
+            )
 
     def _calculate_3d(self, featuresA, featuresB, scale, ratio=0.7, distance_thresh=30, min_matches=20):
         kpsA, descriptorsA = featuresA

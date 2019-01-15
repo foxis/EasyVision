@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
-from .base import EngineBase
+from .base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin
 import cv2
 import numpy as np
 
 
-Pose = namedtuple('Pose', ['rotation', 'translation'])
-
-
-class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
+class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
     def __init__(self, vision, feature_type=None, pose=None, num_features=10000, min_features=1000, reproj_thresh=0.3, debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
@@ -57,7 +54,8 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
         self._last_image = None
         self._last_kps = None
         self._last_features = None
-        self.pose = pose
+        self._last_pose = None
+        self._pose = pose
 
         super(VisualOdometry2DEngine, self).__init__(_vision, debug=debug, display_results=display_results, *args, **kwargs)
 
@@ -110,6 +108,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
                                                 rotation=R.dot(self._pose.rotation))
             else:
                 self._pose = Pose(R, t)
+            self._last_pose = Pose(R, t)
 
         self._last_features = current_image.features
         return self._pose
@@ -137,6 +136,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
                                                 rotation=R.dot(self._pose.rotation))
             else:
                 self._pose = Pose(R, t)
+            self._last_pose = Pose(R, t)
 
             if len(self._last_kps) < self._min_features:
                 current_image = self.vision.process(current_image)
@@ -145,6 +145,10 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
             self._last_kps = cur_kps
 
         return self._pose
+
+    @property
+    def feature_type(self):
+        return self._feature_type
 
     @property
     def pose(self):
@@ -157,12 +161,28 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, EngineBase):
         self._pose = value
 
     @property
+    def relative_pose(self):
+        return self._last_pose
+
+    @property
+    def camera_orientation(self):
+        pass
+
+    @camera_orientation.setter
+    def camera_orientation(self, value):
+        pass
+
+    @property
     def description(self):
         return "Monocular Visual Odometry inspired by https://github.com/uoip/monoVO-python (2D-2D)"
 
     @property
     def capabilities(self):
-        return {}
+        return EngineCapabilities(
+                (ProcessorBase, FeatureExtraction),
+                (Frame, Pose),
+                {}
+            )
 
     def _track_features(self, image_ref, image_cur, px_ref):
         kp2, st, err = cv2.calcOpticalFlowPyrLK(image_ref, image_cur, px_ref, None, **self._lk_params)  # shape: [k,2] [k,1] [k,1]

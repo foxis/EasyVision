@@ -88,7 +88,11 @@ class BOWVocabularyBuilderEngine(EngineBase):
 
     @property
     def capabilities(self):
-        return {}
+        return EngineCapabilities(
+                (ProcessorBase, FeatureExtraction),
+                (Frame),
+                {'dictionaries': ('kmeans', 'dbow3')}
+            )
 
 
 class BOWMatchingMixin(object):

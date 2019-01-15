@@ -12,6 +12,14 @@ import numpy as np
 from .common import *
 
 
+@mark.main
+def test_visual_odometry_2d():
+    cam = CalibratedCamera(VideoCapture(dataset_note9), camera_note9, display_results=False, enabled=False)
+    with VisualOdometry2DEngine(cam, display_results=False, debug=False, feature_type='ORB') as engine:
+        for frame, pose in engine:
+            break
+
+
 @mark.complex
 def test_visual_odometry_kitti_2d():
     common_test_visual_odometry_kitti('FREAK', mp=False, ocl=True, color=cv2.COLOR_BGR2GRAY)

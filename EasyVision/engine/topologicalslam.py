@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .base import EngineBase
+from .base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin
 from .bowvocabulary import BOWMatchingMixin
@@ -8,12 +8,11 @@ import numpy as np
 
 
 Keyframe = namedtuple('Keyframe', ['image', 'points', 'descriptors', 'bow'])
-Pose = namedtuple('Pose', ['rotation', 'translation'])
 Node = namedtuple('Node', ['keyframe', 'transitions'])
 Transition = namedtuple('transition', ['current', 'target', 'pose', 'control'])
 
 
-class TopologicalSLAMEngine(FeatureMatchingMixin, BOWMatchingMixin, EngineBase):
+class TopologicalSLAMEngine(FeatureMatchingMixin, BOWMatchingMixin, OdometryBase):
     def __init__(self, vision, vocabulary, feature_type, pose=None, min_features=5000, debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
@@ -101,6 +100,10 @@ class TopologicalSLAMEngine(FeatureMatchingMixin, BOWMatchingMixin, EngineBase):
         return self._pose
 
     @property
+    def feature_type(self):
+        return self._feature_type
+
+    @property
     def pose(self):
         return self._pose
 
@@ -110,16 +113,32 @@ class TopologicalSLAMEngine(FeatureMatchingMixin, BOWMatchingMixin, EngineBase):
             raise TypeError("Pose must be of type VisualOdometryEngine.Pose")
         self._pose = value
 
+    @property
+    def relative_pose(self):
+        return self._last_pose
+
+    @property
+    def camera_orientation(self):
+        pass
+
+    @camera_orientation.setter
+    def camera_orientation(self, value):
+        pass
+
     def release(self):
         super(VisualOdometryEngine, self).release()
 
     @property
     def description(self):
-        return "Visual Odometry inspired by https://github.com/uoip/monoVO-python"
+        return "Topological Mapping of features using Visual Odometry for Pose Estimation"
 
     @property
     def capabilities(self):
-        return {}
+        return EngineCapabilities(
+                (ProcessorBase, FeatureExtraction),
+                (Frame, Pose),
+                {}
+            )
 
     def _match_features(self, featuresA, featuresB, ratio=0.7, reprojThresh=5.0, distance_thresh=30, min_matches=5):
         kpsA, descriptorsA = featuresA
