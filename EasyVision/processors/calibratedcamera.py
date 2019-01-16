@@ -80,7 +80,7 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
 
 
 class CalibratedCamera(ProcessorBase):
-    def __init__(self, vision, camera, grid_shape=(7, 6), grid_size=1, max_samples=20, frame_delay=1, *args, **kwargs):
+    def __init__(self, vision, camera, grid_shape=(7, 6), square_size=20, max_samples=20, frame_delay=1, *args, **kwargs):
         calibrate = camera is None
         if not calibrate:
             if not isinstance(camera, PinholeCamera) and not (isinstance(camera, tuple) and len(camera) == 3):
@@ -91,6 +91,7 @@ class CalibratedCamera(ProcessorBase):
             self._camera = None
             self._grid_shape = grid_shape
             self._grid_size = grid_size
+            self._square_size = square_size
             self._max_samples = max_samples
             self._frame_delay = frame_delay
             self._last_timestamp = None
@@ -103,6 +104,7 @@ class CalibratedCamera(ProcessorBase):
             # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
             self.objp = np.zeros((np.prod(self._grid_shape), 3), np.float32)
             self.objp[:, :2] = np.indices(self._grid_shape).T.reshape(-1, 2)
+            self.objp *= self._square_size
 
             # Arrays to store object points and image points from all the images.
             self.objpoints = []  # 3d point in real world space

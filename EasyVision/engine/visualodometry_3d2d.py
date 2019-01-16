@@ -31,20 +31,25 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             #defaults['scoreType'] = cv2.ORB_FAST_SCORE
             defaults['nlevels'] = 16
             defaults.update(kwargs)
+            defaults.pop('enabled', None)
             defaults.pop('debug', None)
             defaults.pop('display_results', None)
 
         self._feature_type = feature_type
         _vision = FeatureExtraction(vision, feature_type=feature_type, **defaults) if not feature_extractor_provided else vision
 
-        self._reproj_thresh = reproj_thresh
-        self.camera = _vision.camera
+        self._camera = _vision.camera
         self._last_image = None
         self._last_kps = None
         self._last_features = None
         self._pose = pose
         self._last_pose = None
         self._images = []
+
+        self._ratio = 0.7
+        self._distance_thresh = 30
+        self._min_matches = 100
+        self._reproj_thresh = reproj_thresh
 
         super(VisualOdometry3D2DEngine, self).__init__(_vision, *args, **kwargs)
 
@@ -67,12 +72,12 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
         if len(self._images) == 3 and self._images[-3][1] is not None:
             # TODO filter those features that have similar distance from -3 and -2
-            matches = super(VisualOdometry3D2DEngine, self)._match_features(self._images[-3][1].descriptors, self._images[-1][0].descriptors, self._feature_type, 0.7, 30, 20)
+            matches = self._match_features(self._images[-3][1].descriptors, self._images[-1][0].descriptors, self._feature_type, self._ratio, self._distance_thresh, self._min_matches)
             if matches is None or not matches:
                 return frame, self._pose
             points_3d = np.float32([self._images[-3][1].points[m.queryIdx] for m in matches])
             points_2d = np.float32([self._images[-1][0].points[m.trainIdx].pt for m in matches])
-            ret, r, t, _ = cv2.solvePnPRansac(points_3d, points_2d, self.camera.matrix, self.camera.distortion, reprojectionError=5)
+            ret, r, t, _ = cv2.solvePnPRansac(points_3d, points_2d, self._camera.matrix, None, reprojectionError=5)
             R, _ = cv2.Rodrigues(r * -1)
             t *= -1
             if ret:
@@ -101,15 +106,18 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         return self._feature_type
 
     @property
+    def camera(self):
+        return self._camera
+
+    @property
     def pose(self):
         return self._pose
 
     @pose.setter
     def pose(self, value):
         if not isinstance(value, Pose) and value is not None:
-            raise TypeError("Pose must be of type VisualOdometryEngine.Pose")
+            raise TypeError("Pose must be of type Pose")
         self._pose = value
-
 
     @property
     def relative_pose(self):
@@ -132,14 +140,14 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         return EngineCapabilities(
                 (ProcessorBase, FeatureExtraction),
                 (Frame, Pose),
-                {}
+                {'feature_type': ('FREAK', 'SURF', 'SIFT', 'ORB', 'KAZE', 'AKAZE')}
             )
 
-    def _calculate_3d(self, featuresA, featuresB, scale, ratio=0.7, distance_thresh=30, min_matches=20):
+    def _calculate_3d(self, featuresA, featuresB, scale):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = featuresB
 
-        matches = super(VisualOdometry3D2DEngine, self)._match_features(descriptorsA, descriptorsB, self._feature_type, ratio, distance_thresh, min_matches)
+        matches = self._match_features(descriptorsA, descriptorsB, self._feature_type, self._ratio, self._distance_thresh, self._min_matches)
 
         if matches is None or not matches:
             return None, None, None
@@ -158,7 +166,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         current = np.float32([kp.pt for kp in kpsB])
         last = np.float32([kp.pt for kp in kpsA])
 
-        E, mask = cv2.findEssentialMat(current, last, focal=self.camera.focal_point[0], pp=self.camera.center,
+        E, mask = cv2.findEssentialMat(current, last, focal=self._camera.focal_point[0], pp=self._camera.center,
                                        method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
 
         kpsA = [kp for m, kp in zip(mask, kpsA) if m]
@@ -169,21 +177,21 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         last = np.float32([kp.pt for kp in kpsA])
         current = np.float32([kp.pt for kp in kpsB])
 
-        ret, R, t, mask = cv2.recoverPose(E, current, last, focal=self.camera.focal_point[0], pp=self.camera.center)
+        ret, R, t, mask = cv2.recoverPose(E, current, last, focal=self._camera.focal_point[0], pp=self._camera.center)
 
         if not ret:
             return None, None, None
 
         kpsA = [kp for m, kp in zip(mask, kpsA) if m]
         kpsB = [kp for m, kp in zip(mask, kpsB) if m]
-        dA = np.array([d for m, d in zip(mask, dA) if m])
-        dB = np.array([d for m, d in zip(mask, dB) if m])
+        dA = np.array([d for m, d in zip(mask, dA) if m], dtype=descriptorsA.dtype)
+        dB = np.array([d for m, d in zip(mask, dB) if m], dtype=descriptorsB.dtype)
 
         last = np.float32([kp.pt for kp in kpsA])
         current = np.float32([kp.pt for kp in kpsB])
 
-        P1 = np.dot(self.camera.matrix, np.hstack((np.eye(3, 3), np.zeros((3, 1)))))
-        P2 = np.dot(self.camera.matrix, np.hstack((R, t)))
+        P1 = np.dot(self._camera.matrix, np.hstack((np.eye(3, 3), np.zeros((3, 1)))))
+        P2 = np.dot(self._camera.matrix, np.hstack((R, t)))
 
         point_4d_hom = cv2.triangulatePoints(P1, P2, np.expand_dims(current, axis=1), np.expand_dims(last, axis=1))
         point_4d = point_4d_hom / np.tile(point_4d_hom[-1, :], (4, 1))

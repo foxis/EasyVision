@@ -144,6 +144,9 @@ class CameraPairProxy(VisionBase):
 
         return left._replace(images=left.images + right.images)
 
+    def get_source(self, source):
+        return (self._left.get_source(source), self._right.get_source(source))
+
     @property
     def is_open(self):
         return self._left.is_open and self._right.is_open
@@ -252,7 +255,7 @@ class CameraPairProxy(VisionBase):
 class CalibratedStereoCamera(ProcessorBase):
 
     def __init__(self, left, right, camera=None, calculate_disparity=False, num_disparities=255, block_size=15,
-                 grid_shape=(9, 6), max_samples=20, frame_delay=1, *args, **kwargs):
+                 grid_shape=(9, 6), square_size=20, max_samples=20, frame_delay=1, *args, **kwargs):
         calibrate = camera is None
         if not isinstance(left, ProcessorBase) or not isinstance(right, ProcessorBase) or \
            left.get_source('CalibratedCamera') is None or right.get_source('CalibratedCamera') is None:
@@ -268,24 +271,29 @@ class CalibratedStereoCamera(ProcessorBase):
         else:
             if not left._calibrate or not right._calibrate:
                 raise ValueError("Left and Right cameras must be set to calibrate mode")
+
             left._grid_shape = grid_shape
             right._grid_shape = grid_shape
+            left._square_size = square_size
+            right._square_size = square_size
+
             self._frame_delay = frame_delay
             self._grid_shape = grid_shape
+            self._square_size = square_size
             self._camera = None
             self.stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-5)
             self.flags = 0
             #self.flags |= cv2.CALIB_FIX_INTRINSIC
-            #self.flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            self.flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
             #self.flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-            #self.flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self.flags |= cv2.CALIB_FIX_FOCAL_LENGTH
             self.flags |= cv2.CALIB_FIX_ASPECT_RATIO
             self.flags |= cv2.CALIB_ZERO_TANGENT_DIST
             # self.flags |= cv2.CALIB_RATIONAL_MODEL
             self.flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            # self.flags |= cv2.CALIB_FIX_K3
-            # self.flags |= cv2.CALIB_FIX_K4
-            # self.flags |= cv2.CALIB_FIX_K5
+            self.flags |= cv2.CALIB_FIX_K3
+            self.flags |= cv2.CALIB_FIX_K4
+            self.flags |= cv2.CALIB_FIX_K5
             self._max_samples = max_samples
             self._last_timestamp = None
 
@@ -301,6 +309,7 @@ class CalibratedStereoCamera(ProcessorBase):
         if self._calibrate:
             self.objp = np.zeros((np.prod(self._grid_shape), 3), np.float32)
             self.objp[:, :2] = np.indices(self._grid_shape).T.reshape(-1, 2)
+            self.objp *= self._square_size
 
             self.objpoints = []
             self.imgpoints_l = []

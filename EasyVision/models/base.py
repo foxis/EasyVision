@@ -24,10 +24,7 @@ class ModelView(NamedTupleExtendHelper, namedtuple('ModelView', ['image', 'outli
     @staticmethod
     def fromdict(d):
         image = None if d['image'] is None else np.uint8(d['image'])
-        if d['feature_type'] not in ['SIFT', 'SURF']:
-            features = Features.fromdict(d['features'], descriptor_type=np.uint8)
-        else:
-            features = Features.fromdict(d['features'], descriptor_type=np.float32)
+        features = Features.fromdict(d['features'])
         outline = np.float32(d['outline'])
         return ModelView(image, outline, features, d['feature_type'])
 

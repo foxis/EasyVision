@@ -50,7 +50,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01)
         )
 
-        self.camera = _vision.camera
+        self._camera = _vision.camera
         self._last_image = None
         self._last_kps = None
         self._last_features = None
@@ -97,12 +97,12 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
                     cv2.line(current_image.image, (a[0], a[1]), (b[0], b[1]), (0, 0, 255))
 
             E, mask = cv2.findEssentialMat(current, last,
-                                           focal=self.camera.focal_point[0], pp=self.camera.center,
+                                           focal=self._camera.focal_point[0], pp=self._camera.center,
                                            method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
             #last = np.float32([kp for m, kp in zip(mask, last) if m])
             #current = np.float32([kp for m, kp in zip(mask, current) if m])
             _, R, t, mask = cv2.recoverPose(E, current, last,
-                                            focal=self.camera.focal_point[0], pp=self.camera.center)
+                                            focal=self._camera.focal_point[0], pp=self._camera.center)
             if self._pose:
                 self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
                                                 rotation=R.dot(self._pose.rotation))
@@ -125,12 +125,12 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
                     cv2.line(current_image.image, (a[0], a[1]), (b[0], b[1]), (0, 0, 255))
 
             E, mask = cv2.findEssentialMat(cur_kps, self._last_kps,
-                                           focal=self.camera.focal_point[0], pp=self.camera.center,
+                                           focal=self._camera.focal_point[0], pp=self._camera.center,
                                            method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
             last_kps = np.float32([kp for m, kp in zip(mask, self._last_kps) if m])
             cur_kps = np.float32([kp for m, kp in zip(mask, cur_kps) if m])
             _, R, t, mask = cv2.recoverPose(E, cur_kps, last_kps,
-                                            focal=self.camera.focal_point[0], pp=self.camera.center)
+                                            focal=self._camera.focal_point[0], pp=self._camera.center)
             if self._pose:
                 self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
                                                 rotation=R.dot(self._pose.rotation))
@@ -151,13 +151,17 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         return self._feature_type
 
     @property
+    def camera(self):
+        return self._camera
+
+    @property
     def pose(self):
         return self._pose
 
     @pose.setter
     def pose(self, value):
         if not isinstance(value, Pose) and value is not None:
-            raise TypeError("Pose must be of type VisualOdometryEngine.Pose")
+            raise TypeError("Pose must be of type Pose")
         self._pose = value
 
     @property
@@ -181,7 +185,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         return EngineCapabilities(
                 (ProcessorBase, FeatureExtraction),
                 (Frame, Pose),
-                {}
+                {'feature_type': ('FREAK', 'SURF', 'SIFT', 'ORB', 'KAZE', 'AKAZE', 'FAST', 'GFTT')}
             )
 
     def _track_features(self, image_ref, image_cur, px_ref):

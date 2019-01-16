@@ -28,14 +28,15 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
     def todict(self):
         d = {
             'points': [pt.todict() for pt in self.points],
-            'descriptors': self.descriptors.tolist()
+            'descriptors': self.descriptors.tolist(),
+            'dtype': self.descriptors.dtype.name
         }
         return d
 
     @staticmethod
-    def fromdict(d, descriptor_type=np.uint8):
+    def fromdict(d):
         points = [KeyPoint.fromdict(pt) for pt in d['points']]
-        descriptors = descriptor_type(d['descriptors'])
+        descriptors = np.array(d['descriptors'], dtype=np.dtype(d['dtype']))
         return Features(points, descriptors)
 
 
