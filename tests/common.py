@@ -71,6 +71,8 @@ as_dict_stereo = {
 camera_kitti = PinholeCamera.from_parameters((1241, 376), (718.8560, 718.8560), (607.1928, 185.2157), [0.0, 0.0, 0.0, 0.0, 0.0])
 camera_kitti_right = PinholeCamera.from_parameters((1241, 376), (718.8560, 718.8560), (607.1928, 185.2157), [0.0, 0.0, 0.0, 0.0, 0.0])
 T_kitti =  [[-386.1448], [0], [0]]
+R_kitti =  [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+
 camera_note9 = PinholeCamera.from_parameters((1920, 1080), (1920/2, 1080/2), (1920/2, 1080/2), [0.0, 0.0, 0.0, 0.0, 0.0])
 camera_tum = PinholeCamera.from_parameters((1280, 1024),
     (1280 * 0.535719308086809, 1024 * 0.669566858850269),
@@ -445,6 +447,7 @@ def common_test_visual_odometry_kitti(feature_type, mp=False, ocl=True, debug=Fa
                 cv2.putText(traj, text, (20, 44), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
 
             cv2.imshow('Trajectory', traj)
-            cv2.waitKey(1)
+            if cv2.waitKey(1) == 27:
+                break
 
     cv2.waitKey(0)

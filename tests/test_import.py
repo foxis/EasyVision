@@ -31,6 +31,11 @@ def test_import_engine_visualodometry3d2d():
 
 
 @pytest.mark.main
+def test_import_engine_visualodometry_stereo():
+    from EasyVision.engine import VisualOdometryStereoEngine
+
+
+@pytest.mark.main
 def test_import_models():
     import EasyVision.models
 

@@ -14,12 +14,20 @@ from .common import *
 
 @mark.main
 def test_visual_odometry_stereo():
-    camera = StereoCamera(camera_kitti, camera_kitti, R, T, E, F, Q)
+    camera = StereoCamera(camera_kitti, camera_kitti_right, R_kitti, T_kitti, None, None, None)
+    FEATURE_TYPE = 'FREAK'
 
-    cam_left = CalibratedCamera(VideoCapture(dataset_note9), camera.left)
-    cam_right = CalibratedCamera(VideoCapture(dataset_note9), camera.right)
+    images_kitti_l = ['test_data/kitti00/image_0/{}.png'.format(str(i).zfill(6)) for i in xrange(3)]
+    images_kitti_r = ['test_data/kitti00/image_1/{}.png'.format(str(i).zfill(6)) for i in xrange(3)]
+
+    cam_left = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_l), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.left)
+    cam_right = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_r), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.right)
     cam = CalibratedStereoCamera(cam_left, cam_right, camera)
-    with VisualOdometryStereoEngine(cam, display_results=False, debug=False, feature_type='ORB') as engine:
+    cam = CalibratedStereoCamera(
+            FeatureExtraction(cam_left, FEATURE_TYPE),
+            FeatureExtraction(cam_right, FEATURE_TYPE),
+            camera)
+    with VisualOdometryStereoEngine(cam, display_results=False, debug=False, feature_type=FEATURE_TYPE) as engine:
         for frame, pose in engine:
             break
 
@@ -28,7 +36,7 @@ def test_visual_odometry_stereo():
 def test_visual_odometry_kitti_stereo():
     traj = np.zeros((600, 600, 3), dtype=np.uint8)
 
-
+    pose = "00"
     images_kitti_l = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in xrange(NUM_IMAGES)]
     images_kitti_r = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_1/{}.png'.format(pose, str(i).zfill(6)) for i in xrange(NUM_IMAGES)]
     gt_path_kitti = "d:/datasets/data_odometry_gray/dataset/poses/{}.txt".format(pose)
@@ -37,27 +45,27 @@ def test_visual_odometry_kitti_stereo():
         ground_truth = [[float(i) for i in line.split()] for line in f.readlines()]
 
     error = 0
-    camera = StereoCamera(camera_kitti, camera_kitti, R, T, E, F, Q)
+    camera = StereoCamera(camera_kitti, camera_kitti_right, R_kitti, T_kitti, None, None, None)
 
-    cam_left = CalibratedCamera(VideoCapture(dataset_note9), camera.left)
-    cam_right = CalibratedCamera(VideoCapture(dataset_note9), camera.right)
-    cam = CalibratedStereoCamera(cam_left, cam_right, camera)
-    with VisualOdometryStereoEngine(cam, display_results=True, debug=False, feature_type='FREAK') as engine:
-        for img_id, _ in enumerate(images_kitti):
+    FEATURE_TYPE = 'FREAK'
+
+    cam_left = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_l), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.left)
+    cam_right = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_r), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.right)
+    cam = CalibratedStereoCamera(
+            FeatureExtraction(cam_left, FEATURE_TYPE),
+            FeatureExtraction(cam_right, FEATURE_TYPE),
+            camera)
+    with VisualOdometryStereoEngine(cam, display_results=True, debug=False, feature_type=FEATURE_TYPE) as engine:
+        for img_id, _ in enumerate(images_kitti_l):
             true_x = ground_truth[img_id][3]
             true_y = ground_truth[img_id][7]
             true_z = ground_truth[img_id][11]
 
-            if img_id > 0:
-                scale = np.sqrt((true_x - x_prev) ** 2 + (true_y - y_prev) ** 2 + (true_z - z_prev) ** 2)
-                x_prev, y_prev, z_prev = true_x, true_y, true_z
-            else:
-                scale = 1.0
-                x_prev, y_prev, z_prev = true_x, true_y, true_z
+            x_prev, y_prev, z_prev = true_x, true_y, true_z
 
-            frame, pose = engine.compute(absolute_scale=scale)
+            frame, pose = engine.compute()
             if pose:
-                t = pose.translation
+                t = pose.translation / 1000
 
                 error += np.sqrt((true_x - t[0]) ** 2 + 0 * (true_y - t[1]) ** 2 + (true_z - t[2]) ** 2)
 
@@ -71,12 +79,11 @@ def test_visual_odometry_kitti_stereo():
                 cv2.putText(traj, text, (20, 11), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
                 text = "true: x=%2fm y=%2fm z=%2fm" % (true_x, true_y, true_z)
                 cv2.putText(traj, text, (20, 22), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
-                text = "scale: %2f" % scale
-                cv2.putText(traj, text, (20, 33), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
                 text = "cumulative error: %2f " % error
                 cv2.putText(traj, text, (20, 44), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
 
             cv2.imshow('Trajectory', traj)
-            cv2.waitKey(1)
+            if cv2.waitKey(1) == 27:
+                break
 
     cv2.waitKey(0)
