@@ -6,7 +6,7 @@ import numpy as np
 from collections import namedtuple
 
 
-class EngineCapability(namedtuple('EngineCapability', 'inputs', 'outputs', 'misc')):
+class EngineCapability(namedtuple('EngineCapability', 'inputs outputs misc')):
     """A class describing Engine Capability
 
         inputs: a list of input Processor classes supported

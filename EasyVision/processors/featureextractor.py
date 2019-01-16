@@ -84,6 +84,10 @@ class FeatureExtraction(ProcessorBase):
         if self.display_results:
             self._draw_keypoints(image.image, keypoints)
 
+        #if isinstance(descriptors, cv2.UMat):
+        #    # this will enhance matching when using OCL detector/extractor
+        #    descriptors = descriptors.get()
+
         return image._replace(features=Features(keypoints, descriptors), feature_type=self._feature_type)
 
     def _draw_keypoints(self, image, keypoints):

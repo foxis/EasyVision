@@ -8,7 +8,11 @@ import numpy as np
 
 class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, num_features=10000, ratio=None, distance_thresh=None, reproj_thresh=None, *args, **kwargs):
+    def __init__(self, vision, feature_type=None, pose=None,
+                 num_features=None, nlevels=None,
+                 ratio=None, distance_thresh=None, reproj_thresh=None, reproj_error=None,
+                 min_dZ=None, max_dZ=None,
+                 *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, CalibratedStereoCamera):
             raise TypeError("Vision must be either CalibratedStereoCamera or ProcessorBase")
@@ -31,9 +35,9 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         defaults = {}
 
         if feature_type == 'ORB':
-            defaults['nfeatures'] = num_features
+            defaults['nfeatures'] = num_features if num_features is not None else 2000
             #defaults['scoreType'] = cv2.ORB_FAST_SCORE
-            defaults['nlevels'] = 16
+            defaults['nlevels'] = nlevels if nlevels is not None else 16
             defaults.update(kwargs)
             defaults.pop('enabled', None)
             defaults.pop('debug', None)
@@ -53,11 +57,16 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         self._distance_thresh = 100
         self._min_matches = 10
         self._reproj_thresh = 0.3
+        self._reproj_error = .5
+        self._dZ = 500
+        self._max_dZ = 5000
 
         if feature_type == 'ORB':
-            self._distance_thresh = 80
+            self._distance_thresh = 100
+            self._reproj_error = 2
         elif feature_type == 'FREAK':
             self._distance_thresh = 90
+            self._reproj_error = .2
         elif feature_type == 'SIFT':
             self._distance_thresh = 200
         elif feature_type == 'BRISK':
@@ -69,6 +78,12 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
             self._distance_thresh = distance_thresh
         if reproj_thresh is not None:
             self._reproj_thresh = reproj_thresh
+        if reproj_error is not None:
+            self._reproj_error = reproj_error
+        if min_dZ is not None:
+            self._dZ = min_dZ
+        if max_dZ is not None:
+            self._max_dZ = max_dZ
 
         super(VisualOdometryStereoEngine, self).__init__(_vision, *args, **kwargs)
 
@@ -77,33 +92,47 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         if not frame:
             return None
 
-        stereo_features = self._calculate_3d(frame.images[0].features, frame.images[1].features, frame.images[0].image)
+        stereo_features = self._calculate_3d(frame.images[0].features, frame.images[1].features)
 
         if self._last_3dfeatures is not None:
-            matches = self._match_features(self._last_3dfeatures[1], frame.images[0].features.descriptors,
-                    self._feature_type, self._ratio, self._distance_thresh/3, self._min_matches)
-
-            if self.debug:
-                text = "Number of 3d features: %i" % len(self._last_3dfeatures[0])
-                cv2.putText(self.features, text, (20, 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+            matches = self._match_features(self._last_3dfeatures[1], stereo_features[3],
+                    self._feature_type, self._ratio, self._distance_thresh / 3, self._min_matches)
 
             if matches is None or not matches:
                 self._last_3dfeatures = stereo_features
-                if self.debug:
-                    cv2.imshow("3D points", self.features)
 
                 return frame, self._pose
 
-            if self.debug:
-                text = "Number of matching features: %i" % len(matches)
-                cv2.putText(self.features, text, (20, 25), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
-
             points_3d = np.float32([self._last_3dfeatures[0][m.queryIdx] for m in matches])
-            points_2d = np.float32([frame.images[0].features.points[m.trainIdx].pt for m in matches])
-            ret, r, t, _ = cv2.solvePnPRansac(points_3d, points_2d, self._camera.left.matrix, None, reprojectionError=5)
+            new_points_3d = np.float32([stereo_features[2][m.trainIdx] for m in matches])
+            dZ = 3 * sum(i[0] ** 2 for i in self._last_pose.translation) ** .5 if self._last_pose else 10000
+            dZ = min(self._max_dZ, max(self._dZ, dZ))
+            self._dZ = dZ
+            dZ = 300
+            mask = [abs(a[2] - b[2]) < dZ for a, b in zip(points_3d, new_points_3d)]
+
+            if self.debug:
+                MIN = min(a[2] - b[2] for a, b in zip(points_3d, new_points_3d))
+                MAX = max(a[2] - b[2] for a, b in zip(points_3d, new_points_3d))
+
+            new_points_3d = np.float32([p for M, p in zip(mask, new_points_3d) if M])
+            points_3d = np.float32([p for M, p in zip(mask, points_3d) if M])
+            points_2d = np.float32([stereo_features[0][m.trainIdx] for M, m in zip(mask, matches) if M])
+            r, t = None, None
+            use_rt = False
+            if self._last_pose:
+                R, t = self._last_pose
+                r, _ = cv2.Rodrigues(R)
+                r *= -1
+                t *= -1 / 1.4
+                use_rt = True
+            ret, r, t, inliers = cv2.solvePnPRansac(points_3d, points_2d, self._camera.left.matrix, None, r, t, use_rt, reprojectionError=self._reproj_error)
             R, _ = cv2.Rodrigues(r * -1)
             t *= -1.4
-            if ret:
+
+            dZ = sum(i[0] ** 2 for i in t) ** .5
+
+            if ret and dZ < self._dZ:
                 if self._pose:
                     self._pose = self._pose._replace(translation=self._pose.translation + self._pose.rotation.dot(t),
                                                      rotation=R.dot(self._pose.rotation))
@@ -111,13 +140,70 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
                     self._pose = Pose(R, t)
                 self._last_pose = Pose(R, t)
 
+            if self.debug:
+                if dZ > 3000:
+                    print 'fail'
+                    for a, b in zip(points_3d, new_points_3d):
+                        print a, b
+
+                cv2.rectangle(self.features, (0, 0), (600, 600), (0, 0, 0), -1)
+
+                scale = max(max(p[0], p[2]) for p in points_3d)
+                yscale = max(p[1] for p in points_3d)
+                scale = 50000
+                yscale = 1000
+                #for p in point_3d:
+                #    c = max(0, 255 - int(200 * p[1] / yscale))
+                #    cv2.circle(self.features, (300 + int(300 * p[0] / scale), 600 - int(600 * p[2] / scale)), 1, (0, 0, c))
+
+                for a, b in zip(points_3d, new_points_3d):
+                    c = max(0, 255 - int(200 * p[1] / yscale))
+                    cv2.line(self.features,
+                        (300 + int(300 * a[0] / scale), 600 - int(600 * a[2] / scale)),
+                        (300 + int(300 * b[0] / scale), 600 - int(600 * b[2] / scale)),
+                        (0, 0, c))
+
+                text = "Number of last 3d features: %i" % len(self._last_3dfeatures[0])
+                cv2.putText(self.features, text, (20, 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                text = "Number of new 3d features: %i" % len(stereo_features[2])
+                cv2.putText(self.features, text, (20, 25), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+
+                text = "Number of matching features: %i" % len(points_2d)
+                cv2.putText(self.features, text, (20, 40), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+
+                text = "Number of inliers: %i" % len(inliers)
+                cv2.putText(self.features, text, (20, 55), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+
+                text = "dZ min: %f" % MIN
+                cv2.putText(self.features, text, (20, 70), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+                text = "dZ max: %f" % MAX
+                cv2.putText(self.features, text, (20, 85), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+
+                text = "dZ pos: %f" % (dZ / 3)
+                cv2.putText(self.features, text, (20, 100), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1, 8)
+
+                img = frame.images[0].image.get() if isinstance(frame.images[0].image, cv2.UMat) else frame.images[0].image
+
+                #left, right = stereo_features[:2]
+                #for l, r in zip(left, right):
+                #    cv2.line(img, (int(l[0]), int(l[1])), (int(r[0]), int(r[1])), (0, 0, 255))
+
+                left, right = self._last_lr
+
+                left = [left[m.queryIdx] for M, m in zip(mask, matches) if M]
+                for l, r in zip(left, points_2d):
+                    cv2.line(img, (int(l[0]), int(l[1])), (int(r[0]), int(r[1])), (255, 0, 0))
+
+                cv2.imshow("Left feature matches to right", img)
+
         if self.debug:
             cv2.imshow("3D points", self.features)
+            self._last_lr = stereo_features[:2]
 
-        self._last_3dfeatures = stereo_features
+        self._last_3dfeatures = stereo_features[2:]
         return frame, self._pose
 
-    def _calculate_3d(self, featuresA, featuresB, img):
+    def _calculate_3d(self, featuresA, featuresB):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = featuresB
         matches = self._match_features(descriptorsA, descriptorsB, self._feature_type,
@@ -144,22 +230,16 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         left = np.float32([kp.pt for kp in kpsA])
         right = np.float32([kp.pt for kp in kpsB])
 
-        #E, mask = cv2.findEssentialMat(left, right, focal=self._camera.left.focal_point[0], pp=self._camera.left.center,
-        #                               method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
+        E, mask = cv2.findEssentialMat(left, right, focal=self._camera.left.focal_point[0], pp=self._camera.left.center,
+                                       method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
 
-        #kpsA = [kp for m, kp in zip(mask, kpsA) if m]
-        #kpsB = [kp for m, kp in zip(mask, kpsB) if m]
-        #dA = np.array([d for m, d in zip(mask, dA) if m])
-        #dB = np.array([d for m, d in zip(mask, dB) if m])
+        kpsA = [kp for m, kp in zip(mask, kpsA) if m]
+        kpsB = [kp for m, kp in zip(mask, kpsB) if m]
+        dA = np.array([d for m, d in zip(mask, dA) if m])
+        dB = np.array([d for m, d in zip(mask, dB) if m])
 
-        #left = np.float32([kp.pt for kp in kpsA])
-        #right = np.float32([kp.pt for kp in kpsB])
-
-        if self.debug:
-            img = img.get() if isinstance(img, cv2.UMat) else img
-            for l, r in zip(left, right):
-                cv2.line(img, (int(l[0]), int(l[1])), (int(r[0]), int(r[1])), (0, 0, 255))
-            cv2.imshow("Left feature matches to right", img)
+        left = np.float32([kp.pt for kp in kpsA])
+        right = np.float32([kp.pt for kp in kpsB])
 
         if self._camera.left.projection is None or self._camera.left.projection is None:
             P1 = np.dot(self._camera.left.matrix, np.hstack((np.eye(3, 3), np.zeros((3, 1)))))
@@ -172,22 +252,11 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         point_4d = point_4d_hom / np.tile(point_4d_hom[-1, :], (4, 1))
         point_3d = point_4d[:3, :].T
 
-        if self.debug:
-            cv2.rectangle(self.features, (0, 0), (600, 600), (0, 0, 0), -1)
-
-            scale = max(max(p[0], p[2]) for p in point_3d)
-            yscale = max(p[1] for p in point_3d)
-            scale = 50000
-            yscale = 1000
-            for p in point_3d:
-                c = max(0, 255 - int(200 * p[1] / yscale))
-                cv2.circle(self.features, (300 + int(300 * p[0] / scale), 600 - int(600 * p[2] / scale)), 1, (0, 0, c))
-
         if umat_descriptors:
             dA = cv2.UMat(dA)
             dB = cv2.UMat(dB)
 
-        return point_3d, dA
+        return left, right, point_3d, dA
 
     @property
     def feature_type(self):

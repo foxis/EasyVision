@@ -47,15 +47,15 @@ def test_visual_odometry_kitti_stereo():
     error = 0
     camera = StereoCamera(camera_kitti, camera_kitti_right, R_kitti, T_kitti, None, None, None)
 
-    FEATURE_TYPE = 'FREAK'
+    FEATURE_TYPE = 'ORB'
 
-    cam_left = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_l), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.left)
-    cam_right = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_r), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.right)
+    cam_left = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_l), ocl=True, _color=cv2.COLOR_BGR2GRAY), camera.left)
+    cam_right = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_r), ocl=True, _color=cv2.COLOR_BGR2GRAY), camera.right)
     cam = CalibratedStereoCamera(
             FeatureExtraction(cam_left, FEATURE_TYPE),
             FeatureExtraction(cam_right, FEATURE_TYPE),
             camera)
-    with VisualOdometryStereoEngine(cam, display_results=True, debug=False, feature_type=FEATURE_TYPE) as engine:
+    with VisualOdometryStereoEngine(cam, display_results=True, debug=True, feature_type=FEATURE_TYPE) as engine:
         for img_id, _ in enumerate(images_kitti_l):
             true_x = ground_truth[img_id][3]
             true_y = ground_truth[img_id][7]

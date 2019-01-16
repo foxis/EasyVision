@@ -8,7 +8,7 @@ import numpy as np
 
 class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, num_features=10000, reproj_thresh=0.3, *args, **kwargs):
+    def __init__(self, vision, feature_type=None, pose=None, num_features=10000, reproj_thresh=0.3, reproj_error=1, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -50,6 +50,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         self._distance_thresh = 30
         self._min_matches = 100
         self._reproj_thresh = reproj_thresh
+        self._reproj_error = reproj_error
 
         super(VisualOdometry3D2DEngine, self).__init__(_vision, *args, **kwargs)
 
@@ -77,7 +78,15 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
                 return frame, self._pose
             points_3d = np.float32([self._images[-3][1].points[m.queryIdx] for m in matches])
             points_2d = np.float32([self._images[-1][0].points[m.trainIdx].pt for m in matches])
-            ret, r, t, _ = cv2.solvePnPRansac(points_3d, points_2d, self._camera.matrix, None, reprojectionError=5)
+            r, t = None, None
+            use_rt = False
+            if self._last_pose:
+                R, t = self._last_pose
+                r, _ = cv2.Rodrigues(R)
+                r *= -1
+                t *= -1
+                use_rt = True
+            ret, r, t, _ = cv2.solvePnPRansac(points_3d, points_2d, self._camera.matrix, None, r, t, use_rt, reprojectionError=self._reproj_error)
             R, _ = cv2.Rodrigues(r * -1)
             t *= -1
             if ret:
