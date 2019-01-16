@@ -15,7 +15,7 @@ from .common import *
 @mark.main
 def test_visual_odometry_stereo():
     camera = StereoCamera(camera_kitti, camera_kitti_right, R_kitti, T_kitti, None, None, None)
-    FEATURE_TYPE = 'FREAK'
+    FEATURE_TYPE = 'ORB'
 
     images_kitti_l = ['test_data/kitti00/image_0/{}.png'.format(str(i).zfill(6)) for i in xrange(3)]
     images_kitti_r = ['test_data/kitti00/image_1/{}.png'.format(str(i).zfill(6)) for i in xrange(3)]
@@ -28,8 +28,9 @@ def test_visual_odometry_stereo():
             FeatureExtraction(cam_right, FEATURE_TYPE),
             camera)
     with VisualOdometryStereoEngine(cam, display_results=False, debug=False, feature_type=FEATURE_TYPE) as engine:
-        for frame, pose in engine:
-            break
+        for i, _ in enumerate(engine):
+            if i > 1:
+                break
 
 
 @mark.complex
