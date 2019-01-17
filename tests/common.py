@@ -70,14 +70,17 @@ as_dict_stereo = {
 # KITTI/note9/tum database
 camera_kitti = PinholeCamera.from_parameters((1241, 376), (718.8560, 718.8560), (607.1928, 185.2157), [0.0, 0.0, 0.0, 0.0, 0.0])
 camera_kitti_right = PinholeCamera.from_parameters((1241, 376), (718.8560, 718.8560), (607.1928, 185.2157), [0.0, 0.0, 0.0, 0.0, 0.0])
-T_kitti =  [[-386.1448], [0], [0]]
-R_kitti =  [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+weird_c = 1.4
+T_kitti = [[-386.1448 * weird_c], [0], [0]]
+R_kitti = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
-camera_note9 = PinholeCamera.from_parameters((1920, 1080), (1920/2, 1080/2), (1920/2, 1080/2), [0.0, 0.0, 0.0, 0.0, 0.0])
-camera_tum = PinholeCamera.from_parameters((1280, 1024),
+camera_note9 = PinholeCamera.from_parameters((1920, 1080), (1920/2, 1080/2), (1920 / 2, 1080 / 2), [0.0, 0.0, 0.0, 0.0, 0.0])
+camera_tum = PinholeCamera.from_parameters(
+    (1280, 1024),
     (1280 * 0.535719308086809, 1024 * 0.669566858850269),
     (1280 * 0.493248545285398, 1024 * 0.500408664348414),
-    [0.897966326944875 , 0.0, 0.0, 0.0, 0.0])
+    [0.897966326944875, 0.0, 0.0, 0.0, 0.0]
+)
 
 NUM_IMAGES = 1591
 
