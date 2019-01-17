@@ -80,7 +80,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
     def _compute_match(self, current_image, absolute_scale):
         if not self._last_image:
-            self._last_kps = np.array([x.pt for x in current_image.features.points], dtype=np.float32)
+            self._last_kps = np.float32([x.pt for x in current_image.features.points])
         else:
             M = self._match_features(self._last_features, current_image.features)
 

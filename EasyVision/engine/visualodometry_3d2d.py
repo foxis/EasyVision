@@ -8,7 +8,7 @@ import numpy as np
 
 class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, num_features=10000, reproj_thresh=0.3, reproj_error=1, *args, **kwargs):
+    def __init__(self, vision, feature_type=None, pose=None, num_features=10000, reproj_thresh=0.3, reproj_error=5, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -47,7 +47,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         self._images = []
 
         self._ratio = 0.7
-        self._distance_thresh = 30
+        self._distance_thresh = 100
         self._min_matches = 100
         self._reproj_thresh = reproj_thresh
         self._reproj_error = reproj_error
@@ -73,20 +73,37 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
         if len(self._images) == 3 and self._images[-3][1] is not None:
             # TODO filter those features that have similar distance from -3 and -2
-            matches = self._match_features(self._images[-3][1].descriptors, self._images[-1][0].descriptors, self._feature_type, self._ratio, self._distance_thresh, self._min_matches)
+            matches = self._match_features(self._images[-3][1].descriptors, self._images[-1][0].descriptors,
+                                           self._feature_type, self._ratio, self._distance_thresh / 3, self._min_matches)
+
             if matches is None or not matches:
                 return frame, self._pose
+
             points_3d = np.float32([self._images[-3][1].points[m.queryIdx] for m in matches])
             points_2d = np.float32([self._images[-1][0].points[m.trainIdx].pt for m in matches])
-            r, t = None, None
+
+            _r, _t = None, None
             use_rt = False
             if self._last_pose:
-                R, t = self._last_pose
-                r, _ = cv2.Rodrigues(R)
-                r *= -1
-                t *= -1
+                R, _t = self._last_pose
+                _r, _ = cv2.Rodrigues(R)
+                _r *= -1
+                _t *= -1
                 use_rt = True
-            ret, r, t, _ = cv2.solvePnPRansac(points_3d, points_2d, self._camera.matrix, None, r, t, use_rt, reprojectionError=self._reproj_error)
+
+            for iteration in range(10):
+                ret, r, t, inliers = cv2.solvePnPRansac(points_3d, points_2d, self._camera.matrix, None,
+                                                  _r, _t, use_rt, reprojectionError=self._reproj_error, confidence=.999 - .1 * iteration)
+                projected_2d, _ = cv2.projectPoints(points_3d, r, t, self.camera.matrix, None)
+
+                reproj_error_inliers = sum(p.dot(p) ** .5 for i, p in enumerate(a - b[0] for a, b in zip(points_2d, projected_2d)) if i in inliers) / len(inliers)
+                if reproj_error_inliers < self._reproj_error:
+                    break
+                else:
+                    print 'failed to find inliers', reproj_error_inliers, '<', self._reproj_error
+            else:
+                ret = False
+
             R, _ = cv2.Rodrigues(r * -1)
             t *= -1
             if ret:
@@ -106,7 +123,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
                         cv2.circle(img[2], (int(l[0]), int(l[1])), 1, (0, 0, 255))
                         cv2.line(img[2], (int(l[0]), int(l[1])), (int(c[0]), int(c[1])), (0, 0, 255))
                 if i == 0:
-                    cv2.imshow("stack %i" %i, img[2])
+                    cv2.imshow("stack %i" % i, img[2])
 
         return frame, self._pose
 
@@ -209,11 +226,11 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         if self.debug:
             cv2.rectangle(self.features, (0, 0), (600, 600), (0, 0, 0), -1)
 
-            scale = max(max(p[0], p[2]) for p in point_3d)
-            yscale = max(p[1] for p in point_3d)
+            MIN, MAX = min(p[1] for p in point_3d), max(p[1] for p in point_3d)
+            yscale = MAX - MIN
             scale = 50
             for p in point_3d:
-                cv2.circle(self.features, (300 + int(300 * p[0] / scale), 600 - int(600 * p[2] / scale)), 1, (0, 0, 255 - int(200 * p[1] / yscale)))
+                cv2.circle(self.features, (300 + int(300 * p[0] / scale), 600 - int(600 * p[2] / scale)), 1, (0, 0, 255 - int(200 * (p[1] - MIN) / yscale)))
             cv2.imshow("3D points", self.features)
 
         if umat_descriptors:

@@ -17,7 +17,7 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
     __slots__ = ()
 
     def __new__(cls, points, descriptors):
-        points = [KeyPoint(pt.pt, pt.size, pt.angle, pt.response, pt.octave, pt.class_id) for pt in points]
+        points = [KeyPoint(pt.pt, pt.size, pt.angle, pt.response, pt.octave, pt.class_id) for pt in points] if len(points) and isinstance(points[0], cv2.KeyPoint) else points
         return super(Features, cls).__new__(cls, points, descriptors)
 
     @property
