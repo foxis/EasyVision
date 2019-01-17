@@ -29,7 +29,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         if feature_type == 'ORB':
             defaults['nfeatures'] = num_features
             #defaults['scoreType'] = cv2.ORB_FAST_SCORE
-            defaults['nlevels'] = 16
+            defaults['nlevels'] = 4
             defaults.update(kwargs)
             defaults.pop('enabled', None)
             defaults.pop('debug', None)
@@ -48,7 +48,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
         self._ratio = 0.7
         self._distance_thresh = 100
-        self._min_matches = 100
+        self._min_matches = 50
         self._reproj_thresh = reproj_thresh
         self._reproj_error = reproj_error
 
@@ -194,18 +194,16 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
         E, mask = cv2.findEssentialMat(current, last, focal=self._camera.focal_point[0], pp=self._camera.center,
                                        method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
+        mask = np.array([1 if m and (a - b).dot(a - b) > .5 else 0 for m, a, b in zip(mask, last, current)], dtype=mask.dtype)
 
-        kpsA = [kp for m, kp in zip(mask, kpsA) if m]
-        kpsB = [kp for m, kp in zip(mask, kpsB) if m]
-        dA = np.array([d for m, d in zip(mask, dA) if m])
-        dB = np.array([d for m, d in zip(mask, dB) if m])
+        if sum(mask) < self._min_matches:
+            return None, None, None
 
-        last = np.float32([kp.pt for kp in kpsA])
-        current = np.float32([kp.pt for kp in kpsB])
+        ret, R, t, mask = cv2.recoverPose(E, current, last, focal=self._camera.focal_point[0], pp=self._camera.center, mask=mask)
 
-        ret, R, t, mask = cv2.recoverPose(E, current, last, focal=self._camera.focal_point[0], pp=self._camera.center)
+        dZ = sum(i[0] ** 2 for i in t) ** .5
 
-        if not ret:
+        if not ret or dZ < .000001:
             return None, None, None
 
         kpsA = [kp for m, kp in zip(mask, kpsA) if m]
@@ -227,7 +225,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             cv2.rectangle(self.features, (0, 0), (600, 600), (0, 0, 0), -1)
 
             MIN, MAX = min(p[1] for p in point_3d), max(p[1] for p in point_3d)
-            yscale = MAX - MIN
+            yscale = MAX - MIN+1
             scale = 50
             for p in point_3d:
                 cv2.circle(self.features, (300 + int(300 * p[0] / scale), 600 - int(600 * p[2] / scale)), 1, (0, 0, 255 - int(200 * (p[1] - MIN) / yscale)))

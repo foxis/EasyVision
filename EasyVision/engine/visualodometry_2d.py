@@ -8,7 +8,8 @@ import numpy as np
 
 class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, num_features=10000, min_features=1000, reproj_thresh=0.3, debug=False, display_results=False, *args, **kwargs):
+    def __init__(self, vision, feature_type=None, pose=None, num_features=2000, min_features=1000,
+                 reproj_thresh=None, debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -32,17 +33,20 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             self._extract = True
             defaults = dict()
 
+        self._reproj_thresh = .3
         if feature_type == 'ORB':
             defaults['nfeatures'] = num_features
             #defaults['scoreType'] = cv2.ORB_FAST_SCORE
-            defaults['nlevels'] = 16
+            defaults['nlevels'] = 4
             defaults.update(kwargs)
+            self._reproj_thresh = .5
 
         self._feature_type = feature_type
         _vision = FeatureExtraction(vision, feature_type=feature_type, extract=self._extract, **defaults) if not feature_extractor_provided else vision
 
         self._min_features = min_features
-        self._reproj_thresh = reproj_thresh
+        if reproj_thresh is not None:
+            self._reproj_thresh = reproj_thresh
 
         self._lk_params = dict(
             winSize=(21, 21),
@@ -69,13 +73,6 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
         self._last_image = current_image
 
-        if self.debug:
-            img = current_image.image
-            for x, y in self._last_kps:
-                cv2.circle(img, (x, y), 5, (0, 255, 0))
-        if self.display_results or self.debug:
-            cv2.imshow(self.name, current_image.image)
-
         return frame, pose
 
     def _compute_match(self, current_image, absolute_scale):
@@ -92,23 +89,30 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
             self._last_kps = current
 
-            if self.debug:
-                for a, b in zip(last, current):
-                    cv2.line(current_image.image, (a[0], a[1]), (b[0], b[1]), (0, 0, 255))
-
             E, mask = cv2.findEssentialMat(current, last,
                                            focal=self._camera.focal_point[0], pp=self._camera.center,
                                            method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
-            #last = np.float32([kp for m, kp in zip(mask, last) if m])
-            #current = np.float32([kp for m, kp in zip(mask, current) if m])
-            _, R, t, mask = cv2.recoverPose(E, current, last,
-                                            focal=self._camera.focal_point[0], pp=self._camera.center)
+            mask = np.array([1 if m and (a - b).dot(a - b) > .5 else 0 for m, a, b in zip(mask, last, current)], dtype=mask.dtype)
+
+            ret, R, t, _mask = cv2.recoverPose(E, current, last, focal=self._camera.focal_point[0], pp=self._camera.center, mask=mask)
+
+            if not ret:
+                return self._pose
+
             if self._pose:
                 self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
                                                 rotation=R.dot(self._pose.rotation))
             else:
                 self._pose = Pose(R, t)
             self._last_pose = Pose(R, t)
+
+            if self.debug:
+                img = cv2.cvtColor(current_image.image, cv2.COLOR_GRAY2BGR)
+                for m, a, b in zip(mask, last, current):
+                    cv2.line(img, (a[0], a[1]), (b[0], b[1]), (0, 255 if m else 0, 0 if m else 255))
+                for m, p in zip(mask, self._last_kps):
+                    cv2.circle(img, (p[0], p[1]), 3, (0, 255 if m else 0, 0 if m else 255))
+                cv2.imshow(self.name, img)
 
         self._last_features = current_image.features
         return self._pose
@@ -121,8 +125,12 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             self._last_kps, cur_kps = self._track_features(self._last_image.image, current_image.image, self._last_kps)
 
             if self.debug:
-                for a, b in zip(self._last_kps, cur_kps):
-                    cv2.line(current_image.image, (a[0], a[1]), (b[0], b[1]), (0, 0, 255))
+                img = cv2.cvtColor(current_image.image, cv2.COLOR_GRAY2BGR)
+                for a, b in zip(last, current):
+                    cv2.line(img, (a[0], a[1]), (b[0], b[1]), (0, 0, 255))
+                for x, y in self._last_kps:
+                    cv2.circle(img, (x, y), 5, (0, 255, 0))
+                cv2.imshow(self.name, img)
 
             E, mask = cv2.findEssentialMat(cur_kps, self._last_kps,
                                            focal=self._camera.focal_point[0], pp=self._camera.center,
@@ -202,7 +210,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
         return kp1, kp2
 
-    def _match_features(self, featuresA, featuresB, ratio=0.7, distance_thresh=30, min_matches=5):
+    def _match_features(self, featuresA, featuresB, ratio=0.7, distance_thresh=80, min_matches=10):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = featuresB
 
