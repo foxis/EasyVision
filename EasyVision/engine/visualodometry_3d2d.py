@@ -185,16 +185,19 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
         kpsA = [kpsA[m.queryIdx] for m in matches]
         kpsB = [kpsB[m.trainIdx] for m in matches]
+        mask = [0.5 < 1 if p.dot(p) < 300 else 0 for p in (np.float32(a.pt) - np.float32(b.pt) for a, b in zip(last, current))]
 
-        dA = [descriptorsA[m.queryIdx] for m in matches]
-        dB = [descriptorsB[m.trainIdx] for m in matches]
+        kpsA = [p for m, p in zip(mask, kpsA)]
+        kpsB = [p for m, p in zip(mask, kpsB)]
+        dA = [descriptorsA[m.queryIdx] for M, m in zip(mask, matches)]
+        dB = [descriptorsB[m.trainIdx] for M, m in zip(mask, matches)]
 
         current = np.float32([kp.pt for kp in kpsB])
         last = np.float32([kp.pt for kp in kpsA])
 
         E, mask = cv2.findEssentialMat(current, last, focal=self._camera.focal_point[0], pp=self._camera.center,
                                        method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
-        mask = np.array([1 if m and (a - b).dot(a - b) > .5 else 0 for m, a, b in zip(mask, last, current)], dtype=mask.dtype)
+        #mask = np.array([1 if m and (a - b).dot(a - b) > .5 else 0 for m, a, b in zip(mask, last, current)], dtype=mask.dtype)
 
         if sum(mask) < self._min_matches:
             return None, None, None
