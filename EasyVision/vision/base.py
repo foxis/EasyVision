@@ -3,6 +3,8 @@ from EasyVision.base import *
 from collections import namedtuple
 from datetime import datetime
 from operator import itemgetter
+import cPickle
+import cv2
 
 
 class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'original', 'mask', 'features', 'feature_type'])):
@@ -39,11 +41,11 @@ class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'or
         return super(Image, cls).__new__(cls, source, image, original, mask, features, feature_type)
 
     def tobytes(self):
-        raise NotImplementedError()
+        return cPickle.dumps(self, protocol=-1)
 
     @staticmethod
     def frombytes(data):
-        raise NotImplementedError()
+        return cPickle.loads(data)
 
     def tobuffer(self):
         raise NotImplementedError()
@@ -51,6 +53,17 @@ class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'or
     @staticmethod
     def frombuffer(data):
         raise NotImplementedError()
+
+    def __reduce__(self):
+        d = (
+            None,
+            self.image.get() if isinstance(self.image, cv2.UMat) else self.image,
+            None,
+            self.mask.get() if isinstance(self.mask, cv2.UMat) else self.mask,
+            self.features,
+            self.feature_type,
+        )
+        return (self.__class__, d)
 
 
 class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 'images', 'processor_mask'])):
@@ -113,6 +126,20 @@ class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 
         if processor_mask is not None and not isinstance(processor_mask, tuple) and not isinstance(processor_mask, str):
             raise TypeError("Processor mask must be either a tuple of booleans or a string of 1 and 0")
         return "".join(i and "1" or "0" for i in processor_mask) if isinstance(processor_mask, tuple) else processor_mask
+
+    def tobytes(self):
+        return cPickle.dumps(self, protocol=-1)
+
+    @staticmethod
+    def frombytes(data):
+        return cPickle.loads(data)
+
+    def tobuffer(self):
+        raise NotImplementedError()
+
+    @staticmethod
+    def frombuffer(data):
+        raise NotImplementedError()
 
 
 class VisionBase(EasyVisionBase):

@@ -4,15 +4,15 @@ import numpy as np
 import multiprocessing as mp
 import multiprocessing.connection
 from .base import *
-from EasyVision.base import EasyVisionBase
 from EasyVision.exceptions import TimeoutError
 import functools
-import cProfile
 import cPickle
+#import os
+#import affinity
 
 
 Attr = namedtuple("Attr", ['name', 'method', 'args', 'kwargs'])
-multiprocessing.connection.BUFSIZE = 32 * 1024 * 1024
+multiprocessing.connection.BUFSIZE = 64 * 1024 * 1024
 
 
 class MultiProcessing(ProcessorBase, mp.Process):
@@ -96,7 +96,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
             self._cap_event.set()
         if not self._frame_event.wait(self._timeout):
             raise TimeoutError()
-        frame = cPickle.loads(self._frame_in.recv_bytes())
+        frame = Frame.frombytes(self._frame_in.recv_bytes())
         self._frame_event.clear()
         if isinstance(frame, Exception):
             raise frame
@@ -179,9 +179,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
 
     def _send_frame(self, frame):
         if not self._frame_event.is_set():
-            if isinstance(frame, Frame):
-                frame = frame._replace(images=tuple(i._replace(source=None) for i in frame.images))
-            data = cPickle.dumps(frame, protocol=-1)
+            data = frame.tobytes() if isinstance(frame, Frame) else cPickle.dumps(frame)
             self._frame_out.send_bytes(data)
             self._frame_event.set()
 
@@ -197,6 +195,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
                 self._send_frame(self._lazy_frame)
                 self._cap_event.clear()
             self._lazy_frame = self._vision.capture()
+            #print os.getpid(), affinity.get_process_affinity_mask(os.getpid())
             if not self._lazy_frame:
                 self._send_frame(None)
                 self.running.value = 0

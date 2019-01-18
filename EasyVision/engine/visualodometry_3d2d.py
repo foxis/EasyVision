@@ -4,6 +4,7 @@ from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin, Features
 import cv2
 import numpy as np
+from future_builtins import zip
 
 
 class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
@@ -201,7 +202,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
         kpsA = [kpsA[m.queryIdx] for m in matches]
         kpsB = [kpsB[m.trainIdx] for m in matches]
-        mask = [0.5 < p.dot(p) < 300*300 for p in (np.float32(a.pt) - np.float32(b.pt) for a, b in zip(kpsA, kpsB))]
+        mask = [0.5 < p[0] ** 2 + p[1] ** 2 < 200 * 200 for p in ((a.pt[0] - b.pt[0], a.pt[1] - b.pt[1]) for a, b in zip(kpsA, kpsB))]
         if sum(mask) < self._min_matches:
             print "prune fail"
             return None, None, None

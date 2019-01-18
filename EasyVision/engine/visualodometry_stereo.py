@@ -4,6 +4,7 @@ from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, StereoCamera, CalibratedStereoCamera, FeatureMatchingMixin
 import cv2
 import numpy as np
+from future_builtins import zip
 
 
 class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
@@ -27,6 +28,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
 
                 feature_type = fe[0].feature_type
                 feature_extractor_provided = True
+                print 'using %s features' % feature_type, vision.get_source('FeatureExtraction') is not None
             elif not feature_type:
                 raise TypeError("Feature type must be provided")
         else:
@@ -35,7 +37,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         defaults = {}
 
         if feature_type == 'ORB':
-            defaults['nfeatures'] = num_features if num_features is not None else 3000
+            defaults['nfeatures'] = num_features if num_features is not None else 6000
             #defaults['scoreType'] = cv2.ORB_FAST_SCORE
             defaults['nlevels'] = nlevels if nlevels is not None else 4
             defaults.update(kwargs)
@@ -96,6 +98,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
     def compute(self):
         frame = self.vision.capture()
         if not frame:
+            print 'no frame'
             return None
 
         stereo_features = self._calculate_3d(frame.images[0].features, frame.images[1].features)
@@ -206,8 +209,9 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
                     l, r = P
                     cv2.line(img, (int(l[0]), int(l[1]) + h), (int(r[0]), int(r[1]) + h), (0, 255 if i in inliers else 0, 0 if i in inliers else 255))
 
-                for l, n in zip(last_points_2d, new_points_2d):
-                    cv2.line(img, (int(l[0]), int(l[1])), (int(n[0]), int(n[1]) + h), (255, 0, 0))
+                for i, P in enumerate(zip(last_points_2d, new_points_2d)):
+                    l, n = P
+                    cv2.line(img, (int(l[0]), int(l[1])), (int(n[0]), int(n[1]) + h), (255 if i in inliers else 0, 0, 0 if i in inliers else 255))
 
                 for p in projected_2d:
                     cv2.circle(img, (int(p[0][0]), int(p[0][1]) + h), 3, (0, 0, 255))

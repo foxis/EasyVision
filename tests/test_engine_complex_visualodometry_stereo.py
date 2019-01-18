@@ -27,7 +27,7 @@ def test_visual_odometry_stereo():
             FeatureExtraction(cam_left, FEATURE_TYPE),
             FeatureExtraction(cam_right, FEATURE_TYPE),
             camera)
-    with VisualOdometryStereoEngine(cam, display_results=False, debug=False, feature_type=FEATURE_TYPE) as engine:
+    with VisualOdometryStereoEngine(cam, display_results=False, debug=False) as engine:
         for i, _ in enumerate(engine):
             if i > 1:
                 break
@@ -50,8 +50,8 @@ def test_visual_odometry_kitti_stereo():
 
     FEATURE_TYPE = 'ORB'
 
-    cam_left = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_l), ocl=True, _color=cv2.COLOR_BGR2GRAY), camera.left)
-    cam_right = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_r), ocl=True, _color=cv2.COLOR_BGR2GRAY), camera.right)
+    cam_left = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_l), ocl=False, _color=cv2.COLOR_BGR2GRAY), camera.left)
+    cam_right = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_r), ocl=False, _color=cv2.COLOR_BGR2GRAY), camera.right)
     cam = CalibratedStereoCamera(
             FeatureExtraction(cam_left, FEATURE_TYPE),
             FeatureExtraction(cam_right, FEATURE_TYPE),

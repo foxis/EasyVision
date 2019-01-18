@@ -4,6 +4,7 @@ from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin
 import cv2
 import numpy as np
+from future_builtins import zip
 
 
 class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
@@ -229,7 +230,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
         ptsA = [kpsA[m.queryIdx].pt for m in matches]
         ptsB = [kpsB[m.trainIdx].pt for m in matches]
-        mask = [0.5 < p.dot(p) < 200*200 for p in (np.float32(a) - np.float32(b) for a, b in zip(ptsA, ptsB))]
+        mask = [0.5 < p[0] ** 2 + p[1] ** 2 < 200 * 200 for p in ((a[0] - b[0], a[1] - b[1]) for a, b in zip(ptsA, ptsB))]
 
         ptsA = np.float32([p for m, p in zip(mask, ptsA) if m])
         ptsB = np.float32([p for m, p in zip(mask, ptsB) if m])

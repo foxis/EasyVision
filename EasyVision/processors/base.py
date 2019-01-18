@@ -2,6 +2,8 @@
 from EasyVision.vision.base import *
 import cv2
 import numpy as np
+import cPickle
+from future_builtins import zip
 
 
 class KeyPoint(namedtuple('KeyPoint', ['pt', 'size', 'angle', 'response', 'octave', 'class_id'])):
@@ -38,6 +40,23 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
         points = [KeyPoint.fromdict(pt) for pt in d['points']]
         descriptors = np.array(d['descriptors'], dtype=np.dtype(d['dtype']))
         return Features(points, descriptors)
+
+    def tobytes(self):
+        return cPickle.dumps(self, protocol=-1)
+
+    @staticmethod
+    def frombytes(data):
+        return cPickle.loads(data)
+
+    def tobuffer(self):
+        raise NotImplementedError()
+
+    @staticmethod
+    def frombuffer(data):
+        raise NotImplementedError()
+
+    def __reduce__(self):
+        return (self.__class__, (self.points, self.descriptors.get() if isinstance(self.descriptors, cv2.UMat) else self.descriptors))
 
 
 class ProcessorBase(VisionBase):
@@ -84,7 +103,7 @@ class ProcessorBase(VisionBase):
     def get_source(self, name):
         if self.__class__.__name__ == name:
             return self
-        elif isinstance(self._vision, ProcessorBase):
+        elif isinstance(self._vision, ProcessorBase) or self._vision.__class__.__name__ == 'CameraPairProxy':
             return self._vision.get_source(name)
         elif self._vision.name == name:
             return self._vision

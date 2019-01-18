@@ -129,6 +129,7 @@ class FeatureMatchingMixin(object):
             return None
 
         matches = [M[0] for M in matches if len(M) == 2 and M[0].distance < M[1].distance * ratio and M[0].distance < distance_thresh]
+
         if len(matches) < min_matches:
             return None
 
