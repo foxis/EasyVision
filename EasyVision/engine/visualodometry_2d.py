@@ -8,8 +8,9 @@ import numpy as np
 
 class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, num_features=2000, min_features=1000,
-                 reproj_thresh=None, debug=False, display_results=False, *args, **kwargs):
+    def __init__(self, vision, feature_type=None, pose=None, num_features=6000, min_features=1000,
+                 min_matches=30, distance_thresh=None, ratio=.7, reproj_thresh=None,
+                 debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -33,6 +34,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             self._extract = True
             defaults = dict()
 
+        self._distance_thresh = 200
         self._reproj_thresh = .3
         if feature_type == 'ORB':
             defaults['nfeatures'] = num_features
@@ -40,13 +42,13 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             defaults['nlevels'] = 4
             defaults.update(kwargs)
             self._reproj_thresh = .5
+            self._distance_thresh = 100
 
         self._feature_type = feature_type
         _vision = FeatureExtraction(vision, feature_type=feature_type, extract=self._extract, **defaults) if not feature_extractor_provided else vision
 
         self._min_features = min_features
-        if reproj_thresh is not None:
-            self._reproj_thresh = reproj_thresh
+
 
         self._lk_params = dict(
             winSize=(21, 21),
@@ -60,7 +62,12 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         self._last_features = None
         self._last_pose = None
         self._pose = pose
-
+        self._min_matches = min_matches
+        self._ratio = ratio
+        if distance_thresh is not None:
+            self._distance_thresh = distance_thresh
+        if reproj_thresh is not None:
+            self._reproj_thresh = reproj_thresh
         super(VisualOdometry2DEngine, self).__init__(_vision, debug=debug, display_results=display_results, *args, **kwargs)
 
     def compute(self, absolute_scale=1.0):
@@ -82,6 +89,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             M = self._match_features(self._last_features, current_image.features)
 
             if M is None:
+                print "failed to find matches"
                 return self._pose
             last, current = M
             #if len(current) < self._min_features:
@@ -92,11 +100,11 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             E, mask = cv2.findEssentialMat(current, last,
                                            focal=self._camera.focal_point[0], pp=self._camera.center,
                                            method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
-            mask = np.array([1 if m and (a - b).dot(a - b) > .5 else 0 for m, a, b in zip(mask, last, current)], dtype=mask.dtype)
 
             ret, R, t, _mask = cv2.recoverPose(E, current, last, focal=self._camera.focal_point[0], pp=self._camera.center, mask=mask)
 
             if not ret:
+                print "failed to recoverPose"
                 return self._pose
 
             if self._pose:
@@ -108,10 +116,10 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
             if self.debug:
                 img = cv2.cvtColor(current_image.image, cv2.COLOR_GRAY2BGR)
+                img = img.get() if isinstance(img, cv2.UMat) else img
                 for m, a, b in zip(mask, last, current):
-                    cv2.line(img, (a[0], a[1]), (b[0], b[1]), (0, 255 if m else 0, 0 if m else 255))
-                for m, p in zip(mask, self._last_kps):
-                    cv2.circle(img, (p[0], p[1]), 3, (0, 255 if m else 0, 0 if m else 255))
+                    cv2.line(img, (int(a[0]), int(a[1])), (int(b[0]), int(b[1])), (0, 255 if m else 0, 0 if m else 255))
+                    cv2.circle(img, (int(a[0]), int(a[1])), 3, (0, 255 if m else 0, 0 if m else 255))
                 cv2.imshow(self.name, img)
 
         self._last_features = current_image.features
@@ -210,16 +218,24 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
         return kp1, kp2
 
-    def _match_features(self, featuresA, featuresB, ratio=0.7, distance_thresh=80, min_matches=10):
+    def _match_features(self, featuresA, featuresB):
         kpsA, descriptorsA = featuresA
         kpsB, descriptorsB = featuresB
 
-        matches = super(VisualOdometry2DEngine, self)._match_features(descriptorsA, descriptorsB, self._feature_type, ratio, distance_thresh, min_matches)
+        matches = super(VisualOdometry2DEngine, self)._match_features(descriptorsA, descriptorsB, self._feature_type, self._ratio, self._distance_thresh, self._min_matches)
 
         if matches is None or not matches:
             return None
 
-        ptsA = np.float32([kpsA[m.queryIdx].pt for m in matches])
-        ptsB = np.float32([kpsB[m.trainIdx].pt for m in matches])
+        ptsA = [kpsA[m.queryIdx].pt for m in matches]
+        ptsB = [kpsB[m.trainIdx].pt for m in matches]
+        mask = [0.5 < p.dot(p) < 200*200 for p in (np.float32(a) - np.float32(b) for a, b in zip(ptsA, ptsB))]
+
+        ptsA = np.float32([p for m, p in zip(mask, ptsA) if m])
+        ptsB = np.float32([p for m, p in zip(mask, ptsB) if m])
+
+        if len(ptsA) < self._min_matches:
+            print "prune fail"
+            return None
 
         return ptsA, ptsB

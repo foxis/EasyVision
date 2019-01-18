@@ -8,7 +8,8 @@ import numpy as np
 
 class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, num_features=10000, reproj_thresh=0.3, reproj_error=5, *args, **kwargs):
+    def __init__(self, vision, feature_type=None, pose=None, num_features=3000,
+                 min_matches=30, distance_thresh=None, reproj_thresh=None, reproj_error=None, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -26,6 +27,9 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             raise ValueError('FAST and GFTT features not supported')
 
         defaults = {}
+        self._distance_thresh = 200
+        self._reproj_thresh = .3
+        self._reproj_error = 6
         if feature_type == 'ORB':
             defaults['nfeatures'] = num_features
             #defaults['scoreType'] = cv2.ORB_FAST_SCORE
@@ -34,6 +38,9 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             defaults.pop('enabled', None)
             defaults.pop('debug', None)
             defaults.pop('display_results', None)
+            self._reproj_error = 18
+            self._reproj_thresh = .5
+            self._distance_thresh = 100
 
         self._feature_type = feature_type
         _vision = FeatureExtraction(vision, feature_type=feature_type, **defaults) if not feature_extractor_provided else vision
@@ -47,10 +54,14 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         self._images = []
 
         self._ratio = 0.7
-        self._distance_thresh = 100
-        self._min_matches = 50
-        self._reproj_thresh = reproj_thresh
-        self._reproj_error = reproj_error
+        self._min_matches = min_matches
+
+        if distance_thresh is not None:
+            self._distance_thresh = distance_thresh
+        if reproj_thresh is not None:
+            self._reproj_thresh = reproj_thresh
+        if reproj_error is not None:
+            self._reproj_thresh = reproj_error
 
         super(VisualOdometry3D2DEngine, self).__init__(_vision, *args, **kwargs)
 
@@ -77,6 +88,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
                                            self._feature_type, self._ratio, self._distance_thresh / 3, self._min_matches)
 
             if matches is None or not matches:
+                print "failed to find matches"
                 return frame, self._pose
 
             points_3d = np.float32([self._images[-3][1].points[m.queryIdx] for m in matches])
@@ -114,16 +126,20 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
                     self._pose = Pose(R, t)
                 self._last_pose = Pose(R, t)
 
-        if self.display_results and featuresA is not None and featuresB is not None:
-            for i, img in enumerate(self._images):
-                if i == 0 and self.debug:
-                    last = [kp.pt for kp in featuresA.points]
-                    current = [kp.pt for kp in featuresB.points]
-                    for l, c in zip(last, current):
-                        cv2.circle(img[2], (int(l[0]), int(l[1])), 1, (0, 0, 255))
-                        cv2.line(img[2], (int(l[0]), int(l[1])), (int(c[0]), int(c[1])), (0, 0, 255))
-                if i == 0:
-                    cv2.imshow("stack %i" % i, img[2])
+            if self.debug and featuresA is not None and featuresB is not None:
+                img = cv2.cvtColor(self._images[1][2], cv2.COLOR_GRAY2BGR)
+                img = img.get() if isinstance(img, cv2.UMat) else img
+                last = [kp.pt for kp in featuresA.points]
+                current = [kp.pt for kp in featuresB.points]
+                for i, p in enumerate(zip(last, current)):
+                    a, b = p
+                    m = i in inliers
+                    cv2.line(img, (int(a[0]), int(a[1])), (int(b[0]), int(b[1])), (0, 255 if m else 0, 0 if m else 255))
+                    cv2.circle(img, (int(a[0]), int(a[1])), 3, (0, 255 if m else 0, 0 if m else 255))
+                for i in inliers:
+                    p = projected_2d[i][0]
+                    cv2.circle(img, (int(p[0][0]), int(p[0][1])), 2, (255, 0, 0))
+                cv2.imshow(self.name, img)
 
         return frame, self._pose
 
@@ -185,28 +201,26 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
         kpsA = [kpsA[m.queryIdx] for m in matches]
         kpsB = [kpsB[m.trainIdx] for m in matches]
-        mask = [0.5 < 1 if p.dot(p) < 300 else 0 for p in (np.float32(a.pt) - np.float32(b.pt) for a, b in zip(last, current))]
+        mask = [0.5 < p.dot(p) < 300*300 for p in (np.float32(a.pt) - np.float32(b.pt) for a, b in zip(kpsA, kpsB))]
+        if sum(mask) < self._min_matches:
+            print "prune fail"
+            return None, None, None
 
-        kpsA = [p for m, p in zip(mask, kpsA)]
-        kpsB = [p for m, p in zip(mask, kpsB)]
-        dA = [descriptorsA[m.queryIdx] for M, m in zip(mask, matches)]
-        dB = [descriptorsB[m.trainIdx] for M, m in zip(mask, matches)]
+        kpsA = [p for M, p in zip(mask, kpsA) if M]
+        kpsB = [p for M, p in zip(mask, kpsB) if M]
+        dA = [descriptorsA[m.queryIdx] for M, m in zip(mask, matches) if M]
+        dB = [descriptorsB[m.trainIdx] for M, m in zip(mask, matches) if M]
 
         current = np.float32([kp.pt for kp in kpsB])
         last = np.float32([kp.pt for kp in kpsA])
 
         E, mask = cv2.findEssentialMat(current, last, focal=self._camera.focal_point[0], pp=self._camera.center,
                                        method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
-        #mask = np.array([1 if m and (a - b).dot(a - b) > .5 else 0 for m, a, b in zip(mask, last, current)], dtype=mask.dtype)
-
-        if sum(mask) < self._min_matches:
-            return None, None, None
 
         ret, R, t, mask = cv2.recoverPose(E, current, last, focal=self._camera.focal_point[0], pp=self._camera.center, mask=mask)
 
-        dZ = sum(i[0] ** 2 for i in t) ** .5
-
-        if not ret or dZ < .000001:
+        if not ret:
+            print "recoverPose fail"
             return None, None, None
 
         kpsA = [kp for m, kp in zip(mask, kpsA) if m]
