@@ -47,12 +47,12 @@ class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'or
     def frombytes(data):
         return cPickle.loads(data)
 
-    def tobuffer(self):
-        raise NotImplementedError()
+    def tobuffer(self, buf):
+        cPickle.dump(self, buf, protocol=-1)
 
     @staticmethod
-    def frombuffer(data):
-        raise NotImplementedError()
+    def frombuffer(buf):
+        return cPickle.load(self, buf)
 
     def __reduce__(self):
         d = (
@@ -134,12 +134,12 @@ class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 
     def frombytes(data):
         return cPickle.loads(data)
 
-    def tobuffer(self):
-        raise NotImplementedError()
+    def tobuffer(self, buf):
+        cPickle.dump(self, buf, protocol=-1)
 
     @staticmethod
-    def frombuffer(data):
-        raise NotImplementedError()
+    def frombuffer(buf):
+        return cPickle.load(self, buf)
 
 
 class VisionBase(EasyVisionBase):

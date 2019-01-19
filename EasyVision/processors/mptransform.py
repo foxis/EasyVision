@@ -7,6 +7,7 @@ from .base import *
 from EasyVision.exceptions import TimeoutError
 import functools
 import cPickle
+import ctypes
 #import os
 #import affinity
 
@@ -21,7 +22,8 @@ class MultiProcessing(ProcessorBase, mp.Process):
         self._freerun = freerun
 
         self._timeout = timeout
-        self._running = mp.Value("i", 0)
+        self._running = mp.Value("b", 0)
+
         self._frame_in, self._frame_out = mp.Pipe(False)
         self._ctrl_in, self._ctrl_out = mp.Pipe(False)
         self._res_in, self._res_out = mp.Pipe(False)
@@ -53,13 +55,6 @@ class MultiProcessing(ProcessorBase, mp.Process):
         else:
             return self.remote_get(name)
 
-    # attribute routing to remote
-    #def __setattr__(self, name, value):
-    #    if hasattr(self, name):
-    #        super(MultiProcessing, self).__setattr__(name, value)
-    #    else:
-    #        remote_set(name, value)
-
     def next(self):
         frame = self.capture()
 
@@ -68,13 +63,13 @@ class MultiProcessing(ProcessorBase, mp.Process):
         return frame
 
     def setup(self):
-        assert(self._running.value == 0)
+        assert(self._running.value == False)
         self.start()
         if not self._run_event.wait(self._timeout):
             raise TimeoutError()
 
     def release(self):
-        self._running.value = 0
+        self._running.value = False
         self.join(self._timeout)
 
     @property
@@ -96,7 +91,9 @@ class MultiProcessing(ProcessorBase, mp.Process):
             self._cap_event.set()
         if not self._frame_event.wait(self._timeout):
             raise TimeoutError()
+
         frame = Frame.frombytes(self._frame_in.recv_bytes())
+
         self._frame_event.clear()
         if isinstance(frame, Exception):
             raise frame
@@ -150,12 +147,9 @@ class MultiProcessing(ProcessorBase, mp.Process):
             finally:
                 self._res_sem.release()
 
-    #def run(self):
-    #    cProfile.runctx('self._run()', globals(), locals(), 'processing.profile')
-
     def run(self):
         super(MultiProcessing, self).setup()
-        self._running.value = 1
+        self._running.value = True
         self._lazy_frame = None
         self._run_event.set()
         while self._running.value:
@@ -179,7 +173,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
 
     def _send_frame(self, frame):
         if not self._frame_event.is_set():
-            data = frame.tobytes() if isinstance(frame, Frame) else cPickle.dumps(frame)
+            data = frame.tobytes() if isinstance(frame, Frame) else cPickle.dumps(frame, protocol=-1)
             self._frame_out.send_bytes(data)
             self._frame_event.set()
 
@@ -187,7 +181,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
         frame = self._vision.capture()
         self._send_frame(frame)
         if not frame:
-            self.running.value = 0
+            self._running.value = False
 
     def _capture_lazy(self):
         if self._cap_event.wait(.001):
@@ -198,7 +192,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
             #print os.getpid(), affinity.get_process_affinity_mask(os.getpid())
             if not self._lazy_frame:
                 self._send_frame(None)
-                self.running.value = 0
+                self._running.value = False
 
     @property
     def autoexposure(self):

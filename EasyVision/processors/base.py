@@ -48,12 +48,12 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
     def frombytes(data):
         return cPickle.loads(data)
 
-    def tobuffer(self):
-        raise NotImplementedError()
+    def tobuffer(self, buf):
+        cPickle.dump(self, buf, protocol=-1)
 
     @staticmethod
-    def frombuffer(data):
-        raise NotImplementedError()
+    def frombuffer(buf):
+        return cPickle.load(self, buf)
 
     def __reduce__(self):
         return (self.__class__, (self.points, self.descriptors.get() if isinstance(self.descriptors, cv2.UMat) else self.descriptors))
