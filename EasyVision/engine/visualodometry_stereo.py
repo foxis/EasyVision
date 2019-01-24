@@ -9,11 +9,15 @@ from future_builtins import zip
 
 class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
 
-    def __init__(self, vision, feature_type=None, pose=None,
+    def __init__(self, vision, occupancy_map=None, feature_type=None, pose=None,
                  num_features=None, nlevels=None,
                  ratio=None, distance_thresh=None, reproj_thresh=None, reproj_error=None,
                  min_dZ=None, max_dZ=None, max_dY=None, max_dX=None,
                  *args, **kwargs):
+
+        if not isinstance(occupancy_map, MapBase) and occupancy_map is not None:
+            raise TypeError("Occupancy Map must be of type MapBase")
+
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, CalibratedStereoCamera):
             raise TypeError("Vision must be either CalibratedStereoCamera or ProcessorBase")
@@ -55,6 +59,8 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         self._last_pose = None
         self._last_3dfeatures = None
 
+        self._map = occupancy_map
+
         self._ratio = 0.7
         self._distance_thresh = 100
         self._min_matches = 10
@@ -95,6 +101,16 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
 
         super(VisualOdometryStereoEngine, self).__init__(_vision, *args, **kwargs)
 
+    def setup(self):
+        super(VisualOdometryStereoEngine, self).setup()
+        if self._map is not None:
+            self._map.setup()
+
+    def release(self):
+        super(VisualOdometryStereoEngine, self).release()
+        if self._map is not None:
+            self._map.release()
+
     def compute(self):
         frame = self.vision.capture()
         if not frame:
@@ -117,7 +133,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
             _r, _t = None, None
             use_rt = False
             if self._last_pose:
-                R, _t = self._last_pose
+                R, _t = self._last_pose[1:3]
                 _r, _ = cv2.Rodrigues(R)
                 _r *= -1
                 _t *= -1
@@ -144,10 +160,18 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
 
             if ret:
                 if self._pose:
-                    self._pose = self._pose._replace(translation=self._pose.translation + self._pose.rotation.dot(t), rotation=R.dot(self._pose.rotation))
+                    self._pose = self._pose._replace(
+                        timestamp=frame.timestamp,
+                        translation=self._pose.translation + self._pose.rotation.dot(t),
+                        rotation=R.dot(self._pose.rotation),
+                        features=Features(new_points_3d, None)
+                    )
                 else:
-                    self._pose = Pose(R, t)
-                self._last_pose = Pose(R, t)
+                    self._pose = Pose(frame.timestamp, R, t, Features(new_points_3d, None))
+                self._last_pose = Pose(frame.timestamp, R, t, Features(new_points_3d, None))
+
+                if self._map is not None:
+                    self._map.update(self._pose)
             else:
                 print 'not found'
 

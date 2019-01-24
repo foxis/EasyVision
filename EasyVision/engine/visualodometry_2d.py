@@ -50,7 +50,6 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
         self._min_features = min_features
 
-
         self._lk_params = dict(
             winSize=(21, 21),
             #maxLevel = 3,
@@ -149,11 +148,14 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             _, R, t, mask = cv2.recoverPose(E, cur_kps, last_kps,
                                             focal=self._camera.focal_point[0], pp=self._camera.center)
             if self._pose:
-                self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
-                                                rotation=R.dot(self._pose.rotation))
+                self._pose = self._pose._replace(
+                    timestamp=frame.timestamp,
+                    translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
+                    rotation=R.dot(self._pose.rotation)
+                )
             else:
-                self._pose = Pose(R, t)
-            self._last_pose = Pose(R, t)
+                self._pose = Pose(frame.timestamp, R, t)
+            self._last_pose = Pose(fame.timestamp, R, t)
 
             if len(self._last_kps) < self._min_features:
                 current_image = self.vision.process(current_image)

@@ -98,7 +98,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             _r, _t = None, None
             use_rt = False
             if self._last_pose:
-                R, _t = self._last_pose
+                R, _t = self._last_pose[1:3]
                 _r, _ = cv2.Rodrigues(R)
                 _r *= -1
                 _t *= -1
@@ -121,11 +121,14 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             t *= -1
             if ret:
                 if self._pose:
-                    self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
-                                                     rotation=R.dot(self._pose.rotation))
+                    self._pose = self._pose._replace(
+                        timestamp=frame.timestamp,
+                        translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
+                        rotation=R.dot(self._pose.rotation)
+                    )
                 else:
-                    self._pose = Pose(R, t)
-                self._last_pose = Pose(R, t)
+                    self._pose = Pose(frame.timestamp, R, t)
+                self._last_pose = Pose(frame.timestamp, R, t)
 
             if self.debug and featuresA is not None and featuresB is not None:
                 img = cv2.cvtColor(self._images[1][2], cv2.COLOR_GRAY2BGR)

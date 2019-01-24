@@ -29,7 +29,7 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
 
     def todict(self):
         d = {
-            'points': [pt.todict() for pt in self.points],
+            'points': [pt.todict() for pt in self.points] if len(points) and isinstance(points[0], KeyPoint) else self.points,
             'descriptors': self.descriptors.tolist(),
             'dtype': self.descriptors.dtype.name
         }
@@ -37,7 +37,11 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
 
     @staticmethod
     def fromdict(d):
-        points = [KeyPoint.fromdict(pt) for pt in d['points']]
+        pts = d['points']
+        if len(pts) and isinstance(pts[0], dict):
+            points = [KeyPoint.fromdict(pt) for pt in pts]
+        else:
+            points = tuple(pts)
         descriptors = np.array(d['descriptors'], dtype=np.dtype(d['dtype']))
         return Features(points, descriptors)
 

@@ -2,6 +2,7 @@
 from EasyVision.base import *
 from EasyVision.exceptions import *
 from EasyVision.vision.base import VisionBase
+from EasyVision.processors.base import Features
 import numpy as np
 from collections import namedtuple
 
@@ -66,23 +67,35 @@ class EngineBase(EasyVisionBase):
         return self._vision
 
 
-class Pose(namedtuple('Pose', ['rotation', 'translation'])):
+class Pose(namedtuple('Pose', 'timestamp rotation translation features')):
     """A class describing agent pose
 
         rotation: a rotation matrix
         translation: a translation vector
     """
+    __slots__ = ()
+
+    def __new__(cls, timestamp, rotation, translation, features=None):
+        if not isinstance(features, Features) and features is not None:
+            raise TypeError("Features must be of type Features")
+        if not isinstance(rotation, np.ndarray):
+            rotation = np.float32(rotation)
+        if not isinstance(translation, np.ndarray):
+            translation = np.float32(translation)
+        return super(Pose, cls).__new__(cls, timestamp, rotation, translation, features)
 
     def todict(self):
         d = {
+            'timestamp': self.timestamp,
             'rotation': self.rotation.tolist(),
-            'translation': self.translation.tolist()
+            'translation': self.translation.tolist(),
+            'features': self.features.todict()
         }
         return d
 
     @staticmethod
     def fromdict(d):
-        return Pose(np.float32(d['rotation']), np.float32(d['translation']))
+        return Pose(d['timestamp'], d['rotation'], d['translation'], Features.fromdict(d['features']))
 
 
 class OdometryBase(EngineBase):
@@ -111,4 +124,26 @@ class OdometryBase(EngineBase):
     @abstractproperty
     def feature_type(self):
         """Feature Type that the odometry is working with"""
+        pass
+
+
+class MapBase(EasyVisionBase):
+
+    def __init__(self, *args, **kwargs):
+        super(MapBase, self).__init__(*args, **kwargs)
+
+    @abstractproperty
+    def map_raw(self):
+        pass
+
+    @abstractproperty
+    def pose(self):
+        pass
+
+    @abstractproperty
+    def path(self):
+        pass
+
+    @abstractmethod
+    def update(self, pose, scan):
         pass

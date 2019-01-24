@@ -56,7 +56,9 @@ def test_visual_odometry_kitti_stereo():
             FeatureExtraction(cam_left, FEATURE_TYPE),
             FeatureExtraction(cam_right, FEATURE_TYPE),
             camera)
-    with VisualOdometryStereoEngine(cam, display_results=True, debug=True, feature_type=FEATURE_TYPE) as engine:
+    occmap = OccupancyGridMap((1200, 1200), .002, display_results=True)
+    pose = Pose(0, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[290000], [0], [90000]])
+    with VisualOdometryStereoEngine(cam, pose=pose, occupancy_map=occmap, display_results=True, debug=True) as engine:
         for img_id, _ in enumerate(images_kitti_l):
             true_x = ground_truth[img_id][3]
             true_y = ground_truth[img_id][7]
@@ -68,9 +70,9 @@ def test_visual_odometry_kitti_stereo():
             if pose:
                 t = pose.translation / 1000
 
-                error += np.sqrt((true_x - t[0]) ** 2 + 0 * (true_y - t[1]) ** 2 + (true_z - t[2]) ** 2)
+                error += np.sqrt((true_x - t[0] - 290) ** 2 + 0 * (true_y - t[1]) ** 2 + (true_z - t[2] - 90) ** 2)
 
-                draw_x, draw_y = int(t[0]) + 290, int(t[2]) + 90
+                draw_x, draw_y = int(t[0]), int(t[2])
                 dtrue_x, dtrue_y = int(true_x) + 290, int(true_z) + 90
 
                 cv2.circle(traj, (draw_x, draw_y), 1, (img_id * 255 / 4540, 255 - img_id * 255 / 4540, 0))

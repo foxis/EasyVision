@@ -63,7 +63,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
         return frame
 
     def setup(self):
-        assert(self._running.value == False)
+        assert(not self._running.value)
         self.start()
         if not self._run_event.wait(self._timeout):
             raise TimeoutError()
