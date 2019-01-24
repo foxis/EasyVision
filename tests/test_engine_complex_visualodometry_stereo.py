@@ -70,7 +70,7 @@ def test_visual_odometry_kitti_stereo():
             if pose:
                 t = pose.translation / 1000
 
-                error += np.sqrt((true_x - t[0] - 290) ** 2 + 0 * (true_y - t[1]) ** 2 + (true_z - t[2] - 90) ** 2)
+                error += np.sqrt((true_x - t[0] + 290) ** 2 + 0 * (true_y - t[1]) ** 2 + (true_z - t[2] + 90) ** 2)
 
                 draw_x, draw_y = int(t[0]), int(t[2])
                 dtrue_x, dtrue_y = int(true_x) + 290, int(true_z) + 90

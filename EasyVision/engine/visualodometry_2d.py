@@ -9,7 +9,7 @@ from future_builtins import zip
 
 class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, num_features=6000, min_features=1000,
+    def __init__(self, vision, _map=None, feature_type=None, pose=None, num_features=6000, min_features=1000,
                  min_matches=30, distance_thresh=None, ratio=.7, reproj_thresh=None,
                  debug=False, display_results=False, *args, **kwargs):
         feature_extractor_provided = False
@@ -57,6 +57,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         )
 
         self._camera = _vision.camera
+        self._map = _map
         self._last_image = None
         self._last_kps = None
         self._last_features = None
@@ -70,19 +71,29 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             self._reproj_thresh = reproj_thresh
         super(VisualOdometry2DEngine, self).__init__(_vision, debug=debug, display_results=display_results, *args, **kwargs)
 
+    def setup(self):
+        super(VisualOdometry2DEngine, self).setup()
+        if self._map is not None:
+            self._map.setup()
+
+    def release(self):
+        super(VisualOdometry2DEngine, self).release()
+        if self._map is not None:
+            self._map.release()
+
     def compute(self, absolute_scale=1.0):
         frame = self.vision.capture()
         if not frame:
             return None
         current_image = frame.images[0]
 
-        pose = self._compute_match(current_image, absolute_scale) if self._extract else self._compute_track(current_image, absolute_scale)
+        pose = self._compute_match(frame.timestamp, current_image, absolute_scale) if self._extract else self._compute_track(current_image, absolute_scale)
 
         self._last_image = current_image
 
         return frame, pose
 
-    def _compute_match(self, current_image, absolute_scale):
+    def _compute_match(self, timestamp, current_image, absolute_scale):
         if not self._last_image:
             self._last_kps = np.float32([x.pt for x in current_image.features.points])
         else:
@@ -91,9 +102,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             if M is None:
                 print "failed to find matches"
                 return self._pose
-            last, current = M
-            #if len(current) < self._min_features:
-            #    return self._pose
+            last, current, descriptors = M
 
             self._last_kps = current
 
@@ -101,18 +110,37 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
                                            focal=self._camera.focal_point[0], pp=self._camera.center,
                                            method=cv2.RANSAC, prob=0.999, threshold=self._reproj_thresh)
 
-            ret, R, t, _mask = cv2.recoverPose(E, current, last, focal=self._camera.focal_point[0], pp=self._camera.center, mask=mask)
+            ret, R, t, mask = cv2.recoverPose(E, current, last, focal=self._camera.focal_point[0], pp=self._camera.center, mask=mask)
 
-            if not ret:
-                print "failed to recoverPose"
-                return self._pose
+            if ret:
+                if self._map is not None:
+                    P1 = np.dot(self._camera.matrix, np.hstack((np.eye(3, 3), np.zeros((3, 1)))))
+                    P2 = np.dot(self._camera.matrix, np.hstack((R, t)))
 
-            if self._pose:
-                self._pose = self._pose._replace(translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
-                                                rotation=R.dot(self._pose.rotation))
-            else:
-                self._pose = Pose(R, t)
-            self._last_pose = Pose(R, t)
+                    last_inliers = np.float32([p for m, p in zip(mask, last) if m])
+                    current_inliers = np.float32([p for m, p in zip(mask, current) if m])
+                    descriptors = np.array([p for m, p in zip(mask, descriptors) if m], dtype=descriptors.dtype)
+
+                    points_4d_hom = cv2.triangulatePoints(P1, P2, np.expand_dims(current_inliers, axis=1), np.expand_dims(last_inliers, axis=1))
+                    points_4d = points_4d_hom / np.tile(points_4d_hom[-1, :], (4, 1))
+                    points_3d = points_4d[:3, :].T
+                    features = Features(current, descriptors, points_3d)
+                else:
+                    features = None
+
+                if self._pose:
+                    self._pose = self._pose._replace(
+                        timestamp=timestamp,
+                        translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
+                        rotation=R.dot(self._pose.rotation),
+                        features=features
+                    )
+                else:
+                    self._pose = Pose(timestamp, R, t, features)
+                self._last_pose = Pose(timestamp, R, t, features)
+
+                if self._map is not None:
+                    self._pose = self._map.update(self._pose, scale=absolute_scale)
 
             if self.debug:
                 img = cv2.cvtColor(current_image.image, cv2.COLOR_GRAY2BGR)
@@ -222,8 +250,8 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         return kp1, kp2
 
     def _match_features(self, featuresA, featuresB):
-        kpsA, descriptorsA = featuresA
-        kpsB, descriptorsB = featuresB
+        kpsA, descriptorsA, _ = featuresA
+        kpsB, descriptorsB, _ = featuresB
 
         matches = super(VisualOdometry2DEngine, self)._match_features(descriptorsA, descriptorsB, self._feature_type, self._ratio, self._distance_thresh, self._min_matches)
 
@@ -237,8 +265,14 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         ptsA = np.float32([p for m, p in zip(mask, ptsA) if m])
         ptsB = np.float32([p for m, p in zip(mask, ptsB) if m])
 
+        if isinstance(descriptorsB, cv2.UMat):
+            descriptors = descriptorsB.get()
+        else:
+            descriptors = descriptorsB
+        descriptors = np.array([descriptors[m.trainIdx] for m in matches], dtype=descriptors.dtype)
+
         if len(ptsA) < self._min_matches:
             print "prune fail"
             return None
 
-        return ptsA, ptsB
+        return ptsA, ptsB, descriptors

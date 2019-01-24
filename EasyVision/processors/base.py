@@ -6,7 +6,11 @@ import cPickle
 from future_builtins import zip
 
 
-class KeyPoint(namedtuple('KeyPoint', ['pt', 'size', 'angle', 'response', 'octave', 'class_id'])):
+class KeyPoint(namedtuple('KeyPoint', 'pt size angle response octave class_id')):
+    """KeyPoint struct that mirrors cv2.KeyPoint
+    """
+    __slots__ = ()
+
     def todict(self):
         return self._asdict()
 
@@ -15,12 +19,20 @@ class KeyPoint(namedtuple('KeyPoint', ['pt', 'size', 'angle', 'response', 'octav
         return KeyPoint(**d)
 
 
-class Features(namedtuple('Features', ['points', 'descriptors'])):
+class Features(namedtuple('Features', 'points descriptors points3d')):
+    """Features structure
+    Contains feature points either as 2d points or KeyPoint, descriptors and associated 3d points.
+    """
     __slots__ = ()
 
-    def __new__(cls, points, descriptors):
-        points = [KeyPoint(pt.pt, pt.size, pt.angle, pt.response, pt.octave, pt.class_id) for pt in points] if len(points) and isinstance(points[0], cv2.KeyPoint) else points
-        return super(Features, cls).__new__(cls, points, descriptors)
+    def __new__(cls, points, descriptors, points3d=None):
+        if len(points) and hasattr(points[0], 'pt'):
+            points = tuple(KeyPoint(pt.pt, pt.size, pt.angle, pt.response, pt.octave, pt.class_id) for pt in points)
+        elif not isinstance(points, np.ndarray):
+            points = np.float32(points)
+        if not isinstance(points3d, np.ndarray) and points3d is not None:
+            points3d = np.float32(points3d)
+        return super(Features, cls).__new__(cls, points, descriptors, points3d)
 
     @property
     def keypoints(self):
@@ -29,7 +41,8 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
 
     def todict(self):
         d = {
-            'points': [pt.todict() for pt in self.points] if len(points) and isinstance(points[0], KeyPoint) else self.points,
+            'points': [pt.todict() for pt in self.points] if len(points) and isinstance(points[0], KeyPoint) else self.points.tolist(),
+            'points3d': self.points.tolist(),
             'descriptors': self.descriptors.tolist(),
             'dtype': self.descriptors.dtype.name
         }
@@ -41,9 +54,9 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
         if len(pts) and isinstance(pts[0], dict):
             points = [KeyPoint.fromdict(pt) for pt in pts]
         else:
-            points = tuple(pts)
+            points = pts
         descriptors = np.array(d['descriptors'], dtype=np.dtype(d['dtype']))
-        return Features(points, descriptors)
+        return Features(points, descriptors, d['points3d'])
 
     def tobytes(self):
         return cPickle.dumps(self, protocol=-1)
@@ -64,6 +77,18 @@ class Features(namedtuple('Features', ['points', 'descriptors'])):
 
 
 class ProcessorBase(VisionBase):
+    """Abstract Base class for image processor algorithms
+
+    Capture will call process on each image in the frame if associated mask is set to '1'.
+    Mask is a string of '1' and '0', where index of the mask is the same as the index of frame image.
+    Processor mask will override frame processor mask.
+
+    Abstract methods:
+        process
+
+    Abstract properties:
+
+    """
 
     def __init__(self, vision, processor_mask=None, enabled=True, *args, **kwargs):
         if not isinstance(vision, VisionBase) and vision is not None:
@@ -76,6 +101,12 @@ class ProcessorBase(VisionBase):
 
     @abstractmethod
     def process(self, image):
+        """Processes frame image. Must return a valid Image instance
+        Note, that this method will only be called if self.enabled is True and associated processor mask is '1'
+
+        :param image: instance of Image struct - input image
+        :return: an instance of Image struct.
+        """
         pass
 
     def capture(self):
@@ -84,8 +115,8 @@ class ProcessorBase(VisionBase):
         if not self.enabled:
             return frame
         elif frame:
-            processor_mask = frame.processor_mask if frame.processor_mask else self._processor_mask
-            if not processor_mask:
+            processor_mask = self._processor_mask if self._processor_mask is not None else frame.processor_mask
+            if processor_mask is None:
                 processor_mask = "1" * len(frame.images)
             images = tuple(m == "0" and img or self.process(img)._replace(source=self) for m, img in zip(processor_mask, frame.images))
             return frame._replace(images=images)

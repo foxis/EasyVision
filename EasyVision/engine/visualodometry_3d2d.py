@@ -9,7 +9,7 @@ from future_builtins import zip
 
 class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
-    def __init__(self, vision, feature_type=None, pose=None, num_features=3000,
+    def __init__(self, vision, _map=None, feature_type=None, pose=None, num_features=3000,
                  min_matches=30, distance_thresh=None, reproj_thresh=None, reproj_error=None, *args, **kwargs):
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
@@ -53,6 +53,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         self._pose = pose
         self._last_pose = None
         self._images = []
+        self._map = _map
 
         self._ratio = 0.7
         self._min_matches = min_matches
@@ -66,6 +67,16 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
         super(VisualOdometry3D2DEngine, self).__init__(_vision, *args, **kwargs)
 
+    def setup(self):
+        super(VisualOdometry3D2DEngine, self).setup()
+        if self._map is not None:
+            self._map.setup()
+
+    def release(self):
+        super(VisualOdometry3D2DEngine, self).release()
+        if self._map is not None:
+            self._map.release()
+
     def compute(self, absolute_scale=1.0):
         frame = self.vision.capture()
         if not frame:
@@ -77,11 +88,9 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         if len(self._images) == 1:
             return frame, self._pose
 
-        featuresA, featuresB, features3D = self._calculate_3d(self._images[-2][0], self._images[-1][0], absolute_scale)
-        if featuresA is not None and featuresB is not None and features3D is not None:
-            #self._images[-2][0] = featuresA
-            self._images[-2][1] = features3D
-            #self._images[-1][0] = featuresB
+        featuresA, featuresB = self._calculate_3d(self._images[-2][0], self._images[-1][0], absolute_scale)
+        if featuresA is not None and featuresB is not None:
+            self._images[-2][1] = featuresB
 
         if len(self._images) == 3 and self._images[-3][1] is not None:
             # TODO filter those features that have similar distance from -3 and -2
@@ -92,8 +101,13 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
                 print "failed to find matches"
                 return frame, self._pose
 
-            points_3d = np.float32([self._images[-3][1].points[m.queryIdx] for m in matches])
+            points_3d = np.float32([self._images[-3][1].points3d[m.queryIdx] for m in matches])
             points_2d = np.float32([self._images[-1][0].points[m.trainIdx].pt for m in matches])
+            if isinstance(self._images[-3][1].descriptors, cv2.UMat):
+                descriptors = self._images[-3][1].descriptors.get()
+            else:
+                descriptors = self._images[-3][1].descriptors
+            descriptors = np.array([descriptors[m.queryIdx] for m in matches], dtype=descriptors.dtype)
 
             _r, _t = None, None
             use_rt = False
@@ -120,15 +134,20 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             R, _ = cv2.Rodrigues(r * -1)
             t *= -1
             if ret:
+                #points_3d_inliers = np.float32([points_3d[i].tolist()[0] for i in inliers])
                 if self._pose:
                     self._pose = self._pose._replace(
                         timestamp=frame.timestamp,
                         translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
-                        rotation=R.dot(self._pose.rotation)
+                        rotation=R.dot(self._pose.rotation),
+                        features=Features(points_2d, descriptors, points_3d)
                     )
                 else:
-                    self._pose = Pose(frame.timestamp, R, t)
-                self._last_pose = Pose(frame.timestamp, R, t)
+                    self._pose = Pose(frame.timestamp, R, t, Features(points_2d, descriptors, points_3d))
+                self._last_pose = Pose(frame.timestamp, R, t, Features(points_2d, descriptors, points_3d))
+
+                if self._map is not None:
+                    self._pose = self._map.update(self._pose, scale=absolute_scale)
 
             if self.debug and featuresA is not None and featuresB is not None:
                 img = cv2.cvtColor(self._images[1][2], cv2.COLOR_GRAY2BGR)
@@ -190,13 +209,13 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             )
 
     def _calculate_3d(self, featuresA, featuresB, scale):
-        kpsA, descriptorsA = featuresA
-        kpsB, descriptorsB = featuresB
+        kpsA, descriptorsA, _ = featuresA
+        kpsB, descriptorsB, _ = featuresB
 
         matches = self._match_features(descriptorsA, descriptorsB, self._feature_type, self._ratio, self._distance_thresh, self._min_matches)
 
         if matches is None or not matches:
-            return None, None, None
+            return None, None
 
         umat_descriptors = isinstance(descriptorsA, cv2.UMat)
         if umat_descriptors:
@@ -208,7 +227,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         mask = [0.5 < p[0] ** 2 + p[1] ** 2 < 200 * 200 for p in ((a.pt[0] - b.pt[0], a.pt[1] - b.pt[1]) for a, b in zip(kpsA, kpsB))]
         if sum(mask) < self._min_matches:
             print "prune fail"
-            return None, None, None
+            return None, None
 
         kpsA = [p for M, p in zip(mask, kpsA) if M]
         kpsB = [p for M, p in zip(mask, kpsB) if M]
@@ -225,7 +244,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
         if not ret:
             print "recoverPose fail"
-            return None, None, None
+            return None, None
 
         kpsA = [kp for m, kp in zip(mask, kpsA) if m]
         kpsB = [kp for m, kp in zip(mask, kpsB) if m]
@@ -256,7 +275,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             dA = cv2.UMat(dA)
             dB = cv2.UMat(dB)
 
-        return Features(kpsA, dA), Features(kpsB, dB), Features(point_3d, dB)
+        return Features(kpsA, dA), Features(kpsB, dB, point_3d)
 
     def debug_changed(self, last, current):
         if current:

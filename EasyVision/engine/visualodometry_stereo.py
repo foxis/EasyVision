@@ -128,7 +128,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
                 print 'no matches'
                 return frame, self._pose
 
-            last_points_2d, last_points_3d, new_points_2d, new_points_3d, last_points_2d_right, new_points_2d_right = matches
+            last_points_2d, last_points_3d, _, new_points_2d, new_points_3d, new_descriptors, last_points_2d_right, new_points_2d_right = matches
 
             _r, _t = None, None
             use_rt = False
@@ -159,19 +159,21 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
             dZ = sum(i[0] ** 2 for i in t) ** .5
 
             if ret:
+                new_points_3d_inliers = np.float32([new_points_3d[i].tolist()[0] for i in inliers])
+
                 if self._pose:
                     self._pose = self._pose._replace(
                         timestamp=frame.timestamp,
                         translation=self._pose.translation + self._pose.rotation.dot(t),
                         rotation=R.dot(self._pose.rotation),
-                        features=Features(new_points_3d, None)
+                        features=Features(new_points_2d, new_descriptors, new_points_3d_inliers)
                     )
                 else:
-                    self._pose = Pose(frame.timestamp, R, t, Features(new_points_3d, None))
-                self._last_pose = Pose(frame.timestamp, R, t, Features(new_points_3d, None))
+                    self._pose = Pose(frame.timestamp, R, t, Features(new_points_2d, new_descriptors, new_points_3d_inliers))
+                self._last_pose = Pose(frame.timestamp, R, t, Features(new_points_2d, new_descriptors, new_points_3d_inliers))
 
                 if self._map is not None:
-                    self._map.update(self._pose)
+                    self._pose = self._map.update(self._pose)
             else:
                 print 'not found'
 
@@ -263,8 +265,8 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         will return corresponding left/right points and triangulated points
         :return: (left, right, 3d points) or None
         """
-        kpsA, descriptorsA = featuresA
-        kpsB, descriptorsB = featuresB
+        kpsA, descriptorsA, _ = featuresA
+        kpsB, descriptorsB, _ = featuresB
         matches = self._match_features(descriptorsA, descriptorsB, self._feature_type, self._ratio, self._distance_thresh, self._min_matches)
 
         if matches is None or not matches:
@@ -302,14 +304,13 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         if umat_descriptors:
             dA = cv2.UMat(dA)
             dB = cv2.UMat(dB)
-
         return left, right, point_3d, dA
 
     def _match_stereo(self, last_features, new_features):
         """Matches Last frame features with new frame features.
         Filters matched features based on triangulated points.
 
-        :return: (last2d, last3d, new2d, new3d) or None
+        :return: (last2d, last3d, last_descr, new2d, new3d, new_descr, last_points_right, new_points_right) or None
         """
         matches = self._match_features(last_features[3], new_features[3],
                 self._feature_type, self._ratio, self._distance_thresh / 3, self._min_matches)
@@ -335,7 +336,16 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         last_points_2d = np.float32([last_features[0][m.queryIdx] for M, m in zip(mask, matches) if M])
         last_points_2d_right = np.float32([last_features[1][m.queryIdx] for M, m in zip(mask, matches) if M])
 
-        return last_points_2d, last_points_3d, new_points_2d, new_points_3d, last_points_2d_right, new_points_2d_right
+        if isinstance(last_features[3], cv2.UMat):
+            last_descriptors = last_features[3].get()
+            new_descriptors = new_features[3].get()
+        else:
+            last_descriptors = last_features[3]
+            new_descriptors = new_features[3]
+        last_descriptors = np.array([last_descriptors[m.queryIdx] for M, m in zip(mask, matches) if M], dtype=last_descriptors.dtype)
+        new_descriptors = np.array([new_descriptors[m.trainIdx] for M, m in zip(mask, matches) if M], dtype=new_descriptors.dtype)
+
+        return last_points_2d, last_points_3d, last_descriptors, new_points_2d, new_points_3d, new_descriptors, last_points_2d_right, new_points_2d_right
 
     @property
     def feature_type(self):

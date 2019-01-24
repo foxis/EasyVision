@@ -100,6 +100,14 @@ class Pose(namedtuple('Pose', 'timestamp rotation translation features')):
 
 class OdometryBase(EngineBase):
     """An abstract Odometry Base class for Odometry Engines
+
+    Abstract methods:
+        ...
+    Abstract properties:
+        pose
+        relative_pose
+        camera_orientation
+        feature_type
     """
     def __init__(self, *args, **kwargs):
         super(OdometryBase, self).__init__(*args, **kwargs)
@@ -128,22 +136,55 @@ class OdometryBase(EngineBase):
 
 
 class MapBase(EasyVisionBase):
+    """ Map Base is an abstract base class for Mapping with Visual Odometry
 
+    Abstract methods:
+        update
+            Updates the map and returns (corrected) pose
+        plan
+            Given a target returns a path of poses to reach a target
+
+    Abstract properties
+        map_raw
+            returns RAW map
+        pose
+            returns current pose
+        path
+            returns current path
+    """
     def __init__(self, *args, **kwargs):
         super(MapBase, self).__init__(*args, **kwargs)
 
     @abstractproperty
     def map_raw(self):
+        """Returns RAW map. Either a graph or np.array"""
         pass
 
     @abstractproperty
     def pose(self):
+        """Returns current pose"""
         pass
 
     @abstractproperty
     def path(self):
+        """Returns the whole path as a list of poses"""
         pass
 
     @abstractmethod
-    def update(self, pose, scan):
+    def update(self, pose, *args, **kwargs):
+        """Updates the map.
+
+        :param pose: current pose of the robot
+        :return: Current pose (may be different from input pose due to correction)
+        """
+        pass
+
+    @abstractmethod
+    def plan(self, target, radius, **kwargs):
+        """Plans a path towards a target
+
+        :param target: a target based on map implementation
+        :param radius: radius of agent for obstacle detection
+        :return: a list of poses
+        """
         pass
