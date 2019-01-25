@@ -9,6 +9,7 @@ from EasyVision.processors import MultiProcessing
 from EasyVision.vision import *
 from collections import namedtuple
 from .common import VisionSubclass, MyException
+from time import sleep
 
 Payload = namedtuple('Payload', ('a', 'b'))
 
@@ -44,6 +45,7 @@ def test_capture_mp_freerun():
         for index, img in enumerate(mp):
             assert(isinstance(img, Frame))
             assert(img.images[0].image == "AN IMAGE")
+            sleep(.01)
             if index > 10:
                 assert(img.index > index)
                 break

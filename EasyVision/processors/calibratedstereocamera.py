@@ -25,11 +25,11 @@ class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', '
         if left.size != right.size:
             raise ValueError("Left and Right camera width/height must match")
 
-        R = np.array(R) if isinstance(R, list) else R
-        T = np.array(T) if isinstance(T, list) else T
-        E = np.array(E) if isinstance(E, list) else E
-        F = np.array(F) if isinstance(F, list) else F
-        Q = np.array(Q) if isinstance(Q, list) else Q
+        R = np.float32(R) if not isinstance(R, np.ndarray) and R is not None else R
+        T = np.float32(T) if not isinstance(T, np.ndarray) and T is not None else T
+        E = np.float32(E) if not isinstance(E, np.ndarray) and E is not None else E
+        F = np.float32(F) if not isinstance(F, np.ndarray) and F is not None else F
+        Q = np.float32(Q) if not isinstance(Q, np.ndarray) and Q is not None else Q
         return super(StereoCamera, cls).__new__(cls, left, right, R, T, E, F, Q)
 
     @staticmethod

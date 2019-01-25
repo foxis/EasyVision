@@ -9,10 +9,10 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
 
     Contains these fields:
         size - (width, height)
-        matrix - camera matrix
+        matrix - camera matrix 3x3
         distortion - camera distortion coefficients
-        rectify - rectification transform matrix
-        projection - reprojection matrix
+        rectify - rectification transform matrix 3x3
+        projection - projection matrix after rectification 3x3
 
     """
 
@@ -21,10 +21,10 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
             size = tuple(size)
         if not isinstance(size, tuple) or len(size) != 2 or not all((isinstance(i, int) or isinstance(i, long)) and i > 0 for i in size):
             raise TypeError('Frame size must be a tuple consisting of two positive integers')
-        matrix = np.array(matrix) if isinstance(matrix, list) else matrix
-        distortion = np.array(distortion) if isinstance(distortion, list) else distortion
-        rectify = np.array(rectify) if isinstance(rectify, list) else rectify
-        projection = np.array(projection) if isinstance(projection, list) else projection
+        matrix = np.float32(matrix) if not isinstance(matrix, np.ndarray) and matrix is not None else matrix
+        distortion = np.float32(distortion) if not isinstance(distortion, np.ndarray) and distortion is not None else distortion
+        rectify = np.float32(rectify) if not isinstance(rectify, np.ndarray) and rectify is not None else rectify
+        projection = np.float32(projection) if not isinstance(projection, np.ndarray) and projection is not None else projection
 
         return super(PinholeCamera, cls).__new__(cls, size, matrix, distortion, rectify, projection)
 
@@ -90,7 +90,6 @@ class CalibratedCamera(ProcessorBase):
             self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
             self._camera = None
             self._grid_shape = grid_shape
-            self._grid_size = grid_size
             self._square_size = square_size
             self._max_samples = max_samples
             self._frame_delay = frame_delay
