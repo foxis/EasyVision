@@ -62,6 +62,7 @@ class ObjectModel(ModelBase):
         contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
         if not contour_sizes:
             return None
+
         return max(contour_sizes, key=lambda x: x[0])[1]
 
     @staticmethod
@@ -99,12 +100,12 @@ class ObjectModel(ModelBase):
     def create_from_processed_image(name, image, display_results=False, **kwargs):
         if not isinstance(image, Image):
             raise TypeError("Image must be Image type")
-        if not image.features or len(image.features.points) < 5:
+        if image.features is None or len(image.features.points) < 5:
             return None
         if not image.feature_type:
             return None
 
-        if display_results:
+        if display_results and image.mask is not None:
             cv2.imshow("%s mask" % name, image.mask)
 
         outline, thumb, features = ObjectModel._get_outline(image)
@@ -147,9 +148,11 @@ class ObjectModel(ModelBase):
 
         views = (self._match_view(frame, view, matcher, **kwargs) for view in self)
         views = sum((v for v in views if v), ())
+
         if not views:
             self._views += [ModelView(thumb, outline, features, image.feature_type)]
             return self
+
         N = max(views, key=lambda x: len(x.matches))
         if N <= len(image.features.points) / 3:
             self.views += [ModelView(thumb, outline, features, image.feature_type)]
@@ -165,8 +168,8 @@ class ObjectModel(ModelBase):
         return view_matches if view_matches else None
 
     def _match_features(self, image, view, matcher, display_results=False, **kwargs):
-        kpsA, descriptorsA = image.features
-        kpsB, descriptorsB = view.features
+        kpsA, descriptorsA, _ = image.features
+        kpsB, descriptorsB, _ = view.features
         outline = view.outline
         _outline = outline.reshape((-1, 1, 2))
 
@@ -194,6 +197,7 @@ class ObjectModel(ModelBase):
 
             if sum(inside) < self._min_matches:
                 return results
+
             _matches = [m for i, m in zip(inside, matches) if i]
             matches = [m for i, m in zip(inside, matches) if not i]
             ptsA = np.float32([pt for i, pt in zip(inside, ptsA) if not i])

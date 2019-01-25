@@ -8,7 +8,7 @@ from .common import *
 
 @mark.complex
 def test_match_images_ORB_complex():
-    common_test_match_images('ORB', display=True)
+    common_test_match_images('SIFT', display=True)
 
 
 @mark.long

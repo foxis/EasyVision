@@ -50,8 +50,11 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
             raise TypeError("Updating model requires a frame")
         elif model is None and isinstance(image, Frame):
             image = image.images[0]
-            if not image.features or not image.feature_type:
-                image = self.vision.process(image)
+        elif not isinstance(image, Image):
+            raise TypeError("image must be Image.")
+
+        if image.features is None or not image.feature_type:
+            image = self.vision.process(image)
 
         if model is not None:
             return model.update_from_processed_frame(image, self, **kwargs)
@@ -84,4 +87,4 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
 
     def _match_models(self, frame):
         results = (model.compute(frame, self) for model in self._models.values())
-        return MatchResults(sum(tuple(i for i in results if i), ()))
+        return MatchResults(sum((i for i in results if i), ()))

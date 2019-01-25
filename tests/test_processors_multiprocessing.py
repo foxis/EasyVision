@@ -168,6 +168,7 @@ def test_capture_mp_camera():
             if i > 30:
                 break
 
+
 @pytest.mark.main
 def test_mp_properties():
     vision = VisionSubclass("Test")

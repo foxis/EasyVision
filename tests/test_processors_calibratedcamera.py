@@ -10,25 +10,25 @@ import numpy as np
 from .common import *
 
 
-@pytest.mark.main
+@mark.main
 def test_camera_from_parameters():
     camera = PinholeCamera.from_parameters((640, 480), fp, cp, d)
     assert_camera(camera)
 
 
-@pytest.mark.main
+@mark.main
 def test_camera():
     camera = PinholeCamera((640, 480), M_left, d_left)
     assert_camera(camera)
 
 
-@pytest.mark.main
+@mark.main
 def test_camera_fromdict():
     camera = PinholeCamera.fromdict(as_dict_left)
     assert_camera(camera)
 
 
-@pytest.mark.main
+@mark.main
 def test_camera_todict():
     camera = PinholeCamera((640, 480), M_left, d_left)
     as_d = camera.todict()

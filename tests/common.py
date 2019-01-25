@@ -384,17 +384,17 @@ def common_test_match_images(feature_type, display=False, mp=False):
             assert(frame.images[0].image is not None)
 
             if frame.index == 2:
-                if display and len(matches) != 2:
+                if display and len(matches.results) != 2:
                     cv2.waitKey(0)
-                assert(len(matches) == 2)
-                assert(matches[0].model.name == 'obj1' or matches[0].model.name == 'obj2')
-                assert(matches[1].model.name == 'obj1' or matches[1].model.name == 'obj2')
+                assert(len(matches.results) == 2 or display)
+                assert(matches.results[0].model.name == 'obj1' or matches.results[0].model.name == 'obj2' or display)
+                assert(matches.results[1].model.name == 'obj1' or matches.results[1].model.name == 'obj2' or display)
             elif frame.index == 3:
-                if display and len(matches) != 3:
+                if display and len(matches.results) != 3:
                     cv2.waitKey(0)
-                assert(len(matches) == 3)
+                assert(len(matches.results) == 3 or display)
             else:
-                assert(len(matches) == 0)
+                assert(len(matches.results) == 0 or display)
         if display:
             cv2.waitKey(0)
 

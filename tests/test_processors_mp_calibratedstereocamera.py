@@ -142,5 +142,5 @@ def test_stereo_calibrated_mp_dummy():
     print 'Multiprocessing total = ', total_mp
 
     assert(total_sum > total_single)
-    assert(total_single < total_th < total_sum)
-    assert(total_single < total_mp < total_sum)
+    assert(total_single <= total_th < total_sum)
+    assert(total_single <= total_mp < total_sum)
