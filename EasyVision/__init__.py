@@ -17,5 +17,7 @@ __all__ = [
     "vision",
     "engine",
     "processors",
-    "models"
+    "models",
+    "server",
+    "processorstackbuilder"
 ]

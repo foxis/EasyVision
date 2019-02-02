@@ -64,6 +64,7 @@ class Server(object):
             raise TypeError("Vision must be EasyVisionBase")
 
         self._name = name
+        self._running = False
 
         self._proxy = proxy_class(vision, freerun)
 
@@ -81,10 +82,14 @@ class Server(object):
         uri = daemon.connect(self._proxy, self._name)
         self._proxy.setup()
 
+        self._running = True
         try:
-            daemon.requestLoop()
+            daemon.requestLoop(condition=lambda: self._running)
         except KeyboardInterrupt:
             pass
 
         daemon.disconnect(self._proxy)
         daemon.shutdown()
+
+    def stop(self):
+        self._running = False
