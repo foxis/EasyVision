@@ -202,7 +202,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
 
     @property
     def capabilities(self):
-        return EngineCapabilities(
+        return EngineCapability(
                 (ProcessorBase, FeatureExtraction),
                 (Frame, Pose),
                 {'feature_type': ('FREAK', 'SURF', 'SIFT', 'ORB', 'KAZE', 'AKAZE')}

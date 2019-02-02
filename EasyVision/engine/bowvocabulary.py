@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .base import EngineBase
+from .base import EngineBase, EngineCapability
 from EasyVision.models import ObjectModel, ModelView
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction
@@ -88,7 +88,7 @@ class BOWVocabularyBuilderEngine(EngineBase):
 
     @property
     def capabilities(self):
-        return EngineCapabilities(
+        return EngineCapability(
                 (ProcessorBase, FeatureExtraction),
                 (Frame),
                 {'dictionaries': ('kmeans', 'dbow3')}
@@ -97,7 +97,7 @@ class BOWVocabularyBuilderEngine(EngineBase):
 
 class BOWMatchingMixin(object):
     SLOTS = ('_bow_extractor', '_database')
-    __slots__ = ()
+    __slots__ = SLOTS
 
     def __init__(self, *args, **kwargs):
         self._bow_extractor = None

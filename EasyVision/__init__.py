@@ -16,5 +16,6 @@ __all__ = [
     "exceptions",
     "vision",
     "engine",
-    "model"
+    "processors",
+    "models"
 ]

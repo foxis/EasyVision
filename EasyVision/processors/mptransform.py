@@ -127,6 +127,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
                 result = None
                 if ctrl.method == 'SET':
                     cur_obj = self._vision
+                    last_obj = None
                     while cur_obj or last_obj:
                         last_obj, cur_obj = cur_obj, getattr(cur_obj, '_vision', None)
 

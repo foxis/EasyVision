@@ -52,7 +52,7 @@ class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'or
 
     @staticmethod
     def frombuffer(buf):
-        return cPickle.load(self, buf)
+        return cPickle.load(buf)
 
     def __reduce__(self):
         d = (
@@ -139,7 +139,7 @@ class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 
 
     @staticmethod
     def frombuffer(buf):
-        return cPickle.load(self, buf)
+        return cPickle.load(buf)
 
 
 class VisionBase(EasyVisionBase):

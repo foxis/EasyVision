@@ -79,7 +79,7 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
 
     @property
     def capabilities(self):
-        return EngineCapabilities(
+        return EngineCapability(
                 (ProcessorBase, FeatureExtraction, ObjectModel),
                 (Frame, MatchResults),
                 {'feature_type': ('FREAK', 'SURF', 'SIFT', 'ORB', 'KAZE', 'AKAZE')}

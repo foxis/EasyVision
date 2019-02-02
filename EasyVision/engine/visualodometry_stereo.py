@@ -150,13 +150,14 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
                     break
                 else:
                     print 'failed to find inliers', reproj_error_inliers, '<', self._reproj_error
+
+                R, _ = cv2.Rodrigues(r * -1)
+                t *= -1
+
+                dZ = sum(i[0] ** 2 for i in t) ** .5
+
             else:
                 ret = False
-
-            R, _ = cv2.Rodrigues(r * -1)
-            t *= -1
-
-            dZ = sum(i[0] ** 2 for i in t) ** .5
 
             if ret:
                 new_points_3d_inliers = np.float32([new_points_3d[i].tolist()[0] for i in inliers])
@@ -383,7 +384,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
 
     @property
     def capabilities(self):
-        return EngineCapabilities(
+        return EngineCapability(
                 (ProcessorBase, CalibratedStereoCamera, FeatureExtraction),
                 (Frame, Pose),
                 {'feature_type': ('FREAK', 'SURF', 'SIFT', 'ORB', 'KAZE', 'AKAZE')}
