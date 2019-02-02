@@ -12,7 +12,7 @@ import ctypes
 #import affinity
 
 
-Attr = namedtuple("Attr", ['name', 'method', 'args', 'kwargs'])
+Attr = namedtuple("Attr", 'name method args kwargs')
 multiprocessing.connection.BUFSIZE = 64 * 1024 * 1024
 
 
@@ -41,10 +41,10 @@ class MultiProcessing(ProcessorBase, mp.Process):
         super(MultiProcessing, self).__init__(vision, *args, **kwargs)
 
     def __getattr__(self, name):
-        def caller_proxy(_self, name, attr):
-            @functools.wraps(attr)
+        def caller_proxy(_self, _name, _attr):
+            @functools.wraps(_attr)
             def wrapper(*args, **kwargs):
-                return _self.remote_call(name, *args, **kwargs)
+                return _self.remote_call(_name, *args, **kwargs)
             return wrapper
 
         if (name.startswith('__') and name.endswith('__')) or not self._running.value:
