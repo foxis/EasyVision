@@ -11,6 +11,11 @@ def test_import_main():
 
 
 @pytest.mark.main
+def test_import_processorbuilder():
+    import EasyVision.processorstackbuilder
+
+
+@pytest.mark.main
 def test_import_engine():
     import EasyVision.engine
 
@@ -58,6 +63,11 @@ def test_import_monocular():
 @pytest.mark.main
 def test_import_image():
     from EasyVision.vision import ImagesReader
+
+
+@pytest.mark.main
+def test_import_pyrocapture():
+    from EasyVision.vision import PyroCapture
 
 
 @pytest.mark.main
