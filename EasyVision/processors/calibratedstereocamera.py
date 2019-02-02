@@ -327,6 +327,12 @@ class CalibratedStereoCamera(ProcessorBase):
     def camera(self):
         return self._camera
 
+    @camera.setter
+    def camera(self, value):
+        if not isinstance(value, StereoCamera):
+            raise TypeError("Must be StereoCamera")
+        self._camera = value
+
     def capture(self):
         frame = super(CalibratedStereoCamera, self).capture()
         if frame and self._calculate_disparity and not self._calibrate:

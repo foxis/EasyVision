@@ -127,6 +127,12 @@ class CalibratedCamera(ProcessorBase):
     def camera(self):
         return self._camera
 
+    @camera.setter
+    def camera(self, value):
+        if not isinstance(value, PinholeCamera):
+            raise TypeError("Must be PinholeCamera")
+        self._camera = value
+
     def process(self, image):
         if self._calibrate:
             img = image.image
