@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 from .base import EasyVisionBase
 from collections import namedtuple
-import Pyro.core
-import Pyro.naming
-from Pyro.errors import PyroError,NamingError
+import Pyro4
 
 Command = namedtuple('Command', 'name method args kwargs')
 
 
-class ProxyVision(Pyro.core.ObjBase):
+@Pyro4.expose
+class ProxyVision(object):
     """Proxy object for accepting and handling remote commands.
     """
 
@@ -69,27 +68,16 @@ class Server(object):
         self._proxy = proxy_class(vision, freerun)
 
     def run(self):
-        Pyro.core.initServer()
-        ns = Pyro.naming.NameServerLocator().getNS()
-        daemon = Pyro.core.Daemon()
-        daemon.useNameServer(ns)
+        with Pyro4.Daemon() as daemon:
+            ns = Pyro4.locateNS()
 
-        try:
-            ns.unregister(self._name)
-        except NamingError:
-            pass
+            uri = daemon.register(self._proxy)
+            ns.register(self._name, uri)
 
-        uri = daemon.connect(self._proxy, self._name)
-        self._proxy.setup()
+            self._proxy.setup()
 
-        self._running = True
-        try:
+            self._running = True
             daemon.requestLoop(condition=lambda: self._running)
-        except KeyboardInterrupt:
-            pass
-
-        daemon.disconnect(self._proxy)
-        daemon.shutdown()
 
     def stop(self):
         self._running = False

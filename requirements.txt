@@ -8,4 +8,4 @@ numpy==1.15.4
 opencv-contrib-python==3.4.2.16
 
 # interserver communication
-pyro==3.16
+pyro4==4.75

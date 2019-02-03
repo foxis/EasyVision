@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from .base import *
-import Pyro.core
-import Pyro.naming
-import Pyro.protocol
+import Pyro4
 import functools
 from EasyVision.server import Command
 
@@ -49,11 +47,7 @@ class PyroCapture(VisionBase):
 
     def setup(self):
         super(PyroCapture, self).setup()
-        Pyro.core.initClient()
-        ns = Pyro.naming.NameServerLocator().getNS()
-
-        uri = ns.resolve(self._name)
-        self._proxy = Pyro.core.getProxyForURI(uri)
+        self._proxy = Pyro4.Proxy('PYRONAME:%s' % self._name)
         self.remote_call('setup')
 
     def release(self):
