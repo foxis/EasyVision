@@ -85,7 +85,7 @@ class CalibratedCamera(ProcessorBase):
         if not calibrate:
             if not isinstance(camera, PinholeCamera) and not (isinstance(camera, tuple) and len(camera) == 3):
                 raise TypeError("Camera must be either PinholeCamera or tuple with (frame_size, camera_matrix, distortion)")
-            self._camera = PinholeCamera._make(camera)
+            self._camera = camera
         else:
             self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
             self._camera = None
@@ -132,6 +132,7 @@ class CalibratedCamera(ProcessorBase):
         if not isinstance(value, PinholeCamera):
             raise TypeError("Must be PinholeCamera")
         self._camera = value
+        self._calibrate = False
 
     def process(self, image):
         if self._calibrate:

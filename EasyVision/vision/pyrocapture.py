@@ -2,6 +2,9 @@
 from .base import *
 import Pyro4
 import functools
+import cPickle
+import socket
+import threading
 from EasyVision.server import Command
 
 
@@ -9,6 +12,7 @@ class PyroCapture(VisionBase):
     def __init__(self, name):
         self._name = name
         self._proxy = None
+        self._sock = None
 
     def __getattr__(self, name):
         def caller_proxy(_self, _name, _attr):
@@ -26,32 +30,35 @@ class PyroCapture(VisionBase):
         else:
             return self.remote_get(name)
 
+    def __command(self, cmd):
+        assert(self._proxy is not None)
+        data = cPickle.dumps(cmd, protocol=-1)
+        blob_id = self._proxy.command(data)
+        if blob_id is not None:
+            self._sock.sendall(blob_id)
+            f = self._sock.makefile('rb')
+            return cPickle.load(f)  # FIXME: This is really very unsafe
+
     def remote_get(self, name):
-        result = self._proxy.command(Command(name, 'GET', None, None))
-        if isinstance(result, Exception):
-            raise result
-        else:
-            return result
+        return self.__command(Command(name, 'GET', None, None))
 
     def remote_set(self, name, value):
-        result = self._proxy.command(Command(name, 'SET', value, None))
-        if isinstance(result, Exception):
-            raise result
+        self.__command(Command(name, 'SET', value, None))
 
     def remote_call(self, name, *args, **kwargs):
-        result = self._proxy.command(Command(name, 'CALL', args, kwargs))
-        if isinstance(result, Exception):
-            raise result
-        else:
-            return result
+        return self.__command(Command(name, 'CALL', args, kwargs))
 
     def setup(self):
         super(PyroCapture, self).setup()
         self._proxy = Pyro4.Proxy('PYRONAME:%s' % self._name)
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock.connect(tuple(self._proxy.getsockname()))
         self.remote_call('setup')
 
     def release(self):
         self.remote_call('release')
+        self._sock.close()
+        self._proxy = None
         super(PyroCapture, self).release()
 
     def capture(self):
