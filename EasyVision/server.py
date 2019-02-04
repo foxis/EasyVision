@@ -8,7 +8,7 @@ import Pyro4
 import cPickle
 import select
 import uuid
-import cStringIO
+from datetime import datetime
 
 Command = namedtuple('Command', 'name method args kwargs')
 
@@ -76,6 +76,8 @@ class ProxyVision(object):
             self._running = True
             self._event.clear()
             self._exit_event.clear()
+            self._frames = 0
+            self._framestart = datetime.now()
 
             print 'thread started'
 
@@ -84,6 +86,7 @@ class ProxyVision(object):
                     self._result = result
                     self._result_ready = True
                     self._event.set()
+                    self._frames += 1
                 if not self._running:
                     break
         except:
@@ -93,6 +96,14 @@ class ProxyVision(object):
             print 'thread finally'
             self._running = False
             self._exit_event.set()
+
+    @Pyro4.expose
+    def fps(self):
+        if self._freerun:
+            with self._result_lock:
+                return self._frames / (datetime.now() - self._framestart).total_seconds()
+        else:
+            return None
 
     @Pyro4.expose
     def setup(self):
@@ -186,6 +197,7 @@ class ServerDaemon(Pyro4.core.Daemon):
                 if file_id is None:
                     return
                 data = self.datablobs.pop(file_id)
+                csock.sendall("{:016}".format(len(data)))
                 csock.sendall(data)
             except:
                 break

@@ -33,8 +33,10 @@ class PyroCapture(VisionBase):
     def __receive_blob(self, blob_id):
         if blob_id is not None:
             self._sock.sendall(blob_id)
-            f = self._sock.makefile('rb')
-            return cPickle.load(f)  # FIXME: This is really very unsafe
+            len = int(self._sock.recv(16))
+            data = self._sock.recv(len)
+            result = cPickle.loads(data)
+            return result
 
     def __command(self, cmd):
         assert(self._proxy is not None)
