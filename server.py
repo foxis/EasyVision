@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument("file", help="Processor Stack builder config file")
     parser.add_argument("-H", "--host", default="localhost", help="Hostname of the server")
     parser.add_argument("-p", "--port", default=0, help="Port of the server")
-    parser.add_argument("-r", "--freerun", default=False, help="Whether to go in freerun mode")
+    parser.add_argument("-l", "--lazy", const=False, default=True, action='store_const', help="Whether to go in freerun mode")
 
     args = parser.parse_args()
 

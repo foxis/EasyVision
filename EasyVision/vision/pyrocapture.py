@@ -4,15 +4,15 @@ import Pyro4
 import functools
 import cPickle
 import socket
-import threading
 from EasyVision.server import Command
 
 
 class PyroCapture(VisionBase):
-    def __init__(self, name):
+    def __init__(self, name, *args, **kwargs):
         self._name = name
         self._proxy = None
         self._sock = None
+        super(PyroCapture, self).__init__(*args, **kwargs)
 
     def __getattr__(self, name):
         def caller_proxy(_self, _name, _attr):
@@ -53,17 +53,21 @@ class PyroCapture(VisionBase):
         self._proxy = Pyro4.Proxy('PYRONAME:%s' % self._name)
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect(tuple(self._proxy.getsockname()))
-        self.remote_call('setup')
+        self._proxy.setup()
 
     def release(self):
-        self.remote_call('release')
+        self._proxy.release()
         self._sock.close()
         self._proxy = None
         super(PyroCapture, self).release()
 
     def capture(self):
         super(PyroCapture, self).capture()
-        return self.remote_call('capture')
+        return self._proxy.capture()
+
+    def compute(self):
+        super(PyroCapture, self).capture()
+        return self._proxy.compute()
 
     @property
     def frame_size(self):
