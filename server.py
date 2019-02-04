@@ -13,13 +13,14 @@ if __name__ == "__main__":
     parser.add_argument("file", help="Processor Stack builder config file")
     parser.add_argument("-H", "--host", default="localhost", help="Hostname of the server")
     parser.add_argument("-p", "--port", default=0, help="Port of the server")
-    parser.add_argument("-l", "--lazy", const=False, default=True, action='store_const', help="Whether to go in freerun mode")
+    parser.add_argument("-l", "--lazy", const=True, default=False, action='store_const', help="Whether to go in freerun mode")
 
     args = parser.parse_args()
 
     classes = (
         ImagesReader,
         VideoCapture,
+        PyroCapture,
         CalibratedCamera,
         CalibratedStereoCamera,
         PinholeCamera,
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     vision = builder.build()
 
     print("Initializing server...")
-    server = Server(args.name, vision, host=args.host, port=args.port, freerun=args.freerun)
+    server = Server(args.name, vision, host=args.host, port=args.port, freerun=not args.lazy)
 
     print("Starting server...")
     server.run()
