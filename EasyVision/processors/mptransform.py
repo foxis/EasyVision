@@ -128,13 +128,13 @@ class MultiProcessing(ProcessorBase, mp.Process):
                 if ctrl.method == 'SET':
                     cur_obj = self._vision
                     last_obj = None
-                    while cur_obj or last_obj:
+                    while cur_obj is not None or last_obj is not None:
                         last_obj, cur_obj = cur_obj, getattr(cur_obj, '_vision', None)
 
                         if hasattr(last_obj, ctrl.name) and not hasattr(cur_obj, ctrl.name):
                             setattr(last_obj, ctrl.name, ctrl.args)
                             break
-                    if not cur_obj and not last_obj:
+                    if cur_obj is None and last_obj is None:
                         raise AttributeError("can't set attribute")
                 elif ctrl.method == 'GET':
                     result = getattr(self._vision, ctrl.name)

@@ -24,20 +24,23 @@ class PyroCapture(VisionBase):
         if name.startswith('__') and name.endswith('__') or self._proxy is None:
             return super(PyroCapture, self).__getattr__(name)
 
-        attr = getattr(self._vision, name)
+        attr = getattr(self._proxy, name)
         if hasattr(attr, '__call__'):
             return caller_proxy(self, name, attr)
         else:
             return self.remote_get(name)
 
-    def __command(self, cmd):
-        assert(self._proxy is not None)
-        data = cPickle.dumps(cmd, protocol=-1)
-        blob_id = self._proxy.command(data)
+    def __receive_blob(self, blob_id):
         if blob_id is not None:
             self._sock.sendall(blob_id)
             f = self._sock.makefile('rb')
             return cPickle.load(f)  # FIXME: This is really very unsafe
+
+    def __command(self, cmd):
+        assert(self._proxy is not None)
+        data = cPickle.dumps(cmd, protocol=-1)
+        blob_id = self._proxy.command(data)
+        return self.__receive_blob(blob_id)
 
     def remote_get(self, name):
         return self.__command(Command(name, 'GET', None, None))
@@ -63,11 +66,13 @@ class PyroCapture(VisionBase):
 
     def capture(self):
         super(PyroCapture, self).capture()
-        return self._proxy.capture()
+        blob_id = self._proxy.capture()
+        return self.__receive_blob(blob_id)
 
     def compute(self):
         super(PyroCapture, self).capture()
-        return self._proxy.compute()
+        blob_id = self._proxy.compute()
+        return self.__receive_blob(blob_id)
 
     @property
     def frame_size(self):
@@ -87,7 +92,7 @@ class PyroCapture(VisionBase):
 
     @property
     def name(self):
-        return "{} @ {}".format(self._name, self._remote_get('name'))
+        return "{} @ {}".format(self._name, self.remote_get('name'))
 
     @property
     def description(self):

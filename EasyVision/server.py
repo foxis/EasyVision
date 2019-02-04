@@ -8,6 +8,7 @@ import Pyro4
 import cPickle
 import select
 import uuid
+import cStringIO
 
 Command = namedtuple('Command', 'name method args kwargs')
 
@@ -35,28 +36,29 @@ class ProxyVision(object):
         super(ProxyVision, self).__init__()
 
     @Pyro4.expose
+    def echo(self, data):
+        return data
+
+    @Pyro4.expose
     def command(self, data):
         """Will handle remote commands"""
-        result = None
-        ctrl = cPickle.loads(data)
+        ctrl = cPickle.loads(data.encode('latin1'))
         if ctrl.method == 'SET':
             cur_obj = self._vision
             last_obj = None
-            while cur_obj or last_obj:
+            while cur_obj is not None or last_obj is not None:
                 last_obj, cur_obj = cur_obj, getattr(cur_obj, '_vision', None)
-
                 if hasattr(last_obj, ctrl.name) and not hasattr(cur_obj, ctrl.name):
                     setattr(last_obj, ctrl.name, ctrl.args)
-                    break
-            if not cur_obj and not last_obj:
+                    return None
+            if cur_obj is None and last_obj is None:
                 raise AttributeError("can't set attribute")
-            return None
         elif ctrl.method == 'GET':
             result = getattr(self._vision, ctrl.name)
         elif ctrl.method == 'CALL':
             result = getattr(self._vision, ctrl.name)(*ctrl.args, **ctrl.kwargs)
         else:
-            pass
+            return None
 
         if isinstance(result, EasyVisionBase):
             result = result.name
@@ -67,13 +69,15 @@ class ProxyVision(object):
         data = cPickle.dumps(data, protocol=-1)
         data_id = str(uuid.uuid4())
         self._pyroDaemon.datablobs[data_id] = data
-        return data_id, self._pyroDaemon.blobsocket.getsockname()
+        return data_id
 
     def freerun(self):
         try:
             self._running = True
             self._event.clear()
             self._exit_event.clear()
+
+            print 'thread started'
 
             for result in self._vision:
                 with self._result_lock:
@@ -83,8 +87,10 @@ class ProxyVision(object):
                 if not self._running:
                     break
         except:
+            print 'thread except'
             raise
         finally:
+            print 'thread finally'
             self._running = False
             self._exit_event.set()
 
@@ -175,12 +181,15 @@ class ServerDaemon(Pyro4.core.Daemon):
 
     def blob_client(self, csock):
         while True:
-            file_id = Pyro4.socketutil.receiveData(csock, 36).decode()
-            if file_id is None:
-                return
-            data = self.datablobs.pop(file_id)
-            csock.sendall(data)
-            csock.close()
+            try:
+                file_id = Pyro4.socketutil.receiveData(csock, 36).decode()
+                if file_id is None:
+                    return
+                data = self.datablobs.pop(file_id)
+                csock.sendall(data)
+            except:
+                break
+        csock.close()
 
 
 class Server(object):

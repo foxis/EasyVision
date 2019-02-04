@@ -98,7 +98,7 @@ class CalibratedCamera(ProcessorBase):
         self._calibrate = calibrate
         super(CalibratedCamera, self).__init__(vision, *args, **kwargs)
 
-    def setup(self):
+    def __setup(self):
         if self._calibrate:
             # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
             self.objp = np.zeros((np.prod(self._grid_shape), 3), np.float32)
@@ -117,6 +117,9 @@ class CalibratedCamera(ProcessorBase):
                     self.camera.projection,
                     self.camera.size,
                     cv2.CV_32FC1)
+
+    def setup(self):
+        self.__setup()
         super(CalibratedCamera, self).setup()
 
     @property
@@ -133,6 +136,7 @@ class CalibratedCamera(ProcessorBase):
             raise TypeError("Must be PinholeCamera")
         self._camera = value
         self._calibrate = False
+        self.__setup()
 
     def process(self, image):
         if self._calibrate:
