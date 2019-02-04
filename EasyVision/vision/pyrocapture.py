@@ -87,7 +87,7 @@ class PyroCapture(VisionBase):
 
     @property
     def name(self):
-        return self._name if self._name else "Capture {}".format(self._path)
+        return "{} @ {}".format(self._name, self._remote_get('name'))
 
     @property
     def description(self):

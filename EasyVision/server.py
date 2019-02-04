@@ -23,7 +23,7 @@ class ProxyVision(object):
 
         self._vision = vision
         self._freerun = freerun
-        self._last_result = None
+        self._result = None
         self._result_ready = False
         self._running = False
         self._result_lock = threading.Lock()
@@ -115,7 +115,7 @@ class ProxyVision(object):
             self._event.wait()
 
         with self._result_lock:
-            result = self._last_result
+            result = self._result
             self._result_ready = False
             self._event.clear()
 
