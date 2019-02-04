@@ -11,6 +11,8 @@ import threading as mt
 
 @mark.main
 def test_server_client():
+    """This test requires Pyro NameServer started"""
+    
     vision = ImagesReader(images_left)
     cam = CalibratedCamera(vision, left_camera)
 
@@ -25,4 +27,3 @@ def test_server_client():
             assert(idx > len(images_left))
 
     server.stop()
-    

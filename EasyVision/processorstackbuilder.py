@@ -77,7 +77,7 @@ class Args(object):
 
     @staticmethod
     def _retrieve_object(classes, objects, value):
-        if isinstance(value, str) and value.startswith('object__'):
+        if isinstance(value, basestring) and value.startswith('object__'):
             obj = objects[value]
             name = value[8:-1]
             return classes[name].fromdict(obj)
