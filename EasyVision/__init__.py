@@ -4,7 +4,7 @@
 Package Description.
 """
 
-__version__ = "0.0.1"
+__version__ = "0.0.3"
 __short_description__ = "Easy Computer Vision Library using OpenCV."
 __license__ = "BSD 3-Clause"
 __author__ = "Andrius Mikonis"
