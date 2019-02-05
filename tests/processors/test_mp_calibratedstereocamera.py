@@ -9,7 +9,7 @@ import cv2
 import json
 import numpy as np
 import os
-from .common import *
+from tests.common import *
 
 
 class DummySubclass(VisionSubclass):

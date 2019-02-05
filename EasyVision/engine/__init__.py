@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .base import Pose
+from EasyVision.engine.base import Pose, EngineCapability
 from .exceptions import *
 
 from .objectrecognition import ObjectRecognitionEngine

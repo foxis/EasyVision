@@ -4,7 +4,7 @@
 import pytest
 from pytest import raises, approx
 from EasyVision.vision.base import *
-from .common import VisionSubclass
+from tests.common import VisionSubclass
 
 
 @pytest.mark.main

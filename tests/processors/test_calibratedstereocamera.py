@@ -8,7 +8,7 @@ from EasyVision.processors import *
 import cv2
 import json
 import numpy as np
-from .common import *
+from tests.common import *
 
 
 @pytest.mark.main

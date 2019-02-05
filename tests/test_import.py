@@ -106,17 +106,5 @@ def test_import_featureextractor():
 
 
 @pytest.mark.main
-def test_import_topologicalslam():
-    from EasyVision.engine import TopologicalSLAMEngine
-
-
-@pytest.mark.main
 def test_import_bowvocabulary():
     from EasyVision.engine import BOWVocabularyBuilderEngine
-
-
-if __name__ == "__main__":
-    import os
-
-    basename = os.path.basename(__file__)
-    pytest.main([basename, "-s", "--tb=native"])

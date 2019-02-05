@@ -5,7 +5,7 @@ import pytest
 from pytest import raises, approx
 from EasyVision.vision.base import *
 from EasyVision.processors.base import *
-from .common import VisionSubclass, ProcessorA, ProcessorB
+from tests.common import VisionSubclass, ProcessorA, ProcessorB
 
 
 @pytest.mark.main

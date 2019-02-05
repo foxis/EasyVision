@@ -1,14 +1,24 @@
 # -*- coding: utf-8 -*-
-from .base import EasyVisionBase
-from .vision.base import VisionBase
-from .engine.base import EngineBase
+from EasyVision.base import *
 from collections import namedtuple
 import threading
 import Pyro4
-import cPickle
 import select
 import uuid
 from datetime import datetime
+
+try:
+    # Due to Multiprocessing incompatability
+    from EasyVision.engine.base import EngineBase
+except ImportError:
+    pass
+
+from EasyVision.vision.base import VisionBase
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 Command = namedtuple('Command', 'name method args kwargs')
 
@@ -42,7 +52,7 @@ class ProxyVision(object):
     @Pyro4.expose
     def command(self, data):
         """Will handle remote commands"""
-        ctrl = cPickle.loads(data.encode('latin1'))
+        ctrl = pickle.loads(data.encode('latin1'))
         if ctrl.method == 'SET':
             cur_obj = self._vision
             last_obj = None
@@ -66,7 +76,9 @@ class ProxyVision(object):
         return self.send_data(result)
 
     def send_data(self, data):
-        data = cPickle.dumps(data, protocol=-1)
+        if data is None:
+            return None
+        data = pickle.dumps(data, protocol=-1)
         data_id = str(uuid.uuid4())
         self._pyroDaemon.datablobs[data_id] = data
         return data_id
@@ -94,7 +106,8 @@ class ProxyVision(object):
             raise
         finally:
             print 'thread finally'
-            self._running = False
+            with self._result_lock:
+                 self._running = False
             self._exit_event.set()
 
     @Pyro4.expose
@@ -127,8 +140,11 @@ class ProxyVision(object):
     def get_last_result(self):
         with self._result_lock:
             result_ready = self._result_ready
+            running = self._running
 
         if not result_ready:
+            if not running:
+                return None
             self._event.wait()
 
         with self._result_lock:

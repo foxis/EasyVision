@@ -6,7 +6,7 @@ from pytest import raises, approx, mark
 from EasyVision.vision import *
 from EasyVision.processors import *
 import cv2
-from .common import *
+from tests.common import *
 from EasyVision.processorstackbuilder import Builder, Args
 
 

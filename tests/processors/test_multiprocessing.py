@@ -8,7 +8,7 @@ from EasyVision.processors.base import *
 from EasyVision.processors import MultiProcessing
 from EasyVision.vision import *
 from collections import namedtuple
-from .common import VisionSubclass, MyException
+from tests.common import VisionSubclass, MyException
 from time import sleep
 
 Payload = namedtuple('Payload', ('a', 'b'))

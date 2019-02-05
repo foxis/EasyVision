@@ -2,9 +2,13 @@
 from .base import *
 import Pyro4
 import functools
-import cPickle
 import socket
 from EasyVision.server import Command
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 
 class PyroCapture(VisionBase):
@@ -35,12 +39,12 @@ class PyroCapture(VisionBase):
             self._sock.sendall(blob_id)
             len = int(self._sock.recv(16))
             data = self._sock.recv(len)
-            result = cPickle.loads(data)
+            result = pickle.loads(data)
             return result
 
     def __command(self, cmd):
         assert(self._proxy is not None)
-        data = cPickle.dumps(cmd, protocol=-1)
+        data = pickle.dumps(cmd, protocol=-1)
         blob_id = self._proxy.command(data)
         return self.__receive_blob(blob_id)
 
@@ -69,6 +73,7 @@ class PyroCapture(VisionBase):
     def capture(self):
         super(PyroCapture, self).capture()
         blob_id = self._proxy.capture()
+        print blob_id
         return self.__receive_blob(blob_id)
 
     def compute(self):

@@ -9,7 +9,7 @@ from EasyVision.processors import *
 from EasyVision.vision import *
 import cv2
 import numpy as np
-from .common import *
+from tests.common import *
 
 
 @mark.complex

@@ -7,7 +7,7 @@ from EasyVision.vision import *
 from EasyVision.processors import *
 import cv2
 import numpy as np
-from .common import *
+from tests.common import *
 
 
 @mark.main

@@ -3,7 +3,7 @@
 
 import pytest
 from pytest import raises, approx, mark
-from .common import *
+from tests.common import *
 
 
 @mark.complex

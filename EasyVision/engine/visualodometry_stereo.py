@@ -147,15 +147,12 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
                 reproj_error_inliers = sum(p.dot(p) ** .5 for i, p in enumerate(a - b[0] for a, b in zip(new_points_2d, projected_2d)) if i in inliers) / len(inliers)
                 reproj_error = sum(p.dot(p) ** .5 for p in (a - b[0] for a, b in zip(new_points_2d, projected_2d))) / len(new_points_2d)
                 if reproj_error_inliers < self._reproj_error:
+                    R, _ = cv2.Rodrigues(r * -1)
+                    t *= -1
+                    dZ = sum(i[0] ** 2 for i in t) ** .5
                     break
                 else:
                     print 'failed to find inliers', reproj_error_inliers, '<', self._reproj_error
-
-                R, _ = cv2.Rodrigues(r * -1)
-                t *= -1
-
-                dZ = sum(i[0] ** 2 for i in t) ** .5
-
             else:
                 ret = False
 

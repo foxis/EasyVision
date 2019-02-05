@@ -2,8 +2,12 @@
 from EasyVision.vision.base import *
 import cv2
 import numpy as np
-import cPickle
 from future_builtins import zip
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 
 class KeyPoint(namedtuple('KeyPoint', 'pt size angle response octave class_id')):
@@ -59,18 +63,18 @@ class Features(namedtuple('Features', 'points descriptors points3d')):
         return Features(points, descriptors, d['points3d'])
 
     def tobytes(self):
-        return cPickle.dumps(self, protocol=-1)
+        return pickle.dumps(self, protocol=-1)
 
     @staticmethod
     def frombytes(data):
-        return cPickle.loads(data)
+        return pickle.loads(data)
 
     def tobuffer(self, buf):
-        cPickle.dump(self, buf, protocol=-1)
+        pickle.dump(self, buf, protocol=-1)
 
     @staticmethod
     def frombuffer(buf):
-        return cPickle.load(self, buf)
+        return pickle.load(self, buf)
 
     def __reduce__(self):
         return (self.__class__, (self.points, self.descriptors.get() if isinstance(self.descriptors, cv2.UMat) else self.descriptors))

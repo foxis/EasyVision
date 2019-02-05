@@ -3,8 +3,12 @@ from EasyVision.base import *
 from collections import namedtuple
 from datetime import datetime
 from operator import itemgetter
-import cPickle
 import cv2
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 
 class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'original', 'mask', 'features', 'feature_type'])):
@@ -41,18 +45,18 @@ class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'or
         return super(Image, cls).__new__(cls, source, image, original, mask, features, feature_type)
 
     def tobytes(self):
-        return cPickle.dumps(self, protocol=-1)
+        return pickle.dumps(self, protocol=-1)
 
     @staticmethod
     def frombytes(data):
-        return cPickle.loads(data)
+        return pickle.loads(data)
 
     def tobuffer(self, buf):
-        cPickle.dump(self, buf, protocol=-1)
+        pickle.dump(self, buf, protocol=-1)
 
     @staticmethod
     def frombuffer(buf):
-        return cPickle.load(buf)
+        return pickle.load(buf)
 
     def __reduce__(self):
         d = (
@@ -63,7 +67,7 @@ class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'or
             self.features,
             self.feature_type,
         )
-        return (self.__class__, d)
+        return self.__class__, d
 
 
 class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 'images', 'processor_mask'])):
@@ -128,18 +132,18 @@ class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 
         return "".join(i and "1" or "0" for i in processor_mask) if isinstance(processor_mask, tuple) else processor_mask
 
     def tobytes(self):
-        return cPickle.dumps(self, protocol=-1)
+        return pickle.dumps(self, protocol=-1)
 
     @staticmethod
     def frombytes(data):
-        return cPickle.loads(data)
+        return pickle.loads(data)
 
     def tobuffer(self, buf):
-        cPickle.dump(self, buf, protocol=-1)
+        pickle.dump(self, buf, protocol=-1)
 
     @staticmethod
     def frombuffer(buf):
-        return cPickle.load(buf)
+        return pickle.load(buf)
 
 
 class VisionBase(EasyVisionBase):

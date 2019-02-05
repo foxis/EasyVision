@@ -10,9 +10,11 @@ from collections import namedtuple
 class EngineCapability(namedtuple('EngineCapability', 'inputs outputs misc')):
     """A class describing Engine Capability
 
-        inputs: a list of input Processor classes supported
-        outputs: a list of classes returned. e.g. (Frame, Pose) for Odometry or (Frame, MatchResults) for Object Recognition
-        misc: Miscellaneous information about the engine specific to the algorithms implemented
+    **inputs**: a list of input Processor classes supported
+
+    **outputs**: a list of classes returned. e.g. (Frame, Pose) for Odometry or (Frame, MatchResults) for Object Recognition
+
+    **misc**: Miscellaneous information about the engine specific to the algorithms implemented
     """
     pass
 

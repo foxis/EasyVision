@@ -7,7 +7,7 @@ from EasyVision.vision.base import *
 from EasyVision.processors import MultiConsumers
 from EasyVision.vision import *
 from itertools import izip
-from .common import VisionSubclass
+from tests.common import VisionSubclass
 
 
 @pytest.mark.main
