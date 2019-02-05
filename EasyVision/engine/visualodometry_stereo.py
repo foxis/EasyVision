@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .base import *
+from EasyVision.engine.base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, StereoCamera, CalibratedStereoCamera, FeatureMatchingMixin
 import cv2

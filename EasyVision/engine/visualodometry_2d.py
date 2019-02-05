@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .base import *
+from .base import OdometryBase, Pose, EngineCapability
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin
 import cv2

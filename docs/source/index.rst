@@ -1,19 +1,17 @@
-.. contents::
-
-Release v\ |release| (:ref:`What's new? <release_history>`).
-
 .. include:: ../../README.rst
 
-Table of Content
-------------------------------------------------------------------------------
+.. toctree::
+   :maxdepth: 4
+   :caption: Contents:
 
-.. articles::
+   EasyVision
+   changelog
+   authors
+   license
 
-.. include:: ../../AUTHORS.rst
+Indices and tables
+==================
 
-
-API Document
-------------------------------------------------------------------------------
-
-* :ref:`by Name <genindex>`
-* :ref:`by Structure <modindex>`
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
