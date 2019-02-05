@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from tests.test_processors_mp_calibratedstereocamera import test_stereo_calibrated_mp
+from tests.processors.test_mp_calibratedstereocamera import test_stereo_calibrated_mp
 
 
 if __name__ == "__main__":

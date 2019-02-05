@@ -7,7 +7,7 @@ from EasyVision.processors import *
 from EasyVision.vision import *
 import cv2
 import numpy as np
-from tests.test_processors_mp_calibratedstereocamera import test_stereo_calibrated_mp, test_stereo_calibrated_mp_dummy
+from tests.processors.test_mp_calibratedstereocamera import test_stereo_calibrated_mp, test_stereo_calibrated_mp_dummy
 
 if __name__ == "__main__":
     test_stereo_calibrated_mp_dummy()
