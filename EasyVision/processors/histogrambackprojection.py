@@ -1,9 +1,20 @@
 # -*- coding: utf-8 -*-
+"""Implements Histogram Backprojection using OpenCV
+
+"""
+
 from .base import *
 import cv2
 
 
 class HistogramBackprojection(ProcessorBase):
+    """Class that implements Histogram Backprojection algorithm
+
+    Provided a tuple of histograms will calculate masks for each histogram.
+    If ``combine_masks`` is False, then ``Image.mask`` will be a tuple containing all the masks for each histogram.
+    Otherwise ``Image.mask`` will contain a combined mask.
+    """
+
     CHANNELS = (0, 1)
     RANGES = (0, 180, 0, 256)
     RANGE_MIN = (0., 20., 22.)
@@ -12,6 +23,17 @@ class HistogramBackprojection(ProcessorBase):
 
     def __init__(self, vision, histogram, combine_masks=False, invert=False, channels=CHANNELS, ranges=RANGES,
                  range_min=RANGE_MIN, range_max=RANGE_MAX, *args, **kwargs):
+        """HistogramBackprojection instance initialization
+
+        :param vision: source capturing object
+        :param histogram: a tuple of histograms
+        :param combine_masks: flag indicating that one should combine all the masks for all the histograms
+        :param invert: flag indicating that resulting mask will be inverted (useful for e.g. hand rejection)
+        :param channels: a tuple of channels used in histogram
+        :param ranges: channel value ranges
+        :param range_min: min value for filtering of color
+        :param range_max: max value for filtering of color
+        """
         if isinstance(histogram, tuple) and not histogram:
             raise ValueError("If Histogram is a list of histograms, then it must not be empty.")
         self._hist = histogram if isinstance(histogram, tuple) else (histogram, )
@@ -36,6 +58,17 @@ class HistogramBackprojection(ProcessorBase):
     @staticmethod
     def calculate_histogram(image, mask=None, channels=CHANNELS, bins=BINS, ranges=RANGES,
                             range_min=RANGE_MIN, range_max=RANGE_MAX):
+        """Helper method to calculate a histogram from an image using a mask if provided.
+
+        :param image: numpy array representing an BGR image
+        :param mask: numpy array representing a grayscale image
+        :param channels: a tuple of channels used to calculate the histogram
+        :param bins: a tuple for number of bins for each channel
+        :param ranges: channel value ranges
+        :param range_min: min value for filtering of color
+        :param range_max: max value for filtering of color
+        :return: numpy array representing calculated histogram
+        """
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         _mask = cv2.inRange(hsv, range_min, range_max)
         if mask is not None:

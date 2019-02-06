@@ -1,18 +1,31 @@
 # -*- coding: utf-8 -*-
+"""Contains base and helper classes for object models
+
+"""
+
 from EasyVision.base import *
-from EasyVision.exceptions import *
 from EasyVision.processors import Features
 from collections import namedtuple
 import numpy as np
 
 
-class ModelView(NamedTupleExtendHelper, namedtuple('ModelView', ['image', 'outline', 'features', 'feature_type'])):
+class ModelView(NamedTupleExtendHelper, namedtuple('ModelView', 'image outline features feature_type')):
+    """Structure holding feature-based model view
+
+    Contains these fields:
+        image - cropped image of the object
+        outline - np.array of outline points
+        features - Features object containing keypoints and descriptors
+        feature_type - feature type of the Features object
+    """
+
     __slots__ = ()
 
     def __new__(cls, image, outline, features, feature_type):
         return super(ModelView, cls).__new__(cls, image, outline, features, feature_type)
 
     def todict(self):
+        """Convert ModelView to dict"""
         d = {
             'image': self.image.tolist(),
             'outline': self.outline.tolist(),
@@ -23,6 +36,7 @@ class ModelView(NamedTupleExtendHelper, namedtuple('ModelView', ['image', 'outli
 
     @staticmethod
     def fromdict(d):
+        """Create ModelView from dict"""
         image = None if d['image'] is None else np.uint8(d['image'])
         features = Features.fromdict(d['features'])
         outline = np.float32(d['outline'])
@@ -30,6 +44,10 @@ class ModelView(NamedTupleExtendHelper, namedtuple('ModelView', ['image', 'outli
 
 
 class ModelBase(EasyVisionBase):
+    """Base class for object Model
+
+    """
+
     __slots__ = ('_name', '_views', '_view_index')
 
     def __init__(self, name, views, *args, **kwargs):
@@ -41,16 +59,20 @@ class ModelBase(EasyVisionBase):
         super(ModelBase, self).__init__(*args, **kwargs)
 
     def __len__(self):
+        """Will return number of views"""
         return len(self._views)
 
     def __iter__(self):
+        """Will iterate over views"""
         self._view_index = 0
         return self
 
     def setup(self):
+        """This method is not required for models"""
         pass
 
     def release(self):
+        """This method is not required for models"""
         pass
 
     def next(self):
@@ -70,6 +92,7 @@ class ModelBase(EasyVisionBase):
         pass
 
     def update(self, model):
+        """Method to update models with a view or join two model views"""
         if isinstance(model, ModelView):
             self._views += [model]
         elif isinstance(model, ModelBase):

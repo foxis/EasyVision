@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Base module containing Base and helper classes for all of EasyVision algorithms.
+
+"""
+
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 
@@ -13,7 +17,9 @@ class NamedTupleExtendHelper(object):
         _replace
             Return a new object replacing specified fields with new values
 
-    example:
+    example
+
+    .. code-block:: python
 
         MyBase = namedtuple('MyBase', 'a b')
 
@@ -83,11 +89,14 @@ class EasyVisionBase(object):
             Being called when display_results property value is changed
 
     """
+
     __metaclass__ = ABCMeta
     __slots__ = ('_debug', '_display_results', '__setup_called')
 
     def __init__(self, debug=False, display_results=False, *args, **kwargs):
-        """
+        """Initializes the instance. super must be called after all the derived class
+        initialization is complete.
+
         :param debug: Indicates whether this algorithm should output debug info
         :param display_results: Indicates whether this algorithm should output results
         """
@@ -99,10 +108,12 @@ class EasyVisionBase(object):
         super(EasyVisionBase, self).__init__()
 
     def __enter__(self):
+        """Makes derived class into a context manager. Will call setup()."""
         self.setup()
         return self
 
     def __exit__(self, type, value, traceback):
+        """Makes derived class into a context manager. Will call release()."""
         self.release()
 
     def __next__(self):
@@ -110,18 +121,19 @@ class EasyVisionBase(object):
         return self.next()
 
     def __iter__(self):
+        """Makes derived class into iterable."""
         return self
 
     @abstractmethod
     def __len__(self):
-        """Used for len(MyAlgorithm). Should return the number of images/frames/computations available.
+        """Abstract method. Used for len(MyAlgorithm). Should return the number of images/frames/computations available.
         Will return negative numbers or zero for freerun capturing devices such as video camera.
         """
         pass
 
     @abstractmethod
     def next(self):
-        """Legacy method for Python 2.7"""
+        """Abstract method. Legacy method for Python 2.7"""
         assert(self.__setup_called)
 
     @abstractmethod
@@ -153,27 +165,29 @@ class EasyVisionBase(object):
 
     @abstractproperty
     def description(self):
-        """Must be implemented. Should return a brief description of the algorithm."""
+        """Abstract property. Should return a brief description of the algorithm."""
         pass
 
     @property
     def debug(self):
+        """Property specifying whether to perform some outpuf for debugging purposes"""
         return self._debug
 
     @property
     def display_results(self):
+        """Property specifying whether to display intermediate results"""
         return self._display_results
 
     @debug.setter
     def debug(self, value):
-        """ This property will call debug_changed if it finds one in the derived class."""
+        """This property will call debug_changed if it finds one in the derived class."""
         lastdebug, self._debug = self._debug, value
         if lastdebug != value and hasattr(self, 'debug_changed'):
             self.debug_changed(lastdebug, value)
 
     @display_results.setter
     def display_results(self, value):
-        """ This property will call display_results_changed if it finds one in the derived class."""
+        """This property will call display_results_changed if it finds one in the derived class."""
         lastdisplay, self._display_results = self._display_results, value
         if lastdisplay != value and hasattr(self, 'display_results_changed'):
             self.display_results_changed(lastdisplay, value)

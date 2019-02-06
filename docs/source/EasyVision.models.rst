@@ -12,14 +12,6 @@ EasyVision.models.base module
     :undoc-members:
     :show-inheritance:
 
-EasyVision.models.exceptions module
------------------------------------
-
-.. automodule:: EasyVision.models.exceptions
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 EasyVision.models.object module
 -------------------------------
 
@@ -28,11 +20,3 @@ EasyVision.models.object module
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: EasyVision.models
-    :members:
-    :undoc-members:
-    :show-inheritance:

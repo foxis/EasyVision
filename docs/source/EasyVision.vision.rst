@@ -44,11 +44,3 @@ EasyVision.vision.videocapture module
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: EasyVision.vision
-    :members:
-    :undoc-members:
-    :show-inheritance:

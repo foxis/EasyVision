@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""Implements color blob extraction algorithm using OpenCV. Uses HistogramBackprojection to extract colors.
+"""
+
 import cv2
 import numpy as np
 from .base import *
@@ -10,6 +13,10 @@ KeyPoint = namedtuple('KeyPoint', ['pt', 'size', 'angle', 'response', 'octave', 
 
 
 class Blobs(namedtuple('Features', ['points', 'descriptors'])):
+    """Structure that contains blob information and mirrors Features class.
+
+    TODO: Refactor to use Features instead
+    """
     __slots__ = ()
 
     @property
@@ -24,9 +31,26 @@ class Blobs(namedtuple('Features', ['points', 'descriptors'])):
 
 
 class BlobExtraction(ProcessorBase):
+    """Class that implements blob extraction.
+    Depends on ``HistogramBackprojection`` processor.
+    Will add one to the stack if not present already.
+
+    """
 
     def __init__(self, vision, histogram, blur_size=(30, 30), channels=(0, 1), ranges=(0, 180, 0, 256),
                  area=(100, 400 * 400), min_circularity=None, min_convexity=None, min_inertia=None, *args, **kwargs):
+        """BlobExtraction instance initialization
+
+        :param vision: Source vision object
+        :param histogram: color histogram for blob filtering
+        :param blur_size: size of blurring window
+        :param channels: color histogram channels
+        :param ranges: color ranges for thresholding
+        :param area: a tuple of (min_blob_area, max_blob_area)
+        :param min_circularity: blob circularity
+        :param min_convexity: blob convexity
+        :param min_inertia: blob inertia
+        """
         vision = HistogramBackprojection(vision, histogram, channels=channels, ranges=ranges) if not isinstance(vision, HistogramBackprojection) else vision
 
         if not isinstance(blur_size, tuple) or len(blur_size) != 2:
@@ -77,6 +101,7 @@ class BlobExtraction(ProcessorBase):
 
     @property
     def feature_type(self):
+        """Returns feature type that this extractor supports"""
         return 'blobs'
 
     def process(self, image):
@@ -97,12 +122,14 @@ class BlobExtraction(ProcessorBase):
         return image._replace(features=Blobs._make(keypoints, None), feature_type='blobs')
 
     def _draw_keypoints(self, image, keypoints):
+        """Helper method to draw extracted blobs"""
         img = cv2.drawKeypoints(image, keypoints, np.array([]), color=(0, 0, 255),
                                  flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
         cv2.imshow(self.name, img)
 
 
 class BlobMatchingMixin(object):
+    """Mixin class that helps match extracted blobs"""
     SLOTS = ()
     __slots__ = ()
 

@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""Contains Base and helper classes for image processing algorithms.
+Processors can be stacked by passing other processors or capturing adaptors as first argument.
+Can also be used to build processor stacks with the help of Processor Stack Builder.
+
+"""
+
 from EasyVision.vision.base import *
 import cv2
 import numpy as np
@@ -11,21 +17,24 @@ except ImportError:
 
 
 class KeyPoint(namedtuple('KeyPoint', 'pt size angle response octave class_id')):
-    """KeyPoint struct that mirrors cv2.KeyPoint
+    """KeyPoint struct that mirrors cv2.KeyPoint. Mainly used for serialization as pickle does not understand cv2.KeyPoint.
     """
     __slots__ = ()
 
     def todict(self):
+        """Converts KeyPoint into a dictionary"""
         return self._asdict()
 
     @staticmethod
     def fromdict(d):
+        """Creates KeyPoint object from a dictionary"""
         return KeyPoint(**d)
 
 
 class Features(namedtuple('Features', 'points descriptors points3d')):
-    """Features structure
+    """Image Features structure.
     Contains feature points either as 2d points or KeyPoint, descriptors and associated 3d points.
+    Basically points can be anything.
     """
     __slots__ = ()
 
@@ -40,10 +49,12 @@ class Features(namedtuple('Features', 'points descriptors points3d')):
 
     @property
     def keypoints(self):
+        """Returns a list of cv2.KeyPoint items for displaying purposes"""
         return [cv2.KeyPoint(x=pt.pt[0], y=pt.pt[1], _size=pt.size, _angle=pt.angle,
                              _response=pt.response, _octave=pt.octave, _class_id=pt.class_id) for pt in self.points]
 
     def todict(self):
+        """Converts Features into a dictionary"""
         d = {
             'points': [pt.todict() for pt in self.points] if len(points) and isinstance(points[0], KeyPoint) else self.points.tolist(),
             'points3d': self.points.tolist(),
@@ -54,6 +65,7 @@ class Features(namedtuple('Features', 'points descriptors points3d')):
 
     @staticmethod
     def fromdict(d):
+        """Creates Features object from a dictionary"""
         pts = d['points']
         if len(pts) and isinstance(pts[0], dict):
             points = [KeyPoint.fromdict(pt) for pt in pts]
@@ -63,21 +75,26 @@ class Features(namedtuple('Features', 'points descriptors points3d')):
         return Features(points, descriptors, d['points3d'])
 
     def tobytes(self):
+        """Uses pickle to serialize Features into bytes"""
         return pickle.dumps(self, protocol=-1)
 
     @staticmethod
     def frombytes(data):
+        """Uses pickle to deserialize Features from bytes"""
         return pickle.loads(data)
 
     def tobuffer(self, buf):
+        """Uses pickle to serialize Features to buffer-like object"""
         pickle.dump(self, buf, protocol=-1)
 
     @staticmethod
     def frombuffer(buf):
-        return pickle.load(self, buf)
+        """Uses pickle to deserialize Features from buffer-like object"""
+        return pickle.load(buf)
 
     def __reduce__(self):
-        return (self.__class__, (self.points, self.descriptors.get() if isinstance(self.descriptors, cv2.UMat) else self.descriptors))
+        """Used for pickle serialization in order to deal with UMat descriptors"""
+        return self.__class__, (self.points, self.descriptors.get() if isinstance(self.descriptors, cv2.UMat) else self.descriptors)
 
 
 class ProcessorBase(VisionBase):
@@ -89,8 +106,6 @@ class ProcessorBase(VisionBase):
 
     Abstract methods:
         process
-
-    Abstract properties:
 
     """
 
@@ -137,9 +152,11 @@ class ProcessorBase(VisionBase):
 
     @property
     def source(self):
+        """Returns a source for this processor"""
         return self._vision
 
     def get_source(self, name):
+        """Recursively searches for a source class by class name"""
         if self.__class__.__name__ == name:
             return self
         elif isinstance(self._vision, ProcessorBase) or self._vision.__class__.__name__ == 'CameraPairProxy':
@@ -148,12 +165,14 @@ class ProcessorBase(VisionBase):
             return self._vision
 
     def __getattr__(self, name):
+        """Allows to access attributes of deeper sources"""
         if name.startswith('__') and name.endswith('__'):
             return super(ProcessorBase, self).__getattr__(name)
         return getattr(self._vision, name)
 
     @property
     def enabled(self):
+        """Sets/Gets a flag indicated whether process method should be called"""
         return self._enabled
 
     @enabled.setter

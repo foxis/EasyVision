@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""Implements object recognition and object enrollment using specified features.
+"""
+
 from EasyVision.engine.base import *
 from EasyVision.models import ObjectModel, ModelView
 from EasyVision.processors.base import *
@@ -16,8 +19,19 @@ class MatchResults(namedtuple('MatchResults', 'results')):
 
 
 class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
+    """Class implementing Object recognition algorithm using feature matching.
+    This implementation matches processed features with all the models and all model views.
+
+    Actual matching is delegated to the model.
+    """
 
     def __init__(self, vision, feature_type=None, max_matches=10, *args, **kwargs):
+        """Instance initialization
+
+        :param vision: capturing source object.
+        :param feature_type: specify feature type. May be left None if capturing source contains ``FeatureExtraction``
+        :param max_matches: maximum number of features if using ORB features
+        """
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -43,6 +57,22 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
         return frame, self._match_models(frame)
 
     def enroll(self, name, image, model=None, add=False, **kwargs):
+        """Enrolls a model into the matching engine.
+        If no model is provided then this method will create a new model with the supplied name.
+        Otherwise a supplied model will be updated with the image.
+
+        Will extract features if image does not already contain them.
+
+        NOTE: For multiprocessing and especially Pyro4 stacks passing unprocessed image may incurr
+        performance penalties, as the image will be transferred back and forth to a different process or even machine.
+
+        :param name: model name
+        :param image: Image containing an overlapping view of the object
+        :param model: model to enroll image into
+        :param add: indicates whether to add the newly enrolled model to the engine
+        :param kwargs: kwargs to pass to model's ``update_from_processed_frame`` or ``create_from_processed_image``
+        :return: enrolled model
+        """
         if model is None:
             model = self._models.get(name, None)
 
@@ -75,6 +105,7 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
 
     @property
     def models(self):
+        """Returns a list of enrolled models"""
         return self._models
 
     @property
@@ -86,5 +117,7 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
             )
 
     def _match_models(self, frame):
+        """Helper method to find all matching models with all the matching views.
+        Will return MatchResults, where results will be a tuple of all the matching views."""
         results = (model.compute(frame, self) for model in self._models.values())
         return MatchResults(sum((i for i in results if i), ()))

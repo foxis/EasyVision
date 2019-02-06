@@ -1,4 +1,29 @@
 # -*- coding: utf-8 -*-
+"""Stereo camera calibration tool.
+Will calibrate a stereo camera pair using 9x7 rectangular calibration pattern.::
+
+    usage: calibrate_stereo.py [-h] [-f FILE] [-i SIZE] [-p FPS] [-g GRID] [-N N]
+                               [-t] [-d]
+                               left right
+
+    Stereo Camera calibration tool
+
+    positional arguments:
+      left                  Left Camera device ID/folder
+      right                 Left Camera device ID/folder
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -f FILE, --file FILE  Output filename of the calibrated camera
+      -i SIZE, --size SIZE  Frame width and height
+      -p FPS, --fps FPS     Frame rate
+      -g GRID, --grid GRID  Grid shape of the calibration target
+      -N N                  Number of samples to gather
+      -t, --test            Test camera calibration file
+      -d, --disparity       Calculate Disparity Map
+
+"""
+
 from argparse import ArgumentParser
 from EasyVision.processorstackbuilder import Args, Builder
 from EasyVision.vision import VideoCapture
@@ -7,7 +32,7 @@ import json
 import cv2
 
 
-if __name__ == "__main__":
+def main():
     parser = ArgumentParser(description="Stereo Camera calibration tool")
     parser.add_argument("left", help="Left Camera device ID/folder")
     parser.add_argument("right", help="Left Camera device ID/folder")
@@ -66,3 +91,7 @@ if __name__ == "__main__":
 
             with open(args.file, "w") as f:
                 f.write(json.dumps(cam.todict(), indent=4))
+
+
+if __name__ == "__main__":
+    main()

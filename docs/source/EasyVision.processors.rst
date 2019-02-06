@@ -4,18 +4,18 @@ EasyVision.processors package
 Submodules
 ----------
 
-EasyVision.processors.backgroundseparation module
--------------------------------------------------
-
-.. automodule:: EasyVision.processors.backgroundseparation
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 EasyVision.processors.base module
 ---------------------------------
 
 .. automodule:: EasyVision.processors.base
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+EasyVision.processors.backgroundseparation module
+-------------------------------------------------
+
+.. automodule:: EasyVision.processors.backgroundseparation
     :members:
     :undoc-members:
     :show-inheritance:
@@ -80,15 +80,6 @@ EasyVision.processors.mptransform module
 ----------------------------------------
 
 .. automodule:: EasyVision.processors.mptransform
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: EasyVision.processors
     :members:
     :undoc-members:
     :show-inheritance:

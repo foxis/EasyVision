@@ -1,4 +1,28 @@
 # -*- coding: utf-8 -*-
+"""Monocular camera calibration tool
+
+Uses rectangular 9x7 calibration pattern for camera intrinsic parameter calibration.
+Will output a camera calibration json file, that can be loaded and passed to PinholeCamera object.::
+
+    usage: calibrate_camera.py [-h] [-f FILE] [-g GRID] [-i SIZE] [-p FPS] [-N N]
+                               [-t]
+                               camera
+
+    Camera calibration tool
+
+    positional arguments:
+      camera                Camera device ID/folder
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -f FILE, --file FILE  Output filename of the calibrated camera
+      -g GRID, --grid GRID  Grid shape of the calibration target
+      -i SIZE, --size SIZE  Frame width and height
+      -p FPS, --fps FPS     Frame rate
+      -N N                  Number of samples to gather
+      -t, --test            Test camera calibration file
+
+"""
 from argparse import ArgumentParser
 from EasyVision.processorstackbuilder import Args, Builder
 from EasyVision.vision import VideoCapture
@@ -7,7 +31,7 @@ import json
 import cv2
 
 
-if __name__ == "__main__":
+def main():
     parser = ArgumentParser(description="Camera calibration tool")
     parser.add_argument("camera", help="Camera device ID/folder")
     parser.add_argument("-f", "--file", default="camera.json", help="Output filename of the calibrated camera")
@@ -51,3 +75,7 @@ if __name__ == "__main__":
 
             with open(args.file, "w") as f:
                 f.write(json.dumps(cam.todict(), indent=4))
+
+
+if __name__ == "__main__":
+    main()

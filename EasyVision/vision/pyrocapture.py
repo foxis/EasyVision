@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+""" Implements capturing from Pyro4 server.
+
+"""
+
 from .base import *
 import Pyro4
 import functools
@@ -12,6 +16,13 @@ except ImportError:
 
 
 class PyroCapture(VisionBase):
+    """Class for capturing frames from remote processor stack server.
+
+    Uses Pyro4 remote object names. Should be used in conjunction with ``EasyVision.server``.
+    Best results are achieved using EasyVision.base.server and Pyro4-ns.
+
+    """
+
     def __init__(self, name, *args, **kwargs):
         self._name = name
         self._proxy = None
@@ -180,8 +191,10 @@ class PyroCapture(VisionBase):
     # Calibrated camera specifics
     @property
     def camera(self):
+        """Retrieves StereoCamera or PinholeCamera for stacks that contain CalibratedStereoCamera or CalibratedCamera"""
         return self.remote_get('camera')
 
     @camera.setter
     def camera(self, value):
+        """Sets StereoCamera or PinholeCamera for stacks that contain CalibratedStereoCamera or CalibratedCamera"""
         self.remote_set('camera', value)

@@ -1,9 +1,21 @@
 # -*- coding: utf-8 -*-
+"""Implements BOG algorithm using OpenCV.
+MOG, MOG2 and GMG algorithms are exposed.
+
+"""
+
 import cv2
 from .base import *
 
 
 class BackgroundSeparation(ProcessorBase):
+    """Class that produces a mask calculated using different Background separation algorithms present in OpenCV.
+
+    Currently supports MOG, MOG2 and GMG algorithms.
+    When ``max_background_num`` is set, will stop learning background model after specified number of frames.
+    By setting ``background_num`` you can reset background learning.
+    """
+
     def __init__(self, vision, algorithm='MOG', *args, **kwargs):
         if algorithm not in ('MOG', 'MOG2', 'GMG'):
             raise ValueError("Algorithm must be one of MOG/MOG2/GMG")
@@ -31,6 +43,7 @@ class BackgroundSeparation(ProcessorBase):
 
     @property
     def background_num(self):
+        """Setter/Getter for resetting background separation learning"""
         return self._background_num
 
     @background_num.setter

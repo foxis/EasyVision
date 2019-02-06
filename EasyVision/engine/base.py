@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+"""Base and helper classes for engine implementations. Engines differ from capturers and processors in that they
+implement ``compute`` method instead of ``capture`` and in addition to a ``Frame`` may return other things.
+
+"""
+
 from EasyVision.base import *
-from EasyVision.exceptions import *
 from EasyVision.vision.base import VisionBase
 from EasyVision.processors.base import Features
 import numpy as np
@@ -23,6 +27,7 @@ class EngineBase(EasyVisionBase):
     """EngineBase is a base class for all engines that implement various algorithms such as Visual Odometry or Object Recognition
 
     """
+
     def __init__(self, vision, *args, **kwargs):
         if not isinstance(vision, VisionBase):
             raise TypeError("Object must be VisionBase instance")
@@ -44,8 +49,7 @@ class EngineBase(EasyVisionBase):
 
     @abstractmethod
     def compute(self):
-        """ Will compute the algorithm and return a frame and computation result
-        """
+        """Will compute the algorithm and return a frame and computation result"""
         pass
 
     def setup(self):
@@ -72,8 +76,11 @@ class EngineBase(EasyVisionBase):
 class Pose(namedtuple('Pose', 'timestamp rotation translation features')):
     """A class describing agent pose
 
-        rotation: a rotation matrix
-        translation: a translation vector
+    **rotation**: a rotation matrix
+
+    **translation**: a translation vector
+
+    **features**: features associated with this pose
     """
     __slots__ = ()
 
@@ -87,6 +94,7 @@ class Pose(namedtuple('Pose', 'timestamp rotation translation features')):
         return super(Pose, cls).__new__(cls, timestamp, rotation, translation, features)
 
     def todict(self):
+        """Convert Pose object into dict"""
         d = {
             'timestamp': self.timestamp,
             'rotation': self.rotation.tolist(),
@@ -97,33 +105,30 @@ class Pose(namedtuple('Pose', 'timestamp rotation translation features')):
 
     @staticmethod
     def fromdict(d):
+        """Create Pose object from dict"""
         return Pose(d['timestamp'], d['rotation'], d['translation'], Features.fromdict(d['features']))
 
 
 class OdometryBase(EngineBase):
     """An abstract Odometry Base class for Odometry Engines
 
-    Abstract methods:
-        ...
     Abstract properties:
-        pose
-        relative_pose
-        camera_orientation
-        feature_type
+        pose - current pose of the camera
+        relative_pose - relative pose from last to current
+        camera_orientation - camera orientation. Pose will be adjusted according to the camera orientation
+        feature_type - feature type that the odometry is working with
     """
     def __init__(self, *args, **kwargs):
         super(OdometryBase, self).__init__(*args, **kwargs)
 
     @abstractproperty
     def pose(self):
-        """Cumulative pose
-        """
+        """Cumulative pose"""
         pass
 
     @abstractproperty
     def relative_pose(self):
-        """Relative pose from t-1 to t
-        """
+        """Relative pose from t-1 to t"""
         pass
 
     @abstractproperty
@@ -138,7 +143,7 @@ class OdometryBase(EngineBase):
 
 
 class MapBase(EasyVisionBase):
-    """ Map Base is an abstract base class for Mapping with Visual Odometry
+    """MapBase is an abstract base class for Mapping with Visual Odometry
 
     Abstract methods:
         update
@@ -159,7 +164,7 @@ class MapBase(EasyVisionBase):
 
     @abstractproperty
     def map_raw(self):
-        """Returns RAW map. Either a graph or np.array"""
+        """Returns RAW map. Either a graph or np.array. Depends on implementation."""
         pass
 
     @abstractproperty
@@ -177,7 +182,7 @@ class MapBase(EasyVisionBase):
         """Updates the map.
 
         :param pose: current pose of the robot
-        :return: Current pose (may be different from input pose due to correction)
+        :return: Current pose (may be different from input pose due to correction if implemented pose correction)
         """
         pass
 
@@ -185,8 +190,8 @@ class MapBase(EasyVisionBase):
     def plan(self, target, radius, **kwargs):
         """Plans a path towards a target
 
-        :param target: a target based on map implementation
+        :param target: a target pose
         :param radius: radius of agent for obstacle detection
-        :return: a list of poses
+        :return: a list of poses that connect current pose with target pose
         """
         pass

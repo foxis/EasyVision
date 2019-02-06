@@ -20,14 +20,6 @@ EasyVision.engine.bowvocabulary module
     :undoc-members:
     :show-inheritance:
 
-EasyVision.engine.exceptions module
------------------------------------
-
-.. automodule:: EasyVision.engine.exceptions
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 EasyVision.engine.objectrecognition module
 ------------------------------------------
 

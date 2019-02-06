@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from EasyVision.engine.base import Pose, EngineCapability
-from .exceptions import *
 
 from .objectrecognition import ObjectRecognitionEngine
 from .visualodometry_2d import VisualOdometry2DEngine

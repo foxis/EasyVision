@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
+"""Implements Single Source -> Multiple Consumers transform
+
+"""
+
 from .base import *
 
 
 class MultiConsumers(ProcessorBase):
+    """Class that allows to consume the same image from different consumers.
+    Overrides default ``setup``/``release`` logic.
+    Basically will only call ``capture`` on the source when all the consumers have called ``capture`` on this processor.
+    Number of consumers is determined by the number of ``setup`` calls.
+
+    """
 
     def __init__(self, *args, **kwargs):
         self._frame = None

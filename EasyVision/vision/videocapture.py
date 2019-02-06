@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+""" Implements capturing from a camera using OpenCV.
+
+"""
+
 from .base import *
 from .exceptions import DeviceNotFound
 import cv2
@@ -6,6 +10,7 @@ from datetime import datetime
 
 
 class VideoCapture(VisionBase):
+    """Class for capturing images from a video file or capturing device using OpenCV"""
 
     def __init__(self, path, width=None, height=None, fps=None, name=None, *args, **kwargs):
         self._name = name
@@ -135,7 +140,7 @@ class VideoCapture(VisionBase):
 
     @autofocus.setter
     def autofocus(self, value):
-        self._capture.set(cv2.CAP_PROP_AUTO_FOCUS, value)
+        self._capture.set(cv2.CAP_PROP_AUTOFOCUS, value)
 
     @autowhitebalance.setter
     def autowhitebalance(self, value):

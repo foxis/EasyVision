@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""Uses multiprocessing to allow for distributed processing.
+
+NOTE: will set ``multiprocessing.connection.BUFSIZE`` to 64Mb in order to increase frame transfer between processes.
+This is needed as using Pipe is much faster than using e.g. RawArray or anything else. Although Pipe is still very slow.
+By the way, Multiprocessing doesn't really work fine with e.g. feature extraction or any other openCV algorithms
+and usually is a little bit slower than if processing sequentially. See tests for more details.
+"""
+
 import cv2
 import numpy as np
 import multiprocessing as mp
@@ -6,19 +14,38 @@ import multiprocessing.connection
 from .base import *
 from EasyVision.exceptions import TimeoutError
 import functools
-import cPickle
-import ctypes
-#import os
-#import affinity
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 Attr = namedtuple("Attr", 'name method args kwargs')
 multiprocessing.connection.BUFSIZE = 64 * 1024 * 1024
 
 
 class MultiProcessing(ProcessorBase, mp.Process):
+    """Implements processor stack using multiprocessing
+    Allows to set/get properties on the forked process as well as calling methods.
+    This processor supports two modes: freerun and lazy.
+
+    In freerun mode after a new process is forked a capturing loop will be started.
+    The parent process in this case will capture the last captured frame and wait for any new frames.
+
+    In lazy mode last captured frame will be returned and new capturing will be initiated. If no last captured
+    frame is available, then capturing will be initiated and it's result will be returned.
+
+    Usually for streaming devices freerun should be used. Lazy mode is used primarily for tests that use ImagesReader
+    so that every frame will be processed.
+    """
 
     def __init__(self, vision, freerun=True, timeout=10, *args, **kwargs):
+        """MultiProcessing instance initialization
+
+        :param vision: capturing source object
+        :param freerun: indicates whether to execute capturing loop asynchronously
+        :param timeout: timeout for calls
+        """
         self._freerun = freerun
 
         self._timeout = timeout
@@ -102,11 +129,17 @@ class MultiProcessing(ProcessorBase, mp.Process):
         return frame
 
     def _send_ctrl(self, ctrl, lock=True):
+        """Helper method to send control messages to a forked process
+
+        :param ctrl: instance of Attr. Will be pickled before sending through a pipe.
+        :param lock:
+        :return: whatever the _remote_call_handle produced
+        """
         assert(self._running.value)
-        self._ctrl_out.send_bytes(cPickle.dumps(ctrl, protocol=-1))
+        self._ctrl_out.send_bytes(pickle.dumps(ctrl, protocol=-1))
         self._ctrl_sem.release()
         self._res_sem.acquire(lock)
-        res = cPickle.loads(self._res_in.recv_bytes())
+        res = pickle.loads(self._res_in.recv_bytes())
         if isinstance(res, Exception):
             raise res
         return res
@@ -121,11 +154,18 @@ class MultiProcessing(ProcessorBase, mp.Process):
         return self._send_ctrl(Attr(name, 'CALL', args, kwargs))
 
     def _remote_call_handle(self):
+        """Remote call handle. Will receive pickled Attr instances through the pipe, decode them,
+        call appropriate methods from source and send out pickled results."""
         if self._ctrl_sem.acquire(False):
-            ctrl = cPickle.loads(self._ctrl_in.recv_bytes())
+            ctrl = pickle.loads(self._ctrl_in.recv_bytes())
             try:
                 result = None
                 if ctrl.method == 'SET':
+                    """Setting of properties is rather interesting task, as we want to set the property
+                    whenever we find it. and this code tries to find the right property.
+                    Due to __getattr__ implementation we will find the property in processors even if they don't 
+                    have it, but their source does.
+                    """
                     cur_obj = self._vision
                     last_obj = None
                     while cur_obj is not None or last_obj is not None:
@@ -149,6 +189,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
                 self._res_sem.release()
 
     def run(self):
+        """Forked process loop"""
         super(MultiProcessing, self).setup()
         self._running.value = True
         self._lazy_frame = None
@@ -173,24 +214,26 @@ class MultiProcessing(ProcessorBase, mp.Process):
         super(MultiProcessing, self).release()
 
     def _send_frame(self, frame):
+        """Helper method to send a frame. Will pickle None, Frame and exceptions."""
         if not self._frame_event.is_set():
-            data = frame.tobytes() if isinstance(frame, Frame) else cPickle.dumps(frame, protocol=-1)
+            data = frame.tobytes() if isinstance(frame, Frame) else pickle.dumps(frame, protocol=-1)
             self._frame_out.send_bytes(data)
             self._frame_event.set()
 
     def _capture_freerun(self):
+        """Helper method to capture frames in freerun mode"""
         frame = self._vision.capture()
         self._send_frame(frame)
         if not frame:
             self._running.value = False
 
     def _capture_lazy(self):
+        """Helper method to capture frames in lazy mode."""
         if self._cap_event.wait(.001):
             if self._lazy_frame:
                 self._send_frame(self._lazy_frame)
                 self._cap_event.clear()
             self._lazy_frame = self._vision.capture()
-            #print os.getpid(), affinity.get_process_affinity_mask(os.getpid())
             if not self._lazy_frame:
                 self._send_frame(None)
                 self._running.value = False

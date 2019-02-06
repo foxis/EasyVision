@@ -1,4 +1,102 @@
 # -*- coding: utf-8 -*-
+"""Helper class for building processor stacks.
+
+Example::
+
+    builder = Builder(
+        VideoCapture, Args(camera, width=640, height=480, fps=30),
+        CalibratedCamera, Args(camera_model, display_results=True)
+    )
+
+    with builder.build() as vision:
+        for frame in vision:
+            if cv2.waitKey(1) == 27:
+                break
+
+Example using json:
+
+.. code-block:: json
+
+    {
+        "args": [
+            {
+                "args": [0],
+                "class": "VideoCapture",
+                "objects": {},
+                "kwargs": {"width":  1280, "height":  720}
+            },
+            {
+                "args": [],
+                "class": "CalibratedCamera",
+                "objects": {
+                    "object__PinholeCamera0": {
+                        "rectify": null,
+                        "distortion": [
+                            [
+                                0.07507829590903714,
+                                0.2133670120228787,
+                                0.004960489645345226,
+                                -0.0019449662761104394,
+                                -1.0317011493764785
+                            ]
+                        ],
+                        "projection": null,
+                        "matrix": [
+                            [
+                                732.8937676878295,
+                                0.0,
+                                311.31379638926603
+                            ],
+                            [
+                                0.0,
+                                728.1072411106162,
+                                261.6539111360498
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "size": [
+                            640,
+                            480
+                        ]
+                    }
+                },
+                "kwargs": {"camera": "object__PinholeCamera0"}
+            }
+        ],
+        "objects": {},
+        "kwargs": {}
+    }
+
+.. code-block:: python
+
+    classes = (
+        ImagesReader,
+        VideoCapture,
+        PyroCapture,
+        CalibratedCamera,
+        CalibratedStereoCamera,
+        PinholeCamera,
+        StereoCamera,
+        ImageTransform,
+        FeatureExtraction,
+        BackgroundSeparation,
+        BlobExtraction
+    )
+    with open(json_file) as f:
+        builder = Builder.fromdict(json.load(f), classes)
+
+    with builder.build() as vision:
+        for frame in vision:
+            if cv2.waitKey(1) == 27:
+                break
+
+
+"""
+
 from EasyVision.vision.base import VisionBase
 from EasyVision.processors.base import ProcessorBase
 from EasyVision.engine.base import EngineBase
@@ -15,6 +113,7 @@ class Args(object):
         self.kwargs = kwargs
 
     def todict(self):
+        """Converts Args instance into a dictionary"""
         objects = {}
 
         objects, object_idx, args = Args.convert_args(objects, 0, self.args)
@@ -28,6 +127,7 @@ class Args(object):
 
     @staticmethod
     def convert_args(objects, object_idx, _args):
+        """Converts argument objects into object representation for todict"""
         args = ()
         for pos, arg in enumerate(_args):
             if isinstance(arg, object) and hasattr(arg, 'todict') and hasattr(arg, 'fromdict') and arg is not None:
@@ -43,6 +143,7 @@ class Args(object):
 
     @staticmethod
     def convert_kwargs(objects, object_idx, _kwargs):
+        """Converts kwargs objects into object representation for todict"""
         kwargs = {}
         for arg, value in _kwargs.items():
             if isinstance(value, object) and hasattr(value, 'todict') and hasattr(value, 'fromdict') and value is not None:
@@ -71,12 +172,14 @@ class Args(object):
 
     @staticmethod
     def convert_classes(classes):
+        """Helper method to convert classes into lookup dictionary"""
         if isinstance(classes, dict):
             return classes
         return {cls.__name__: cls for cls in classes if hasattr(cls, 'todict') and hasattr(cls, 'fromdict')} if classes else {}
 
     @staticmethod
     def _retrieve_object(classes, objects, value):
+        """Helper method to retrieve objects from their dict representation for fromdict"""
         if isinstance(value, basestring) and value.startswith('object__'):
             obj = objects[value]
             name = value[8:-1]
@@ -88,11 +191,10 @@ class Args(object):
 class Builder(object):
     """Builder class is a processor stack builder from arguments or dictionary.
 
-    Note: first argument must always be a subclass of VisionBase.
-          Even argument must be a subclass of ProcessorBase or Builder object.
-          Odd argument must be a class of Args.
+    Note: first argument must always be a subclass of VisionBase. Even argument must be a subclass of ProcessorBase or Builder object. Odd argument must be a class of Args.
 
-    Usage:
+    Usage::
+
         builder = Builder(
             Builder(
                 ImagesReader, Args("path/to/left_images", keyword_argument=True),
@@ -114,7 +216,8 @@ class Builder(object):
             for frame in vision:
                 pass
 
-    fromdict example:
+    fromdict example::
+
         json = {
             'args': (
                 {
@@ -182,6 +285,7 @@ class Builder(object):
         self.kwargs = kwargs
 
     def build(self):
+        """Builds the processor stack using provided processors and their arguments"""
         index = 0
         args = ()
         cls = None
@@ -209,6 +313,7 @@ class Builder(object):
         return args[0]
 
     def todict(self):
+        """Transforms processor stack into a dictionary"""
         d = {'args': ()}
         cls = None
         for pos, arg in enumerate(self.args):
@@ -235,6 +340,7 @@ class Builder(object):
 
     @staticmethod
     def fromdict(d, classes=None):
+        """Transforms a dictionary into Builder object"""
         args = ()
         _classes = Builder.convert_classes(classes)
         arg_classes = Args.convert_classes(classes)
@@ -252,6 +358,7 @@ class Builder(object):
 
     @staticmethod
     def convert_classes(classes):
+        """Helper method to convert classes into lookup dict"""
         if isinstance(classes, dict):
             return classes
         return {cls.__name__: cls for cls in classes} if classes else {}

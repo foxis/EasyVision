@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""Processor stack server using Pyro4. Used in conjunction with vision.PyroCapture.
+
+Uses Pyro4 for RPC and raw socket for return data transfer.
+
+NOTE: Passing images to the server is very inefficient.
+"""
+
 from EasyVision.base import *
 from collections import namedtuple
 import threading
@@ -19,6 +26,7 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
 
 Command = namedtuple('Command', 'name method args kwargs')
 
@@ -47,6 +55,7 @@ class ProxyVision(object):
 
     @Pyro4.expose
     def echo(self, data):
+        """Used for testing. Will return whatever is passed to it."""
         return data
 
     @Pyro4.expose
@@ -84,6 +93,7 @@ class ProxyVision(object):
         return data_id
 
     def freerun(self):
+        """Capturing loop for freerun configuration"""
         try:
             self._running = True
             self._event.clear()
@@ -112,6 +122,7 @@ class ProxyVision(object):
 
     @Pyro4.expose
     def fps(self):
+        """Will return actual FPS calculated in freerun configuration. Useful for estimating network throughput."""
         if self._freerun:
             with self._result_lock:
                 return self._frames / (datetime.now() - self._framestart).total_seconds()
@@ -120,6 +131,7 @@ class ProxyVision(object):
 
     @Pyro4.expose
     def setup(self):
+        """Calls setup on processor stack."""
         self._vision.setup()
         if self._freerun:
             thread = threading.Thread(target=self.freerun)
@@ -128,6 +140,7 @@ class ProxyVision(object):
 
     @Pyro4.expose
     def release(self):
+        """Calls release on processor stack."""
         if self._freerun:
             self._running = False
             self._exit_event.wait()
@@ -135,9 +148,11 @@ class ProxyVision(object):
 
     @Pyro4.expose
     def getsockname(self):
+        """Returns socket name used for return data transfer."""
         return self._pyroDaemon.blobsocket.getsockname()
 
     def get_last_result(self):
+        """Helper method to get last result calculated in freerun configuration"""
         with self._result_lock:
             result_ready = self._result_ready
             running = self._running
@@ -156,6 +171,7 @@ class ProxyVision(object):
 
     @Pyro4.expose
     def capture(self):
+        """Captures processor stack result"""
         if self._freerun:
             result = self.get_last_result()
         else:
@@ -164,6 +180,7 @@ class ProxyVision(object):
 
     @Pyro4.expose
     def compute(self):
+        """Captures Engine computation result"""
         if self._freerun:
             result = self.get_last_result()
         else:
@@ -172,8 +189,7 @@ class ProxyVision(object):
 
 
 class ServerDaemon(Pyro4.core.Daemon):
-    """
-    Custom  Server Daemon that supports raw sockets for large data transfer
+    """Custom  Server Daemon that supports raw sockets for large data transfer
     """
 
     def __init__(self, host=None, port=0):
@@ -207,6 +223,7 @@ class ServerDaemon(Pyro4.core.Daemon):
         thread.start()
 
     def blob_client(self, csock):
+        """Will send back a requested data blob referenced by UUID"""
         while True:
             try:
                 file_id = Pyro4.socketutil.receiveData(csock, 36).decode()
@@ -234,8 +251,8 @@ class Server(object):
         :param proxy_class: Specify a custom vision object remote proxy class
         :param objects: misc objects to be remotely served as a dictionary {"name": Object_or_class, ...}
         """
-        if not isinstance(vision, EasyVisionBase):
-            raise TypeError("Vision must be EasyVisionBase")
+        if not isinstance(vision, VisionBase):
+            raise TypeError("Vision must be VisionBase")
 
         self._name = name
         self._running = False
@@ -246,9 +263,10 @@ class Server(object):
         self._proxy = proxy_class(vision, freerun)
 
     def run(self):
-        """
+        """Starts a Pyro4 ServerDaemon request loop.
+        The request loop can be stopped by calling stop()
 
-        :return:
+        :return: None
         """
         with ServerDaemon(host=self._host, port=self._port) as daemon:
             ns = Pyro4.locateNS()
@@ -264,8 +282,8 @@ class Server(object):
             daemon.requestLoop(loopCondition=lambda: self._running)
 
     def stop(self):
-        """
+        """Stops the Server if called from another thread.
 
-        :return:
+        :return: None
         """
         self._running = False

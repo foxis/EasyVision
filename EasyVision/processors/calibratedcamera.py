@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Implements Calibrated Camera processor. Uses camera intrinsic parameters transforms the image.
+
+"""
+
 import cv2
 import numpy as np
 from .base import *
@@ -30,25 +34,31 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
 
     @property
     def width(self):
+        """Width of the camera sensor in pixels"""
         return self.size[0]
 
     @property
     def height(self):
+        """Height of the camera sensor in pixels"""
         return self.size[1]
 
     @property
     def focal_point(self):
+        """Focal point tuple in pixels"""
         return (self.matrix[0, 0], self.matrix[1, 1])
 
     @property
     def center(self):
+        """Image center in pixels"""
         return (self.matrix[0, 2], self.matrix[1, 2])
 
     @staticmethod
     def fromdict(as_dict):
+        """Creates camera object from dict"""
         return PinholeCamera(**as_dict)
 
     def todict(self):
+        """Converts camera object to dict"""
         d = {
             "size": self.size,
             "matrix": self.matrix.tolist(),
@@ -60,6 +70,16 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
 
     @staticmethod
     def from_parameters(frame_size, focal_point, center, distortion, rectify=None, projection=None):
+        """Creates camera object from parameters
+
+        :param frame_size: tuple containing (frame_width, frame_height)
+        :param focal_point: tuple containing (focal_x, focal_y)
+        :param center: tuple containing (center_x, center_y)
+        :param distortion: distortion coefficients
+        :param rectify: rectification 3x3 matrix
+        :param projection: projection 3x3 matrix
+        :return: PinholeCamera object
+        """
         if len(distortion) != 5:
             raise ValueError("distortion must be vector of length 5")
         if len(frame_size) != 2:
@@ -80,7 +100,21 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
 
 
 class CalibratedCamera(ProcessorBase):
+    """Class implementing Calibrated Camera undistort/rectify and calibration using rectangular calibration pattern.
+
+    """
+
     def __init__(self, vision, camera, grid_shape=(7, 6), square_size=20, max_samples=20, frame_delay=1, *args, **kwargs):
+        """CalibratedCamera instance initialization
+
+        :param vision: source vision object
+        :param camera: either PinholeCamera object or None. If None is specified - then it will enter calibration mode.
+        :param grid_shape: shape of the calibration pattern.
+        :param square_size: size of the calibration pattern element e.g. in mm.
+        :param max_samples: number of samples to collect for calibration
+        :param frame_delay: how many frames to skip. Useful online calibration using camera.
+        """
+
         calibrate = camera is None
         if not calibrate:
             if not isinstance(camera, PinholeCamera) and not (isinstance(camera, tuple) and len(camera) == 3):
@@ -128,6 +162,7 @@ class CalibratedCamera(ProcessorBase):
 
     @property
     def camera(self):
+        """Get/Set PinholeCamera object. Setting camera will disable calibration mode."""
         return self._camera
 
     @camera.setter
@@ -165,6 +200,7 @@ class CalibratedCamera(ProcessorBase):
             return image._replace(image=mapped)
 
     def calibrate(self):
+        """Calibration method to be used instead of ``capture`` used for camera calibration."""
         if not self._calibrate:
             raise ValueError("calibrate parameter must be set")
 
@@ -192,6 +228,7 @@ class CalibratedCamera(ProcessorBase):
             return self._camera
 
     def _finish_calibration(self, objpoints, imgpoints, shape):
-            ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, shape, None, None)
+        """Helper method that executes camera calibration algorithm. Factored out specifically for ``CalibratedStereoCamera``"""
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, shape, None, None)
 
-            return PinholeCamera(shape, mtx, dist)
+        return PinholeCamera(shape, mtx, dist)

@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+"""Base and helper classess for capturing adapters.
+
+"""
+
 from EasyVision.base import *
 from collections import namedtuple
 from datetime import datetime
-from operator import itemgetter
 import cv2
 
 try:
@@ -13,6 +16,7 @@ except ImportError:
 
 class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'original', 'mask', 'features', 'feature_type'])):
     """Image is class derived from namedtuple and represents a captured and/or processed image.
+
     Contains such fields:
         source
             Is a reference to the algorithm that worked on the image last.
@@ -36,7 +40,9 @@ class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'or
             writes bytes to buffer-like object
         frombuffer
             reads bytes from buffer-like object
+
     """
+
     __slots__ = ()
 
     def __new__(cls, source, image, original=None, mask=None, features=None, feature_type=None):
@@ -45,20 +51,33 @@ class Image(NamedTupleExtendHelper, namedtuple('_Image', ['source', 'image', 'or
         return super(Image, cls).__new__(cls, source, image, original, mask, features, feature_type)
 
     def tobytes(self):
+        """Uses pickle to serialize Image object into bytes"""
         return pickle.dumps(self, protocol=-1)
 
     @staticmethod
     def frombytes(data):
+        """Uses pickle to deserialize Image object from bytes"""
         return pickle.loads(data)
 
     def tobuffer(self, buf):
+        """Uses pickle to serialize Image object into a buffer
+
+        :param buf: Buffer-like object, that supports read/write methods
+        :return: None
+        """
         pickle.dump(self, buf, protocol=-1)
 
     @staticmethod
     def frombuffer(buf):
+        """Uses pickle to deserialize Image object from a buffer
+
+        :param buf: Buffer-like object, that supports read/write methods
+        :return: Image object
+        """
         return pickle.load(buf)
 
     def __reduce__(self):
+        """Used for pickle to properly convert between UMat and numpy array"""
         d = (
             None,
             self.image.get() if isinstance(self.image, cv2.UMat) else self.image,
@@ -90,6 +109,7 @@ class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 
             Returns a string of "1" and "0" from iterable containing booleans
 
     """
+
     __slots__ = ()
 
     def __new__(cls, timestamp, index, images, processor_mask=None):
@@ -123,6 +143,7 @@ class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 
     @staticmethod
     def tidy_processor_mask(processor_mask):
         """Converts an iterable of booleans into a string object of "1" and "0".
+
         :param processor_mask: either a tuple of booleans or a string of "1" and "0"
         :return: a string of "1" and "0"
         :raises: TypeError
@@ -132,22 +153,34 @@ class Frame(NamedTupleExtendHelper, namedtuple('_Frame', ['timestamp', 'index', 
         return "".join(i and "1" or "0" for i in processor_mask) if isinstance(processor_mask, tuple) else processor_mask
 
     def tobytes(self):
+        """Uses pickle to serialize Frame object into bytes"""
         return pickle.dumps(self, protocol=-1)
 
     @staticmethod
     def frombytes(data):
+        """Uses pickle to deserialize Frame object from bytes"""
         return pickle.loads(data)
 
     def tobuffer(self, buf):
+        """Uses pickle to serialize Frame object into a buffer
+
+        :param buf: Buffer-like object, that supports read/write methods
+        :return: None
+        """
         pickle.dump(self, buf, protocol=-1)
 
     @staticmethod
     def frombuffer(buf):
+        """Uses pickle to deserialize Frame object from a buffer
+
+        :param buf: Buffer-like object, that supports read/write methods
+        :return: Frame object
+        """
         return pickle.load(buf)
 
 
 class VisionBase(EasyVisionBase):
-    """ VisionBase is an abstract base class for frame capturers and processors.
+    """VisionBase is an abstract base class for frame capturers and processors.
 
     Implements:
         __len__
@@ -190,6 +223,7 @@ class VisionBase(EasyVisionBase):
             A property to get/set White Balance for video camera.
         gain
             A property to get/set Gain for video camera.
+
     """
 
     def __init__(self, *args, **kwargs):
@@ -207,71 +241,78 @@ class VisionBase(EasyVisionBase):
 
     @abstractmethod
     def capture(self):
+        """Abstract method. Captures a frame from capturing device. ``setup`` must be called before calling this method."""
         super(VisionBase, self).next()
 
     @abstractproperty
     def is_open(self):
+        """Abstract property. Indicates whether any frames are available."""
         pass
 
     @abstractproperty
     def frame_size(self):
+        """Abstract property. Size of the frame that was requested from the device."""
         pass
 
     @abstractproperty
     def fps(self):
+        """Abstract property. Frames per second that the opened device supports."""
         pass
 
     @abstractproperty
     def frame_count(self):
+        """Abstract property. Number of frames available. Negative values mean indefinite amount of frames."""
         pass
 
     @abstractproperty
     def path(self):
+        """Abstract property. Current image path or a capturing device."""
         pass
 
     @abstractproperty
     def devices(self):
-        """
+        """Abstract property. A property to get available capturing devices the adaptor supports.
+
         :return: [{name:, description:, path:, etc:}]
         """
         pass
 
     @abstractproperty
     def autoexposure(self):
-        """A property to get/set automatic Exposure for video camera."""
+        """Abstract property. A property to get/set automatic Exposure for video camera."""
         pass
 
     @abstractproperty
     def autofocus(self):
-        """A property to get/set automatic Focus for video camera."""
+        """Abstract property. A property to get/set automatic Focus for video camera."""
         pass
 
     @abstractproperty
     def autowhitebalance(self):
-        """A property to get/set automatic White Balance for video camera."""
+        """Abstract property. A property to get/set automatic White Balance for video camera."""
         pass
 
     @abstractproperty
     def autogain(self):
-        """A property to get/set automatic Gain for video camera."""
+        """Abstract property. A property to get/set automatic Gain for video camera."""
         pass
 
     @abstractproperty
     def exposure(self):
-        """A property to get/set Exposure for video camera."""
+        """Abstract property. A property to get/set Exposure for video camera."""
         pass
 
     @abstractproperty
     def focus(self):
-        """A property to get/set Focus for video camera."""
+        """Abstract property. A property to get/set Focus for video camera."""
         pass
 
     @abstractproperty
     def whitebalance(self):
-        """A property to get/set White Balance for video camera."""
+        """Abstract property. A property to get/set White Balance for video camera."""
         pass
 
     @abstractproperty
     def gain(self):
-        """A property to get/set Gain for video camera."""
+        """Abstract property. A property to get/set Gain for video camera."""
         pass

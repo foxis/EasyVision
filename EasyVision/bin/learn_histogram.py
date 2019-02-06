@@ -1,10 +1,27 @@
 # -*- coding: utf-8 -*-
+"""Histogram learning tool.
+Will learn a color histogram of the selected region. Will save learned histogram to a json file.::
+
+    usage: learn_histogram.py [-h] [-f FILE] [-i SIZE] [-t] camera
+
+    Color histogram learning tool
+
+    positional arguments:
+      camera                Camera device ID/folder
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -f FILE, --file FILE  Output filename of the learned histogram
+      -i SIZE, --size SIZE  Frame width and height
+      -t, --test            Test histogram
+
+"""
+
 import cv2
 import numpy as np
 import json
 from argparse import ArgumentParser
 from EasyVision.processors import HistogramBackprojection
-from EasyVision.vision import VideoCapture
 
 
 class App(object):
@@ -86,7 +103,7 @@ class App(object):
         cv2.destroyAllWindows()
 
 
-if __name__ == "__main__":
+def main():
     parser = ArgumentParser(description="Color histogram learning tool")
     parser.add_argument("camera", type=int, help="Camera device ID/folder")
     parser.add_argument("-f", "--file", default="histogram.json", help="Output filename of the learned histogram")
@@ -99,8 +116,12 @@ if __name__ == "__main__":
         camera = int(args.camera)
     except:
         camera = args.camera
-    app = App(args.camera)
+    app = App(camera)
     app.run()
 
     with open(args.file, "w") as f:
         json.dump(app.hist.tolist(), f)
+
+
+if __name__ == "__main__":
+    main()

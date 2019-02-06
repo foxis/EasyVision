@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Implements feature based object model
+
+"""
+
 from .base import *
 from collections import namedtuple
 from EasyVision.vision import Image, Frame
@@ -10,6 +14,10 @@ MatchResult = namedtuple('MatchResult', 'model view image matches homography out
 
 
 class ObjectModel(ModelBase):
+    """Feature based object model. Allows models to contain several views that represent the same model.
+
+    """
+
     __slots__ = ('_min_matches', '_reproj_thresh')
 
     def __init__(self, name, views, min_matches=10, reproj_thresh=5.0, *args, **kwargs):
@@ -39,6 +47,7 @@ class ObjectModel(ModelBase):
         super(ObjectModel, self).release()
 
     def todict(self):
+        """Convert object model to dict"""
         d = {
             'name': self.name,
             'views': [v.todict() for v in self._views]
@@ -47,6 +56,7 @@ class ObjectModel(ModelBase):
 
     @staticmethod
     def fromdict(d):
+        """Create object model from dict"""
         return ObjectModel(d['name'], [ModelView.fromdict(v) for v in d['views']])
 
     @property
@@ -55,6 +65,11 @@ class ObjectModel(ModelBase):
 
     @staticmethod
     def _calculate_outline(mask):
+        """Helper method to calculate outline using a mask.
+
+        NOTE: Will select the largest contour as the assumption is to use this method in enrolling an object and in
+        that case the object will occupy most of the camera view.
+        """
         _, mask = cv2.threshold(mask, 180, 255, cv2.THRESH_BINARY)
         _, contours, hierarchy = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -67,6 +82,7 @@ class ObjectModel(ModelBase):
 
     @staticmethod
     def _get_outline(image):
+        """Returns an outline for the object either from image shape or will calculate one from supplied mask"""
         if image.mask is not None:
             mask = image.mask.copy()
             outline = ObjectModel._calculate_outline(mask)
@@ -98,6 +114,15 @@ class ObjectModel(ModelBase):
 
     @staticmethod
     def create_from_processed_image(name, image, display_results=False, **kwargs):
+        """Creates object model from processed image.
+        Basically will take the features, outline, crop the object and return created ObjectModel.
+
+        :param name: name of the object
+        :param image: processed image
+        :param display_results: indicates whether to display intermediate results
+        :param kwargs: kwargs to pass to the newly created ObjectModel
+        :return: ObjectModel instance with a single view
+        """
         if not isinstance(image, Image):
             raise TypeError("Image must be Image type")
         if image.features is None or len(image.features.points) < 5:
@@ -122,6 +147,14 @@ class ObjectModel(ModelBase):
         return ObjectModel(name, [view], display_results=display_results, **kwargs)
 
     def update_from_processed_frame(self, frame, matcher, **kwargs):
+        """Will update current instance of ObjectModel with new frame.
+        Will match existing views, determine if adding a new view will benefit and then add.
+
+        :param frame: processed frame
+        :param matcher: matches which subclases FeatureMatchingMixin
+        :param kwargs: kwargs to pass to matcher
+        :return: None if not enough features found or no outline could be calculated. Otherwise return self.
+        """
         if not isinstance(frame, Frame):
             raise TypeError("Image must be Frame type")
         image = frame.images[0]
@@ -159,6 +192,7 @@ class ObjectModel(ModelBase):
             return self
 
     def _match_view(self, frame, view, matcher, **kwargs):
+        """Helper method to match a view against a processed frame"""
         view_matches = (self._match_features(image, view, matcher, **kwargs) for image in (i for i in frame.images if i.feature_type == view.feature_type))
         view_matches = sum((v for v in view_matches if v), ())
 
@@ -168,6 +202,10 @@ class ObjectModel(ModelBase):
         return view_matches if view_matches else None
 
     def _match_features(self, image, view, matcher, display_results=False, **kwargs):
+        """Helper method to match features from a view to processed image.
+        Will verify matching quality by computing homography, transforming outline and checking if features are
+        contained by the outline.
+        """
         kpsA, descriptorsA, _ = image.features
         kpsB, descriptorsB, _ = view.features
         outline = view.outline
@@ -207,6 +245,7 @@ class ObjectModel(ModelBase):
         return results
 
     def _draw(self, view_matches):
+        """Helper method to draw matches"""
         for index, match in enumerate(view_matches):
             name = "{} = {}[{}]{}".format(match.image.source.name, self._name, self._views.index(match.view), index)
             params = dict(

@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Implements stereo camera calibration and rectify/undistort with a pair of CalibratedCamera objects.
+
+"""
+
 import cv2
 import numpy as np
 from .base import *
@@ -10,6 +14,7 @@ import threading as mt
 class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', 'F', 'Q'])):
     """Stereo camera model that contains two pinhole cameras and transformation matrices between them.
 
+    Has these properties:
         R - rotation matrix
         T - translation vector
         E - essential matrix
@@ -34,11 +39,13 @@ class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', '
 
     @staticmethod
     def fromdict(as_dict):
+        """Creates StereoCamera from a dict"""
         left = PinholeCamera.fromdict(as_dict.pop('left'))
         right = PinholeCamera.fromdict(as_dict.pop('right'))
         return StereoCamera(left, right, **as_dict)
 
     def todict(self):
+        """Converts StereoCamera into a dict"""
         d = {
             "left": self.left.todict(),
             "right": self.right.todict(),
@@ -52,6 +59,24 @@ class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', '
 
     @staticmethod
     def from_parameters(size, M1, d1, R1, P1, M2, d2, R2, P2, R, T, E, F, Q):
+        """Creates StereoCamera from parameters
+
+        :param size: Frame size tuple (width, height)
+        :param M1: Left camera matrix
+        :param d1: Left camera distortion coefficients
+        :param R1: Left camera rectification matrix
+        :param P1: Left camera projection matrix
+        :param M2: Right camera matrix
+        :param d2: Right camera distortion coefficients
+        :param R2: Right camera rectification matrix
+        :param P2: Right camera Projection matrix
+        :param R: Right camera rotation matrix
+        :param T: Right camera translation vector
+        :param E: Essential matrix
+        :param F: Fundamental matrix
+        :param Q: Disparity matrix
+        :return: StereoCamera
+        """
         return StereoCamera(
             PinholeCamera(size, M1, d1, R1, P1),
             PinholeCamera(size, M2, d2, R2, P2),
@@ -59,6 +84,10 @@ class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', '
 
 
 class CaptureThread(mt.Thread):
+    """Capturing thread for a camera pair
+
+    TODO: Synchronization
+    """
 
     def __init__(self, vision):
         super(CaptureThread, self).__init__()
@@ -105,6 +134,10 @@ class CaptureThread(mt.Thread):
 
 
 class CameraPairProxy(VisionBase):
+    """Capturing proxy class
+
+    """
+
     def __init__(self, _self, left, right):
         self._left = CaptureThread(left)
         self._right = CaptureThread(right)
@@ -253,9 +286,24 @@ class CameraPairProxy(VisionBase):
 
 
 class CalibratedStereoCamera(ProcessorBase):
+    """Implements calibrated stereo camera calibration, rectification/undistort in conjuction with CalibratedCamera"""
 
     def __init__(self, left, right, camera=None, calculate_disparity=False, num_disparities=255, block_size=15,
                  grid_shape=(9, 6), square_size=20, max_samples=20, frame_delay=1, *args, **kwargs):
+        """CalibratedStereoCamera instance initialization
+
+        :param left: Left camera capturing source
+        :param right: Right camera capturing source
+        :param camera: StereoCamera object
+        :param calculate_disparity: flag indicating whether to calculate disparity map from stereo
+        :param num_disparities: Disparity map calculation parameter
+        :param block_size: Disparity map calculation parameter
+        :param grid_shape: Calibration grid shape
+        :param square_size: Calibration grid element size e.g. in mm.
+        :param max_samples: number of samples to capture for calibration
+        :param frame_delay: number of frames to skip
+        """
+
         calibrate = camera is None
         if not isinstance(left, ProcessorBase) or not isinstance(right, ProcessorBase) or \
            left.get_source('CalibratedCamera') is None or right.get_source('CalibratedCamera') is None:
@@ -368,6 +416,7 @@ class CalibratedStereoCamera(ProcessorBase):
         return image
 
     def calibrate(self):
+        """Use this method for calibration instead of ``capture``. See ``CalibratedCamera`` as the usage is the same."""
         if not self._calibrate:
             raise ValueError("calibrate parameter must be set")
 
@@ -398,6 +447,7 @@ class CalibratedStereoCamera(ProcessorBase):
             return self._camera
 
     def _finish_calibration(self, objpoints, imgpoints_l, imgpoints_r, shape):
+        """Helper method that is factored out in the same spirit as in ``CalibratedCamera``"""
         left_camera = self.source._left._finish_calibration(objpoints, imgpoints_l, shape)
         right_camera = self.source._right._finish_calibration(objpoints, imgpoints_r, shape)
 
