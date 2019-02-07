@@ -5,6 +5,7 @@
 from EasyVision.engine.base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, StereoCamera, CalibratedStereoCamera, FeatureMatchingMixin
+from EasyVision.vision import PyroCapture
 import cv2
 import numpy as np
 from future_builtins import zip
@@ -57,10 +58,10 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
             raise TypeError("Occupancy Map must be of type MapBase")
 
         feature_extractor_provided = False
-        if not isinstance(vision, ProcessorBase) and not isinstance(vision, CalibratedStereoCamera):
-            raise TypeError("Vision must be either CalibratedStereoCamera or ProcessorBase")
+        if not isinstance(vision, ProcessorBase) and not isinstance(vision, CalibratedStereoCamera) and not isinstance(vision, PyroCapture):
+            raise TypeError("Vision must be either CalibratedStereoCamera or ProcessorBase or PyroCapture")
 
-        if isinstance(vision, ProcessorBase):
+        if isinstance(vision, ProcessorBase) or isinstance(vision, PyroCapture):
             if vision.get_source('CalibratedStereoCamera') is None:
                 raise TypeError("Vision must contain CalibratedStereoCamera")
 

@@ -161,7 +161,7 @@ class ProcessorBase(VisionBase):
             return self
         elif isinstance(self._vision, ProcessorBase) or self._vision.__class__.__name__ == 'CameraPairProxy':
             return self._vision.get_source(name)
-        elif self._vision.name == name:
+        elif self._vision.__class__.__name__ == name:
             return self._vision
 
     def __getattr__(self, name):

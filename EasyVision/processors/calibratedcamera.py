@@ -25,10 +25,10 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
             size = tuple(size)
         if not isinstance(size, tuple) or len(size) != 2 or not all((isinstance(i, int) or isinstance(i, long)) and i > 0 for i in size):
             raise TypeError('Frame size must be a tuple consisting of two positive integers')
-        matrix = np.float32(matrix) if not isinstance(matrix, np.ndarray) and matrix is not None else matrix
-        distortion = np.float32(distortion) if not isinstance(distortion, np.ndarray) and distortion is not None else distortion
-        rectify = np.float32(rectify) if not isinstance(rectify, np.ndarray) and rectify is not None else rectify
-        projection = np.float32(projection) if not isinstance(projection, np.ndarray) and projection is not None else projection
+        matrix = np.float64(matrix) if not isinstance(matrix, np.ndarray) and matrix is not None else matrix
+        distortion = np.float64(distortion) if not isinstance(distortion, np.ndarray) and distortion is not None else distortion
+        rectify = np.float64(rectify) if not isinstance(rectify, np.ndarray) and rectify is not None else rectify
+        projection = np.float64(projection) if not isinstance(projection, np.ndarray) and projection is not None else projection
 
         return super(PinholeCamera, cls).__new__(cls, size, matrix, distortion, rectify, projection)
 
@@ -88,13 +88,13 @@ class PinholeCamera(namedtuple('PinholeCamera', ['size', 'matrix', 'distortion',
             raise ValueError("focal point must be vector of length 2")
         if len(center) != 2:
             raise ValueError("center must be vector of length 2")
-        matrix = np.zeros((3, 3), np.float32)
+        matrix = np.zeros((3, 3), np.float64)
         matrix[0, 0] = focal_point[0]
         matrix[1, 1] = focal_point[1]
         matrix[0, 2] = center[0]
         matrix[1, 2] = center[1]
         matrix[2, 2] = 1
-        d = np.zeros((1, 5), np.float32)
+        d = np.zeros((1, 5), np.float64)
         d[0] = distortion
         return PinholeCamera(frame_size, matrix, d, rectify, projection)
 
@@ -130,6 +130,7 @@ class CalibratedCamera(ProcessorBase):
             self._last_timestamp = None
 
         self._calibrate = calibrate
+        self.__setup_called = False
         super(CalibratedCamera, self).__init__(vision, *args, **kwargs)
 
     def __setup(self):
@@ -154,6 +155,7 @@ class CalibratedCamera(ProcessorBase):
 
     def setup(self):
         self.__setup()
+        self.__setup_called = True
         super(CalibratedCamera, self).setup()
 
     @property
@@ -171,7 +173,8 @@ class CalibratedCamera(ProcessorBase):
             raise TypeError("Must be PinholeCamera")
         self._camera = value
         self._calibrate = False
-        self.__setup()
+        if self.__setup_called:
+            self.__setup()
 
     def process(self, image):
         if self._calibrate:

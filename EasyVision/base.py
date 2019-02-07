@@ -5,6 +5,30 @@
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 
+try:
+    from functools import lru_cache
+except ImportError:
+    import functools
+
+    class lru_cache(object):
+        """Simple lru_cache analog for python 2.7 as python 3.x has it builtin"""
+        def __init__(self, *args, **kwargs):
+            self._cache = {}
+
+        def __call__(self, func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                arg = "".join(str(i) for i in args)
+                kwarg = "".join("{}={}".format(k, v) for k, v in kwargs.items())
+                key = (arg, kwarg)
+                if key in self._cache:
+                    return self._cache[key]
+
+                result = func(*args, **kwargs)
+                self._cache[key] = result
+                return result
+            return wrapper
+
 
 class NamedTupleExtendHelper(object):
     """NamedTupleExtendedHelper is a helper Mixin style class that enables to extend namedtuple derived classes with fields

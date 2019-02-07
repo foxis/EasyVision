@@ -8,13 +8,16 @@ import numpy as np
 from .base import *
 from EasyVision.exceptions import TimeoutError
 from .calibratedcamera import PinholeCamera
+from EasyVision.vision import PyroCapture
 import threading as mt
 
 
-class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', 'F', 'Q'])):
+class StereoCamera(namedtuple('StereoCamera', 'left right R T E F Q')):
     """Stereo camera model that contains two pinhole cameras and transformation matrices between them.
 
     Has these properties:
+        left - left camera intrinsics
+        right - right camera intrinsics
         R - rotation matrix
         T - translation vector
         E - essential matrix
@@ -30,11 +33,11 @@ class StereoCamera(namedtuple('StereoCamera', ['left', 'right', 'R', 'T', 'E', '
         if left.size != right.size:
             raise ValueError("Left and Right camera width/height must match")
 
-        R = np.float32(R) if not isinstance(R, np.ndarray) and R is not None else R
-        T = np.float32(T) if not isinstance(T, np.ndarray) and T is not None else T
-        E = np.float32(E) if not isinstance(E, np.ndarray) and E is not None else E
-        F = np.float32(F) if not isinstance(F, np.ndarray) and F is not None else F
-        Q = np.float32(Q) if not isinstance(Q, np.ndarray) and Q is not None else Q
+        R = np.float64(R) if not isinstance(R, np.ndarray) and R is not None else R
+        T = np.float64(T) if not isinstance(T, np.ndarray) and T is not None else T
+        E = np.float64(E) if not isinstance(E, np.ndarray) and E is not None else E
+        F = np.float64(F) if not isinstance(F, np.ndarray) and F is not None else F
+        Q = np.float64(Q) if not isinstance(Q, np.ndarray) and Q is not None else Q
         return super(StereoCamera, cls).__new__(cls, left, right, R, T, E, F, Q)
 
     @staticmethod
@@ -308,15 +311,16 @@ class CalibratedStereoCamera(ProcessorBase):
         """
 
         calibrate = camera is None
-        if not isinstance(left, ProcessorBase) or not isinstance(right, ProcessorBase) or \
-           left.get_source('CalibratedCamera') is None or right.get_source('CalibratedCamera') is None:
+        if (not isinstance(left, ProcessorBase) and not isinstance(left, PyroCapture))or \
+                (not isinstance(right, ProcessorBase) and not isinstance(right, PyroCapture)) or \
+                left.get_source('CalibratedCamera') is None or right.get_source('CalibratedCamera') is None:
             raise TypeError("Left/Right must have CalibratedCamera")
         if not calibrate:
             if not isinstance(camera, StereoCamera) and not (isinstance(camera, tuple) and len(camera) == 6):
                 raise TypeError("Camera must be either StereoCamera or tuple with (frame_size, camera_matrix, distortion)")
-            self._camera = StereoCamera._make(camera)
-            if left.camera != camera.left or right.camera != camera.right:
-                raise ValueError("Respective CalibratedCamera.camera must equal Camera.left/Camera.right")
+            self._camera = camera
+            left.camera = camera.left
+            right.camera = camera.right
             if left._calibrate or right._calibrate:
                 raise ValueError("Left and Right cameras must NOT be set to calibrate mode")
         else:
@@ -383,6 +387,8 @@ class CalibratedStereoCamera(ProcessorBase):
         if not isinstance(value, StereoCamera):
             raise TypeError("Must be StereoCamera")
         self._camera = value
+        self.source._left.camera = value.left
+        self.source._right.camera = value.right
 
     def capture(self):
         frame = super(CalibratedStereoCamera, self).capture()

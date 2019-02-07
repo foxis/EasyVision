@@ -124,8 +124,8 @@ def test_stereo_calibrated():
 @pytest.mark.main
 def test_stereo_properties():
     camera = StereoCamera(left_camera, right_camera, R, T, E, F, Q)
-    left = CalibratedCamera(VisionSubclass(), camera.left)
-    right = CalibratedCamera(VisionSubclass(), camera.right)
+    left = CalibratedCamera(VisionSubclass(), None)
+    right = CalibratedCamera(VisionSubclass(), None)
     with CalibratedStereoCamera(left, right, camera) as s:
         assert(s.autoexposure == (None, None))
         assert(s.autofocus == (None, None))

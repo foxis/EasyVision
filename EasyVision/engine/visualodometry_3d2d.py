@@ -6,6 +6,7 @@
 from EasyVision.engine.base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin, Features
+from EasyVision.vision import PyroCapture
 import cv2
 import numpy as np
 from future_builtins import zip
@@ -52,9 +53,9 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         :param reproj_error: Reprojection Error used in triangulation
         """
         feature_extractor_provided = False
-        if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
-            raise TypeError("Vision must be either VisionBase or ProcessorBase")
-        if isinstance(vision, ProcessorBase):
+        if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase) and not isinstance(vision, PyroCapture):
+            raise TypeError("Vision must be either VisionBase or ProcessorBase or PyroCapture")
+        if isinstance(vision, ProcessorBase) or isinstance(vision, PyroCapture):
             if vision.get_source('CalibratedCamera') is None:
                 raise TypeError("Vision must contain CalibratedCamera")
 
