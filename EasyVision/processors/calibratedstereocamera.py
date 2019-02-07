@@ -178,7 +178,10 @@ class CameraPairProxy(VisionBase):
         return left._replace(images=left.images + right.images)
 
     def get_source(self, source):
-        return (self._left.get_source(source), self._right.get_source(source))
+        return self._left.get_source(source), self._right.get_source(source)
+
+    def __getattr__(self, name):
+        return getattr(self._left, name), getattr(self._right, name)
 
     @property
     def is_open(self):

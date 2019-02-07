@@ -30,7 +30,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
     6. return current pose
     """
 
-    def __init__(self, vision, occupancy_map=None, feature_type=None, pose=None,
+    def __init__(self, vision, _map=None, feature_type=None, pose=None,
                  num_features=None, nlevels=None,
                  ratio=None, distance_thresh=None, reproj_thresh=None, reproj_error=None,
                  min_dZ=None, max_dZ=None, max_dY=None, max_dX=None,
@@ -38,7 +38,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         """Instance Initialization.
 
         :param vision: capturing source object. Must contain CalibratedStereoCamera processor.
-        :param occupancy_map: an instance of MapBase descendant
+        :param _map: an instance of MapBase descendant
         :param feature_type: type of features. may be left out if FeatureExtraction processor is present for left and right cameras.
         :param pose: initial pose
         :param num_features: number of features for ORB features
@@ -53,7 +53,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         :param max_dX: maximum feature X difference for stereo matching
         """
 
-        if not isinstance(occupancy_map, MapBase) and occupancy_map is not None:
+        if not isinstance(_map, MapBase) and _map is not None:
             raise TypeError("Occupancy Map must be of type MapBase")
 
         feature_extractor_provided = False
@@ -64,13 +64,12 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
             if vision.get_source('CalibratedStereoCamera') is None:
                 raise TypeError("Vision must contain CalibratedStereoCamera")
 
-            if vision.get_source('FeatureExtraction') is not None:
-                fe = vision.get_source('FeatureExtraction')
-                assert(fe[0].feature_type == fe[1].feature_type)
+            if vision.get_source('FeatureExtraction')[0] is not None:
+                fe = vision.feature_type
+                assert(fe[0] == fe[1])
 
-                feature_type = fe[0].feature_type
+                feature_type = fe[0]
                 feature_extractor_provided = True
-                print 'using %s features' % feature_type, vision.get_source('FeatureExtraction') is not None
             elif not feature_type:
                 raise TypeError("Feature type must be provided")
         else:
@@ -97,7 +96,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
         self._last_pose = None
         self._last_3dfeatures = None
 
-        self._map = occupancy_map
+        self._map = _map
 
         self._ratio = 0.7
         self._distance_thresh = 100
