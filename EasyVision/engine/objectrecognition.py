@@ -26,7 +26,8 @@ class ObjectRecognitionEngine(FeatureMatchingMixin, EngineBase):
     """
 
     def __init__(self, vision, feature_type=None, max_matches=10, *args, **kwargs):
-        """Instance initialization
+        """Instance initialization.
+        May add FeatureExtraction processor if current stack does not contain it.
 
         :param vision: capturing source object.
         :param feature_type: specify feature type. May be left None if capturing source contains ``FeatureExtraction``

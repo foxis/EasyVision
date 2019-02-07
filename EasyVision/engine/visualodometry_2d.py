@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""Implements visual odometry for monocular camera case
+
+"""
 from .base import OdometryBase, Pose, EngineCapability
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin
@@ -8,10 +11,47 @@ from future_builtins import zip
 
 
 class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
+    """Class that implement Monocular Visual Odometry.
+
+    Contains two algorithms:
+        - feature tracking
+        - feature matching
+
+    Feature tracking is available for FAST and GFTT features, otherwise feature matching will be used.
+
+    ``compute`` method will return a frame and computed pose. If pose is not available will return last available pose.
+    If a map is provided, then ``map.update`` method will be called.
+
+    Visual odometry algorithm is as follows:
+    1. capture a new frame
+    1.1. if tracking enabled - track features
+    2. if previous frame is available
+    2.1. compute essential matrix
+    2.2. recover pose
+    2.3. calculate reprojection error
+    2.4. if reprojection error is too high, go to 2.1. with slightly different parameters
+    3. update current pose
+    5. if map is provided, call ``update`` method
+    6. return current frame and the pose
+
+    """
 
     def __init__(self, vision, _map=None, feature_type=None, pose=None, num_features=6000, min_features=1000,
                  min_matches=30, distance_thresh=None, ratio=.7, reproj_thresh=None,
                  debug=False, display_results=False, *args, **kwargs):
+        """Instance initialization.
+
+        :param vision: capturing source object.
+        :param _map: an instance of MapBase descendant implementing mapping.
+        :param feature_type: type of the features to be used. May be omitted if FeatureExtraction processor is in the stack.
+        :param pose: Initial pose
+        :param num_features: Number of features for ORB extractor
+        :param min_features: Minimum number of features to compute pose from
+        :param min_matches: Minimum number matches
+        :param distance_thresh: Distance threshold for matching
+        :param ratio: Lowe's ratio
+        :param reproj_thresh: Reprojection threshold
+        """
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -94,6 +134,13 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         return frame, pose
 
     def _compute_match(self, timestamp, current_image, absolute_scale):
+        """Helper method to compute pose from matched features
+
+        :param timestamp: current frame timestamp
+        :param current_image: current image
+        :param absolute_scale: absolute scale that is being passed from ``compute`` method
+        :return: computed and updated pose
+        """
         if not self._last_image:
             self._last_kps = np.float32([x.pt for x in current_image.features.points])
         else:
@@ -153,7 +200,16 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         self._last_features = current_image.features
         return self._pose
 
-    def _compute_track(self, current_image, absolute_scale):
+    def _compute_track(self, timestamp, current_image, absolute_scale):
+        """Helper method to compute pose from tracked features.
+
+        FIXME: currently broken code
+
+        :param timestamp: current frame timestamp
+        :param current_image: current image
+        :param absolute_scale: absolute scale that is being passed from ``compute`` method
+        :return: computed and updated pose
+        """
         self.vision.enable = False
         if not self._last_image:
             self._last_kps = np.array([x.pt for x in current_image.features.points], dtype=np.float32)
@@ -177,13 +233,13 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
                                             focal=self._camera.focal_point[0], pp=self._camera.center)
             if self._pose:
                 self._pose = self._pose._replace(
-                    timestamp=frame.timestamp,
+                    timestamp=timestamp,
                     translation=self._pose.translation + absolute_scale * self._pose.rotation.dot(t),
                     rotation=R.dot(self._pose.rotation)
                 )
             else:
-                self._pose = Pose(frame.timestamp, R, t)
-            self._last_pose = Pose(fame.timestamp, R, t)
+                self._pose = Pose(timestamp, R, t)
+            self._last_pose = Pose(timestamp, R, t)
 
             if len(self._last_kps) < self._min_features:
                 current_image = self.vision.process(current_image)
@@ -236,6 +292,13 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             )
 
     def _track_features(self, image_ref, image_cur, px_ref):
+        """Helper method to track features.
+
+        :param image_ref: last frame
+        :param image_cur: current frame
+        :param px_ref: last frame features
+        :return: last frame points, same points in current frame
+        """
         kp2, st, err = cv2.calcOpticalFlowPyrLK(image_ref, image_cur, px_ref, None, **self._lk_params)  # shape: [k,2] [k,1] [k,1]
 
         umat = isinstance(st, cv2.UMat)
@@ -250,6 +313,12 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         return kp1, kp2
 
     def _match_features(self, featuresA, featuresB):
+        """Helper method to match features and filter out outliers.
+
+        :param featuresA: Features from last frame
+        :param featuresB: Features from current frame
+        :return: points from last frame, corresponding points from current frame and descriptors
+        """
         kpsA, descriptorsA, _ = featuresA
         kpsB, descriptorsB, _ = featuresB
 

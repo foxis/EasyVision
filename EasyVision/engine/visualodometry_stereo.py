@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""Implements Visual Odometry algorithm for stereo camera pair
+
+"""
 from EasyVision.engine.base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, StereoCamera, CalibratedStereoCamera, FeatureMatchingMixin
@@ -8,12 +11,47 @@ from future_builtins import zip
 
 
 class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
+    """Class that implement Stereo Visual Odometry algorithm. Requires CalibratedStereoCamera.
+
+    All feature types are supported except for FAST and GFTT, as only feature matching is implemented.
+
+    ``compute`` method will return a frame and computed pose. If pose is not available will return last available pose.
+    If a map is provided, then ``map.update`` method will be called.
+
+    Visual odometry algorithm is as follows:
+    1. Capture a new frame
+    2. calculate 3d points using triangulation
+    3. if last frame is available:
+    3.1. use solvePnPRansac to calculate relative pose
+    3.2. calculate reprojection error
+    3.3. if reprojection error is larger than specified, go to 3.1. with slightly different parameters
+    4. update current pose
+    5. call ``map.update`` if map is provided
+    6. return current pose
+    """
 
     def __init__(self, vision, occupancy_map=None, feature_type=None, pose=None,
                  num_features=None, nlevels=None,
                  ratio=None, distance_thresh=None, reproj_thresh=None, reproj_error=None,
                  min_dZ=None, max_dZ=None, max_dY=None, max_dX=None,
                  *args, **kwargs):
+        """Instance Initialization.
+
+        :param vision: capturing source object. Must contain CalibratedStereoCamera processor.
+        :param occupancy_map: an instance of MapBase descendant
+        :param feature_type: type of features. may be left out if FeatureExtraction processor is present for left and right cameras.
+        :param pose: initial pose
+        :param num_features: number of features for ORB features
+        :param nlevels: number of levels for ORB features
+        :param ratio: Lowe's ratio
+        :param distance_thresh: feature matching distance threshold
+        :param reproj_thresh: reprojection threshold
+        :param reproj_error: reprojection error threshold
+        :param min_dZ: minimum feature distance difference for stereo matching
+        :param max_dZ: maximum feature distance difference for stereo matching
+        :param max_dY: maximum feature Y difference for stereo matching
+        :param max_dX: maximum feature X difference for stereo matching
+        """
 
         if not isinstance(occupancy_map, MapBase) and occupancy_map is not None:
             raise TypeError("Occupancy Map must be of type MapBase")

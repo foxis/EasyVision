@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Implements simple OccupancyGridMap using 3d features provided with a pose
+"""
 from EasyVision.engine.base import MapBase
 from EasyVision.engine.base import Pose
 import numpy as np
@@ -7,9 +9,25 @@ from math import sin, cos, acos, asin
 
 
 class OccupancyGridMap(MapBase):
+    """Class implementing Occupancy Grid Mapping.
+    Should be used with conjunction with VisualOdometry engine.
+    Uses 3d feature points of the Pose. Z coordinate denotes forward, and Y coordinate - up.
+
+    """
 
     def __init__(self, _map, scale=.001, theta=.01, alpha=.6, beta=-.4, min_y=-10, max_y=5000, max_d=100000, poses=[], *args, **kwargs):
+        """Instance initialization.
 
+        :param _map: Accepts either a tuple of (map_width, map_height) or a np.float32 two dimensional array
+        :param scale: Scale of the map
+        :param theta: obstacle reading spread
+        :param alpha: obstacle weight
+        :param beta: freespace before obstacle weight
+        :param min_y: minimum Y coordinate of the feature
+        :param max_y: maximum Y coordinate of the feature
+        :param max_d: maximum distance of the feature
+        :param poses: a list of poses to initialize a map with
+        """
         if not isinstance(poses, list) or not all(isinstance(i, Pose) for i in poses):
             raise TypeError("Poses must be a list of Pose")
 
@@ -117,6 +135,7 @@ class OccupancyGridMap(MapBase):
         return pose
 
     def draw(self):
+        """Helper method to draw the map"""
         if not len(self._poses):
             return
 

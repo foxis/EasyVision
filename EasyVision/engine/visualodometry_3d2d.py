@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Implements Visual Odometry for monocular camera using 3D-2D algorithm
+
+"""
+
 from EasyVision.engine.base import *
 from EasyVision.processors.base import *
 from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMatchingMixin, Features
@@ -8,9 +12,45 @@ from future_builtins import zip
 
 
 class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
+    """Class that implement Monocular Visual Odometry 3D-2D algorithm.
+
+    All feature types are supported except for FAST and GFTT, as only feature matching is implemented.
+
+    ``compute`` method will return a frame and computed pose. If pose is not available will return last available pose.
+    If a map is provided, then ``map.update`` method will be called.
+
+    Visual odometry algorithm is as follows:
+    1. capture a new frame
+    2. if previous frame is available:
+    2.1. compute essential matrix
+    2.2. recover relative pose
+    2.3. triangulate matched feature points
+    3. if three frames are available:
+    3.1. use solvePnPRansac to calculate pose from 3d points to current frame 2d points
+    3.2. calculate reprojection error
+    3.3. if reprojection error is too high, go to 3.1. with slightly different parameters
+    4. update current pose
+    5. if map is provided, call ``update`` method
+    6. return current frame and the pose
+
+    """
 
     def __init__(self, vision, _map=None, feature_type=None, pose=None, num_features=3000,
                  min_matches=30, distance_thresh=None, reproj_thresh=None, reproj_error=None, *args, **kwargs):
+        """Instance initialization.
+
+        :param vision: capturing source object.
+        :param _map: an instance of MapBase descendant implementing mapping.
+        :param feature_type: type of the features to be used. May be omitted if FeatureExtraction processor is in the stack.
+        :param pose: Initial pose
+        :param num_features: Number of features for ORB extractor
+        :param min_features: Minimum number of features to compute pose from
+        :param min_matches: Minimum number matches
+        :param distance_thresh: Distance threshold for matching
+        :param ratio: Lowe's ratio
+        :param reproj_thresh: Reprojection threshold
+        :param reproj_error: Reprojection Error used in triangulation
+        """
         feature_extractor_provided = False
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
@@ -209,6 +249,13 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
             )
 
     def _calculate_3d(self, featuresA, featuresB, scale):
+        """Helper method to calculate 3D points from two consecutive frames.
+
+        :param featuresA: last frame features
+        :param featuresB: current frame features
+        :param scale: absolute scale passed from ``compute``
+        :return: last frame features with filtered out keypoints, current frame features with filtered out keypoints and calculated 3d points
+        """
         kpsA, descriptorsA, _ = featuresA
         kpsB, descriptorsB, _ = featuresB
 

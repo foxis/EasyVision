@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""Implements Bag Of Words algorithm and matching.
+
+If pyDBoW3 is available, will use that instead of openCV kmeans bow algorithm
+"""
+
 from EasyVision.engine.base import EngineBase, EngineCapability
 from EasyVision.models import ObjectModel, ModelView
 from EasyVision.processors.base import *
@@ -19,10 +24,25 @@ except:
 
 
 class BOWVocabularyBuilderEngine(EngineBase):
+    """Class implementing BOW dictionary
 
-    def __init__(self, vision, feature_type, clusters, dbow3_trainer=True,
+    """
+
+    def __init__(self, vision, feature_type, clusters, dbow3_trainer=dbow_available,
                  k=10, L=5, weighting=bow.WeightingType.TF_IDF, scoring=bow.ScoringType.L1_NORM,
                  *args, **kwargs):
+        """Instance initialization.
+
+        :param vision: capturing source object.
+        :param feature_type: type of features to use
+        :param clusters: number of clusters
+        :param dbow3_trainer: True tells to use DBoW3 library
+        :param k: DBoW3 parameter
+        :param L: DBoW3 parameter
+        :param weighting: DBoW3 parameter
+        :param scoring: DBoW3 parameter
+        """
+
         if not isinstance(vision, ProcessorBase) and not isinstance(vision, VisionBase):
             raise TypeError("Vision must be either VisionBase or ProcessorBase")
         if not isinstance(vision, ProcessorBase) and not feature_type:
@@ -57,18 +77,21 @@ class BOWVocabularyBuilderEngine(EngineBase):
         return frame
 
     def save(self, path):
+        """Saves BOW dictionary to a file"""
         if hasattr(self, '_features'):
             self._trainer.save(path, True)
         else:
             raise NotImplementedError()
 
     def load(self, path):
+        """Loads BOW dictionary from a file"""
         if hasattr(self, '_features'):
             self._trainer.load(path)
         else:
             raise NotImplementedError()
 
     def create_vocabulary(self):
+        """Creates a vocabulary using collected features"""
         if hasattr(self, '_features'):
             self._trainer.create(self._features)
         else:
@@ -76,6 +99,7 @@ class BOWVocabularyBuilderEngine(EngineBase):
 
     @property
     def vocabulary(self):
+        """Returns vocabulary implementation"""
         return self._trainer if hasattr(self, '_features') else self._vocabulary
 
     def release(self):
@@ -90,12 +114,16 @@ class BOWVocabularyBuilderEngine(EngineBase):
     def capabilities(self):
         return EngineCapability(
                 (ProcessorBase, FeatureExtraction),
-                (Frame),
+                (Frame,),
                 {'dictionaries': ('kmeans', 'dbow3')}
             )
 
 
 class BOWMatchingMixin(object):
+    """Mixin class implementing BOW matching.
+
+    """
+
     SLOTS = ('_bow_extractor', '_database')
     __slots__ = SLOTS
 
@@ -104,6 +132,15 @@ class BOWMatchingMixin(object):
         super(BOWMatchingMixin, self).__init__(*args, **kwargs)
 
     def initBOW(self, extractor, matcher, vocabulary, feature_type):
+        """Must be called for the mixin initialization. Usually being called from ``setup`` method.
+
+        :param extractor: is used for openCV BOW algorithm
+        :param matcher: is used for openCV BOW algorithm
+        :param vocabulary: BOW vocabulary instance or a string. if a string is provided, will use dbow3 and will treat it as path to the database.
+        :param feature_type: type of features used in the matching/bow calculation process
+        :return: None
+        """
+
         self._dbow3 = isinstance(vocabulary, bow.Vocabulary) or isinstance(vocabulary, str)
         if self._dbow3 and feature_type not in ['SIFT', 'SURF']:
             raise NotImplementedError("OpenCV KMeans trainer only supports floating point features. Use DBoW3 instead.")
@@ -120,16 +157,19 @@ class BOWMatchingMixin(object):
                 self._database.setVocabulary(vocabulary)
 
     def release(self):
+        """Releases BOW matching engine. Must be called as ``super().release()``"""
         super(BOWMatchingMixin, self).release()
         del self._database
 
     def _add_keyframe(self, descriptors):
+        """Adds a keyframe to the matching database"""
         if isinstance(self._database, list):
             self._database += [(self._compute_bow(descriptors), descriptors)]
         else:
             self._database.add(descriptors)
 
     def _query_frame(self, descriptors, max_results=10):
+        """Finds a list of matching keyframes using provided descriptors"""
         if isinstance(self._database, list):
             current_bow = self._compute_bow(descriptors)
             matches = (self._match_bow(current_bow, bow) for bow, descriptor in self._database)
@@ -139,7 +179,9 @@ class BOWMatchingMixin(object):
         return all_results[:max_results]
 
     def _compute_bow(self, descriptors):
+        """Helper method to compute BOW using feature descriptors"""
         return self._bow_extractor.compute(descriptors)
 
     def _match_bow(self, bowA, bowB, method=cv2.HISTCMP_INTERSECT):
+        """Compares two histograms"""
         return cv2.compareHist(bowA, bowB, method)
