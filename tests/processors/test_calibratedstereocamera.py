@@ -11,7 +11,7 @@ import numpy as np
 from tests.common import *
 
 
-@pytest.mark.main
+@mark.main
 def test_stereo_camera():
     camera = StereoCamera(
         left_camera,
@@ -24,7 +24,7 @@ def test_stereo_camera():
     assert_stereo_camera(camera)
 
 
-@pytest.mark.main
+@mark.main
 def test_stereo_camera_todict():
     camera = StereoCamera(
         left_camera,
@@ -37,7 +37,7 @@ def test_stereo_camera_todict():
     assert(as_dict_stereo == camera.todict())
 
 
-@pytest.mark.main
+@mark.main
 def test_stereo_camera_fromdict():
     camera = StereoCamera.fromdict(as_dict_stereo)
     assert_stereo_camera(camera)
@@ -121,12 +121,18 @@ def test_stereo_calibrated():
             cv2.waitKey(0)
 
 
-@pytest.mark.main
+@mark.main
 def test_stereo_properties():
     camera = StereoCamera(left_camera, right_camera, R, T, E, F, Q)
     left = CalibratedCamera(VisionSubclass(), None)
     right = CalibratedCamera(VisionSubclass(), None)
     with CalibratedStereoCamera(left, right, camera) as s:
+        assert(left.camera is left_camera)
+        assert(right.camera is right_camera)
+
+        assert(not left._calibrate)
+        assert(not right._calibrate)
+
         assert(s.autoexposure == (None, None))
         assert(s.autofocus == (None, None))
         assert(s.autowhitebalance == (None, None))

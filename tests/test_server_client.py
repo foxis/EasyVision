@@ -96,7 +96,7 @@ def test_server_client_vostereo():
         cap = CalibratedStereoCamera(left, right, camera)
         with VisualOdometryStereoEngine(cap, display_results=False, debug=False, feature_type=None) as engine:
             for idx, framepose in enumerate(engine):
-                assert (idx < len(images_left) + 1)
+                assert (idx < len(images_kitti_l) + 1)
     except:
         raise
     finally:

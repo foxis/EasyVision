@@ -39,6 +39,15 @@ def test_camera_todict():
     assert(as_d == test_d)
 
 
+@mark.main
+def test_calibrated_camera_setter():
+    vision = ImagesReader(images_left)
+    with CalibratedCamera(vision, None, max_samples=len(images_left) - 3, frame_delay=0) as vision:
+        assert(vision._calibrate)
+        vision.camera = PinholeCamera((640, 480), M_left, d_left)
+        assert(not vision._calibrate)
+
+
 @mark.slow
 def test_calibrate():
     vision = ImagesReader(images_left)
