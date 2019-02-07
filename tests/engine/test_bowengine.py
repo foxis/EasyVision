@@ -21,7 +21,7 @@ camera2 = PinholeCamera.from_parameters((1280, 1024),
 
 NUM_IMAGES = 159 # 1
 pose = "00"
-images = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in xrange(NUM_IMAGES)]
+images = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in range(NUM_IMAGES)]
 gt_path = "d:/datasets/data_odometry_gray/dataset/poses/{}.txt".format(pose)
 
 
@@ -69,7 +69,6 @@ def test_dbow3_matching_mixin():
         for frame in vision:
             frame_count += 1
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(frame.images[0].image is not None)
 
         assert(frame_count == 3)

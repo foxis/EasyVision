@@ -9,7 +9,10 @@ from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMa
 from EasyVision.vision import PyroCapture
 import cv2
 import numpy as np
-from future_builtins import zip
+try:
+    from future_builtins import zip
+except:
+    pass
 
 
 class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
@@ -139,7 +142,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
                                            self._feature_type, self._ratio, self._distance_thresh / 3, self._min_matches)
 
             if matches is None or not matches:
-                print "failed to find matches"
+                print("failed to find matches")
                 return frame, self._pose
 
             points_3d = np.float32([self._images[-3][1].points3d[m.queryIdx] for m in matches])
@@ -168,7 +171,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
                 if reproj_error_inliers < self._reproj_error:
                     break
                 else:
-                    print 'failed to find inliers', reproj_error_inliers, '<', self._reproj_error
+                    print('failed to find inliers', reproj_error_inliers, '<', self._reproj_error)
             else:
                 ret = False
 
@@ -274,7 +277,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         kpsB = [kpsB[m.trainIdx] for m in matches]
         mask = [0.5 < p[0] ** 2 + p[1] ** 2 < 200 * 200 for p in ((a.pt[0] - b.pt[0], a.pt[1] - b.pt[1]) for a, b in zip(kpsA, kpsB))]
         if sum(mask) < self._min_matches:
-            print "prune fail"
+            print("prune fail")
             return None, None
 
         kpsA = [p for M, p in zip(mask, kpsA) if M]
@@ -291,7 +294,7 @@ class VisualOdometry3D2DEngine(FeatureMatchingMixin, OdometryBase):
         ret, R, t, mask = cv2.recoverPose(E, current, last, focal=self._camera.focal_point[0], pp=self._camera.center, mask=mask)
 
         if not ret:
-            print "recoverPose fail"
+            print("recoverPose fail")
             return None, None
 
         kpsA = [kp for m, kp in zip(mask, kpsA) if m]

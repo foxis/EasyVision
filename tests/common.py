@@ -247,16 +247,16 @@ class VisionSubclass(VisionBase):
 
     @property
     def test_remote_get(self):
-        print 'remote get', self, self._test_remote_get
+        print('remote get', self, self._test_remote_get)
         return self._test_remote_get
 
     @test_remote_get.setter
     def test_remote_get(self, value):
-        print 'remote set', self, value
+        print('remote set', self, value)
         self._test_remote_get = value
 
     def test_remote_call(self, a, b, kwarg_test=0):
-        print 'remote call', self, self._test_remote_get, a, b, kwarg_test
+        print('remote call', self, self._test_remote_get, a, b, kwarg_test)
         return (self._test_remote_get, a, b, kwarg_test)
 
     def test_remote_exception(self, a, b, kwarg_test=0):
@@ -406,7 +406,7 @@ def common_test_visual_odometry_kitti(feature_type, mp=False, ocl=True, debug=Fa
     traj = np.zeros((600, 600, 3), dtype=np.uint8)
 
 
-    images_kitti = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in xrange(NUM_IMAGES)]
+    images_kitti = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in range(NUM_IMAGES)]
     gt_path_kitti = "d:/datasets/data_odometry_gray/dataset/poses/{}.txt".format(pose)
 
     with open(gt_path_kitti) as f:

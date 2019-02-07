@@ -62,7 +62,6 @@ def test_calibrate():
                 assert(cam.focal_point[1] == approx(fp[1], rel=2))
                 assert(cam.center[0] == approx(cp[0], rel=2))
                 assert(cam.center[1] == approx(cp[1], rel=2))
-                print cam.distortion[0]
                 for i in range(5):
                     assert(cam.distortion[0][i] == approx(d[i], rel=5e-1, abs=5e-1))
                 break

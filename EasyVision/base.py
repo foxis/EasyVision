@@ -76,7 +76,7 @@ class NamedTupleExtendHelper(object):
         return result
 
 
-class EasyVisionBase(object):
+class EasyVisionBase(metaclass=ABCMeta):
     """EasyVisionBase is an abstract class for all EasyVision algorithms
     Contains simple setup/release, debug/display_results, setup/release and context functionality.
 

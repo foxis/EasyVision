@@ -11,7 +11,7 @@ from EasyVision.server import Command
 
 try:
     import cPickle as pickle
-except ImportError:
+except:
     import pickle
 
 
@@ -57,8 +57,8 @@ class PyroCapture(VisionBase):
 
     def __receive_blob(self, blob_id):
         if blob_id is not None:
-            self._sock.sendall(blob_id)
-            len = int(self._sock.recv(16))
+            self._sock.sendall(blob_id.encode('utf-8'))
+            len = int(self._sock.recv(16).decode())
             data = self._sock.recv(len)
             result = pickle.loads(data)
             return result
@@ -89,7 +89,6 @@ class PyroCapture(VisionBase):
     def capture(self):
         super(PyroCapture, self).capture()
         blob_id = self._proxy.capture()
-        print blob_id
         return self.__receive_blob(blob_id)
 
     def compute(self):

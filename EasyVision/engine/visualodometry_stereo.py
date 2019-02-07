@@ -8,7 +8,10 @@ from EasyVision.processors import FeatureExtraction, StereoCamera, CalibratedSte
 from EasyVision.vision import PyroCapture
 import cv2
 import numpy as np
-from future_builtins import zip
+try:
+    from future_builtins import zip
+except:
+    pass
 
 
 class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
@@ -152,7 +155,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
     def compute(self):
         frame = self.vision.capture()
         if not frame:
-            print 'no frame'
+            print('no frame')
             return None
 
         stereo_features = self._calculate_3d(frame.images[0].features, frame.images[1].features)
@@ -163,7 +166,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
 
             if matches is None or not matches:
                 self._last_frame = frame
-                print 'no matches'
+                print('no matches')
                 return frame, self._pose
 
             last_points_2d, last_points_3d, _, new_points_2d, new_points_3d, new_descriptors, last_points_2d_right, new_points_2d_right = matches
@@ -190,7 +193,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
                     dZ = sum(i[0] ** 2 for i in t) ** .5
                     break
                 else:
-                    print 'failed to find inliers', reproj_error_inliers, '<', self._reproj_error
+                    print('failed to find inliers', reproj_error_inliers, '<', self._reproj_error)
             else:
                 ret = False
 
@@ -211,7 +214,7 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
                 if self._map is not None:
                     self._pose = self._map.update(self._pose)
             else:
-                print 'not found'
+                print('not found')
 
             if self.debug:
                 cv2.rectangle(self.features, (0, 0), (600, 600), (0, 0, 0), -1)
@@ -282,13 +285,13 @@ class VisualOdometryStereoEngine(FeatureMatchingMixin, OdometryBase):
                 cv2.imshow("3D points", self.features)
 
                 if reproj_error_inliers > 5:
-                    print 'fail'
-                    print last_points_3d.tolist()
-                    print new_points_2d.tolist()
+                    print('fail')
+                    print(last_points_3d.tolist())
+                    print(new_points_2d.tolist())
                     if use_rt:
-                        print _r.tolist()
-                        print _t.tolist()
-                    print self._camera.left.matrix.tolist()
+                        print(_r.tolist())
+                        print(_t.tolist())
+                    print(self._camera.left.matrix.tolist())
 
                     cv2.waitKey(0)
 

@@ -10,7 +10,7 @@ import cv2
 
 try:
     import cPickle as pickle
-except ImportError:
+except:
     import pickle
 
 

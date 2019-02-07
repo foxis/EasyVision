@@ -11,6 +11,11 @@ import numpy as np
 import os
 from tests.common import *
 
+try:
+    from future_builtins import zip
+except:
+    pass
+
 
 class DummySubclass(VisionSubclass):
     def capture(self):
@@ -35,12 +40,11 @@ def test_stereo_calibrated_mp():
     total_single = 0
     left = FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_left), ocl=True), camera.left), feature_type=feature_type)
     with left as left_:
-            print 'Single'
+            print('Single')
             for frame in left_:
                 if frame.index == 0:
                     continue
                 delta = (datetime.now() - frame.timestamp).total_seconds()
-                print delta
                 total_single += delta
 
     total_sum = 0
@@ -49,26 +53,23 @@ def test_stereo_calibrated_mp():
     right = FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_right), ocl=True), camera.right), feature_type=feature_type)
     with left as left_:
         with right as right_:
-            print 'Sequential'
+            print('Sequential')
             for framea, frameb in izip(left_, right_):
                 if framea.index == 0:
                     continue
                 delta = (datetime.now() - framea.timestamp).total_seconds()
-                print delta
                 total_sum += delta
 
-    print 'total = ', total_sum
     total_th = 0
 
     left = FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_left), ocl=True), camera.left), feature_type=feature_type)
     right = FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_right), ocl=True), camera.right), feature_type=feature_type)
     with CalibratedStereoCamera(left, right, camera, display_results=False) as vision:
-        print 'Threaded'
+        print('Threaded')
         for frame in vision:
             if frame.index == 0:
                 continue
             delta = (datetime.now() - frame.timestamp).total_seconds()
-            print delta
             total_th += delta
 
     total_mp = 0
@@ -76,18 +77,17 @@ def test_stereo_calibrated_mp():
     left = MultiProcessing(FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_left), ocl=True), camera.left), feature_type=feature_type), freerun=False)
     right = MultiProcessing(FeatureExtraction(CalibratedCamera(ImageTransform(ImagesReader(images_right), ocl=True), camera.right), feature_type=feature_type), freerun=False)
     with CalibratedStereoCamera(left, right, camera, display_results=False) as vision:
-        print 'Multiprocessing'
+        print('Multiprocessing')
         for frame in vision:
             if frame.index == 0:
                 continue
             delta = (datetime.now() - frame.timestamp).total_seconds()
-            print delta
             total_mp += delta
 
-    print 'Single total = ', total_single
-    print 'Sequential total = ', total_sum
-    print 'Threaded total = ', total_th
-    print 'Multiprocessing total = ', total_mp
+    print('Single total = ', total_single)
+    print('Sequential total = ', total_sum)
+    print('Threaded total = ', total_th)
+    print('Multiprocessing total = ', total_mp)
 
     assert(total_sum > total_single)
     #assert(total_single < total_th < total_sum)
@@ -97,7 +97,6 @@ def test_stereo_calibrated_mp():
 @mark.main
 def test_stereo_calibrated_mp_dummy():
     from datetime import datetime
-    from itertools import izip
 
     camera = StereoCamera(left_camera, right_camera, R, T, E, F, Q)
 
@@ -108,18 +107,14 @@ def test_stereo_calibrated_mp_dummy():
                 delta = (datetime.now() - frame.timestamp).total_seconds()
                 total_single += delta
 
-    print 'Single total = ', total_single
-
     total_sum = 0
     left = CalibratedCamera(DummySubclass(), camera.left)
     right = CalibratedCamera(DummySubclass(), camera.right)
     with left as left_:
         with right as right_:
-            for framea, frameb in izip(left_, right_):
+            for framea, frameb in zip(left_, right_):
                 delta = (datetime.now() - framea.timestamp).total_seconds()
                 total_sum += delta
-
-    print 'Sequential total = ', total_sum
 
     total_th = 0
     left = CalibratedCamera(DummySubclass(), camera.left)
@@ -129,8 +124,6 @@ def test_stereo_calibrated_mp_dummy():
             delta = (datetime.now() - frame.timestamp).total_seconds()
             total_th += delta
 
-    print 'Threaded total = ', total_th
-
     total_mp = 0
     left = MultiProcessing(CalibratedCamera(DummySubclass(), camera.left), freerun=False)
     right = MultiProcessing(CalibratedCamera(DummySubclass(), camera.right), freerun=False)
@@ -139,7 +132,10 @@ def test_stereo_calibrated_mp_dummy():
             delta = (datetime.now() - frame.timestamp).total_seconds()
             total_mp += delta
 
-    print 'Multiprocessing total = ', total_mp
+    print('Single total = ', total_single)
+    print('Sequential total = ', total_sum)
+    print('Threaded total = ', total_th)
+    print('Multiprocessing total = ', total_mp)
 
     assert(total_sum > total_single)
     assert(total_single <= total_th < total_sum)

@@ -22,35 +22,35 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     with PyroCapture(args.name) as vis:
-        print vis.name
-        print vis.fps
-        print vis.frame_size
-        print vis.frame_count
-        print vis.camera
+        print(vis.name)
+        print(vis.fps)
+        print(vis.frame_size)
+        print(vis.frame_count)
+        print(vis.camera)
 
         vis.camera = camera
 
-        print vis.camera
+        print(vis.camera)
 
         name = vis.name
 
         now = datetime.now()
         for i in xrange(30):
             vis._proxy.echo('dat' * 640*480)
-        print "echo calls ps with 640*480*3 bytes", 30 / (datetime.now() - now).total_seconds()
+        print("echo calls ps with 640*480*3 bytes", 30 / (datetime.now() - now).total_seconds())
 
-        print "letting to freerun for 10s"
+        print("letting to freerun for 10s")
         time.sleep(10)
-        print 'remote fps', vis._proxy.fps()
+        print('remote fps', vis._proxy.fps())
 
         now = datetime.now()
         for i, frame in enumerate(vis):
             assert(isinstance(frame, Frame))
-            print '.',
+            print('.',)
             if i > args.N:
                 break
             cv2.imshow(name, frame.images[0].image)
             cv2.waitKey(1)
 
-        print 'capture fps', args.N / (datetime.now() - now).total_seconds()
-        print 'remote fps', vis._proxy.fps()
+        print('capture fps', args.N / (datetime.now() - now).total_seconds())
+        print('remote fps', vis._proxy.fps())

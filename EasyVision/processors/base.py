@@ -8,11 +8,15 @@ Can also be used to build processor stacks with the help of Processor Stack Buil
 from EasyVision.vision.base import *
 import cv2
 import numpy as np
-from future_builtins import zip
+
+try:
+    from future_builtins import zip
+except:
+    pass
 
 try:
     import cPickle as pickle
-except ImportError:
+except:
     import pickle
 
 

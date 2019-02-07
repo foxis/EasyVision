@@ -52,22 +52,6 @@ def test_stereo_calibrate():
         for i in range(15):
             cam = vision.calibrate()
             if cam:
-                print 'M_left = ', cam.left.matrix.tolist()
-                print 'd_left = ', cam.left.distortion.tolist()
-                print 'R_left = ', cam.left.rectify.tolist()
-                print 'P_left = ', cam.left.projection.tolist()
-
-                print 'M_right = ', cam.right.matrix.tolist()
-                print 'd_right = ', cam.right.distortion.tolist()
-                print 'R_right = ', cam.right.rectify.tolist()
-                print 'P_right = ', cam.right.projection.tolist()
-
-                print 'R = ', cam.R.tolist()
-                print 'T = ', cam.T.tolist()
-                print 'E = ', cam.E.tolist()
-                print 'F = ', cam.F.tolist()
-                print 'Q = ', cam.Q.tolist()
-
                 assert(isinstance(cam, StereoCamera))
                 assert(isinstance(cam.left, PinholeCamera))
                 assert(isinstance(cam.right, PinholeCamera))
@@ -87,8 +71,6 @@ def test_stereo_calibrate():
                 assert(cam.right.center[1] == approx(right_camera.center[1], rel=2))
                 for i in range(5):
                     assert(cam.right.distortion[0][i] == approx(right_camera.distortion[0][i], rel=5e-1, abs=5e-1))
-
-                assert(True)
                 break
         else:
             assert(False)
@@ -117,7 +99,6 @@ def test_stereo_calibrated():
     with CalibratedStereoCamera(left, right, camera, display_results=True) as vision:
 
         for frame in vision:
-            print (datetime.now() - frame.timestamp).total_seconds()
             cv2.waitKey(0)
 
 

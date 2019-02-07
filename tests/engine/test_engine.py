@@ -48,7 +48,6 @@ class VisionSubclass(VisionBase):
 
     @property
     def is_open(self):
-        print self.frame, self.frames
         return self.frame < self.frames
 
     @property

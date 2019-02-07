@@ -6,9 +6,12 @@ from pytest import raises, approx
 from EasyVision.vision.base import *
 from EasyVision.processors import MultiConsumers
 from EasyVision.vision import *
-from itertools import izip
 from tests.common import VisionSubclass
 
+try:
+    from future_builtins import zip
+except:
+    pass
 
 @pytest.mark.main
 def test_capture_multiconsumers():
@@ -16,7 +19,7 @@ def test_capture_multiconsumers():
     processor = MultiConsumers(vision)
     with processor as p1:
         with processor as p2:
-            for img1, img2 in izip(p1, p2):
+            for img1, img2 in zip(p1, p2):
                 assert(isinstance(img1, Frame))
                 assert(isinstance(img2, Frame))
                 assert(img1 == img2)

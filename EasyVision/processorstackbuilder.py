@@ -100,13 +100,14 @@ Example using json:
 from EasyVision.vision.base import VisionBase
 from EasyVision.processors.base import ProcessorBase
 from EasyVision.engine.base import EngineBase
+import inspect
 
 
 class Args(object):
     """Args class contains arguments for the vision/processor instance creation"""
 
     MISC_TYPES = (dict, tuple, list, set, frozenset)
-    TYPES = (int, long, float, str, unicode, bytearray, bool, complex) + MISC_TYPES
+    TYPES = (int, float, str, bytearray, bool, complex) + MISC_TYPES
 
     def __init__(self, *args, **kwargs):
         self.args = args
@@ -180,7 +181,7 @@ class Args(object):
     @staticmethod
     def _retrieve_object(classes, objects, value):
         """Helper method to retrieve objects from their dict representation for fromdict"""
-        if isinstance(value, basestring) and value.startswith('object__'):
+        if isinstance(value, str) and value.startswith('object__'):
             obj = objects[value]
             name = value[8:-1]
             return classes[name].fromdict(obj)
@@ -292,8 +293,8 @@ class Builder(object):
         for pos, arg in enumerate(self.args):
             if isinstance(arg, Builder):
                 args += (arg.build(),)
-            elif issubclass(arg, VisionBase) or issubclass(arg, EngineBase):
-                if index and not (issubclass(arg, ProcessorBase) or issubclass(arg, EngineBase)):
+            elif inspect.isclass(arg) and (issubclass(arg, VisionBase) or issubclass(arg, EngineBase)):
+                if index and not inspect.isclass(arg) and not (issubclass(arg, ProcessorBase) or issubclass(arg, EngineBase)):
                     raise TypeError("Class at position %i must be either a subclass of ProcessorBase or EngineBase" % pos)
                 cls = arg
                 index += 1
@@ -321,7 +322,7 @@ class Builder(object):
                 args = arg.todict()
                 args.update({'class': arg.__class__.__name__})
                 d['args'] += (args, )
-            elif issubclass(arg, VisionBase) or issubclass(arg, EngineBase):
+            elif inspect.isclass(arg) and (issubclass(arg, VisionBase) or issubclass(arg, EngineBase)):
                 cls = arg
             elif isinstance(arg, Args):
                 if not cls:

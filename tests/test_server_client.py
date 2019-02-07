@@ -4,7 +4,7 @@
 import pytest
 from pytest import raises, approx, mark
 from EasyVision.vision import *
-from common import *
+from .common import *
 from EasyVision.server import Server
 import threading as mt
 import time
@@ -82,8 +82,8 @@ def test_server_client_vo3d2d():
 
 @mark.slow
 def test_server_client_vostereo():
-    images_kitti_l = ['test_data/kitti00/image_0/{}.png'.format(str(i).zfill(6)) for i in xrange(3)]
-    images_kitti_r = ['test_data/kitti00/image_1/{}.png'.format(str(i).zfill(6)) for i in xrange(3)]
+    images_kitti_l = ['test_data/kitti00/image_0/{}.png'.format(str(i).zfill(6)) for i in range(3)]
+    images_kitti_r = ['test_data/kitti00/image_1/{}.png'.format(str(i).zfill(6)) for i in range(3)]
 
     server_left = create_server(images_kitti_l, None, 'LeftCamera')
     server_right = create_server(images_kitti_r, None, 'RightCamera')

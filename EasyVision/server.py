@@ -12,6 +12,7 @@ import threading
 import Pyro4
 import select
 import uuid
+import base64
 from datetime import datetime
 
 try:
@@ -61,7 +62,8 @@ class ProxyVision(object):
     @Pyro4.expose
     def command(self, data):
         """Will handle remote commands"""
-        ctrl = pickle.loads(data.encode('latin1'))
+        data = base64.b64decode(data['data'])
+        ctrl = pickle.loads(data)
         if ctrl.method == 'SET':
             cur_obj = self._vision
             last_obj = None
@@ -101,7 +103,7 @@ class ProxyVision(object):
             self._frames = 0
             self._framestart = datetime.now()
 
-            print 'thread started'
+            print('thread started')
 
             for result in self._vision:
                 with self._result_lock:
@@ -112,10 +114,10 @@ class ProxyVision(object):
                 if not self._running:
                     break
         except:
-            print 'thread except'
+            print('thread except')
             raise
         finally:
-            print 'thread finally'
+            print('thread finally')
             with self._result_lock:
                  self._running = False
             self._exit_event.set()
@@ -238,7 +240,7 @@ class ServerDaemon(Pyro4.core.Daemon):
                 if file_id is None:
                     return
                 data = self.datablobs.pop(file_id)
-                csock.sendall("{:016}".format(len(data)))
+                csock.sendall("{:016}".format(len(data)).encode('utf-8'))
                 csock.sendall(data)
             except:
                 break

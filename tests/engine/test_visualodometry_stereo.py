@@ -17,8 +17,8 @@ def test_visual_odometry_stereo():
     camera = StereoCamera(camera_kitti, camera_kitti_right, R_kitti, T_kitti, None, None, None)
     FEATURE_TYPE = 'ORB'
 
-    images_kitti_l = ['test_data/kitti00/image_0/{}.png'.format(str(i).zfill(6)) for i in xrange(3)]
-    images_kitti_r = ['test_data/kitti00/image_1/{}.png'.format(str(i).zfill(6)) for i in xrange(3)]
+    images_kitti_l = ['test_data/kitti00/image_0/{}.png'.format(str(i).zfill(6)) for i in range(3)]
+    images_kitti_r = ['test_data/kitti00/image_1/{}.png'.format(str(i).zfill(6)) for i in range(3)]
 
     cam_left = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_l), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.left)
     cam_right = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_r), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.right)
@@ -38,8 +38,8 @@ def test_visual_odometry_kitti_stereo():
     traj = np.zeros((600, 600, 3), dtype=np.uint8)
 
     pose = "00"
-    images_kitti_l = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in xrange(NUM_IMAGES)]
-    images_kitti_r = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_1/{}.png'.format(pose, str(i).zfill(6)) for i in xrange(NUM_IMAGES)]
+    images_kitti_l = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_0/{}.png'.format(pose, str(i).zfill(6)) for i in range(NUM_IMAGES)]
+    images_kitti_r = ['d:/datasets/data_odometry_gray/dataset/sequences/{}/image_1/{}.png'.format(pose, str(i).zfill(6)) for i in range(NUM_IMAGES)]
     gt_path_kitti = "d:/datasets/data_odometry_gray/dataset/poses/{}.txt".format(pose)
 
     with open(gt_path_kitti) as f:

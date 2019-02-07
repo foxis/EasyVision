@@ -21,7 +21,6 @@ def test_histogram_backprojection():
         for frame in vision:
             frame_count += 1
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
             assert(isinstance(frame.images[0].original, np.ndarray))
             assert(isinstance(frame.images[0].mask, np.ndarray))

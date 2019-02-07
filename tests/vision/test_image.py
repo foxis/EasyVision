@@ -5,8 +5,12 @@ import pytest
 from pytest import raises, approx, mark
 from EasyVision.vision import *
 import cv2
-import cPickle
 import numpy as np
+
+try:
+    import cPickle as pickle
+except:
+    import pickle
 
 
 @pytest.mark.main
@@ -15,7 +19,6 @@ def test_load_images():
         frame_count = 0
         for frame in vision:
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(frame.images[0].image is not None)
             assert(frame.index == frame_count)
             frame_count += 1
@@ -44,7 +47,6 @@ def test_load_and_display_images():
         for frame in vision:
             frame_count += 1
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
             cv2.waitKey(0)
 
@@ -75,8 +77,8 @@ def test_images_capture_debug(mocker):
 @pytest.mark.main
 def test_pickle_image():
     _image = ImagesReader.load_image("test_data/34838518832_fd00147042_k.jpg")
-    tmp = cPickle.dumps(_image, -1)
-    image = cPickle.loads(tmp)
+    tmp = pickle.dumps(_image, -1)
+    image = pickle.loads(tmp)
 
     assert(image.source is None)
     assert(image.image is not None)

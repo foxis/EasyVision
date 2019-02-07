@@ -21,7 +21,6 @@ def test_blobextraction_car():
         for frame in vision:
             frame_count += 1
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
             assert(isinstance(frame.images[0].original, np.ndarray))
             assert(isinstance(frame.images[0].mask, np.ndarray))
@@ -51,7 +50,6 @@ def test_blobextraction_robotuintelektas_green():
         for frame in vision:
             frame_count += 1
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
             cv2.waitKey(0)
 
@@ -67,7 +65,6 @@ def test_blobextraction_robotuintelektas_blue():
         for frame in vision:
             frame_count += 1
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
             cv2.waitKey(0)
 
@@ -86,6 +83,5 @@ def test_blobextraction_robotuintelektas_combined():
         for frame in vision:
             frame_count += 1
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(isinstance(frame.images[0].image, np.ndarray))
             cv2.waitKey(0)

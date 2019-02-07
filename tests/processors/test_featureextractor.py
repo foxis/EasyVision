@@ -19,7 +19,6 @@ def test_load_images():
         for frame in vision:
             frame_count += 1
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(frame.images[0].image is not None)
 
         assert(frame_count == 3)
@@ -45,7 +44,6 @@ def test_load_and_display_images():
         for frame in vision:
             frame_count += 1
             assert(isinstance(frame, Frame))
-            print frame.images[0].image.__class__
             assert(frame.images[0].image is not None)
             cv2.waitKey(0)
 

@@ -8,7 +8,10 @@ from EasyVision.processors import FeatureExtraction, CalibratedCamera, FeatureMa
 from EasyVision.vision import PyroCapture
 import cv2
 import numpy as np
-from future_builtins import zip
+try:
+    from future_builtins import zip
+except:
+    pass
 
 
 class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
@@ -148,7 +151,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
             M = self._match_features(self._last_features, current_image.features)
 
             if M is None:
-                print "failed to find matches"
+                print("failed to find matches")
                 return self._pose
             last, current, descriptors = M
 
@@ -342,7 +345,7 @@ class VisualOdometry2DEngine(FeatureMatchingMixin, OdometryBase):
         descriptors = np.array([descriptors[m.trainIdx] for m in matches], dtype=descriptors.dtype)
 
         if len(ptsA) < self._min_matches:
-            print "prune fail"
+            print("prune fail")
             return None
 
         return ptsA, ptsB, descriptors

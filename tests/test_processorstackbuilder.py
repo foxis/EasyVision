@@ -38,10 +38,10 @@ args_truth_simple_obj = {
 
 args_truth = {
     'args': (1, 2, 3),
-    'kwargs': {'custom': 'object__CustomObject1', 'custom1': 'object__CustomObject0'},
+    'kwargs': {'custom': 'object__CustomObject0', 'custom1': 'object__CustomObject1'},
     'objects': {
-        'object__CustomObject1': {'a': 'a var', 'b': 'b var'},
-        'object__CustomObject0': {'a': 'A var', 'b': 'B var'}
+        'object__CustomObject0': {'a': 'a var', 'b': 'b var'},
+        'object__CustomObject1': {'a': 'A var', 'b': 'B var'}
     }
 }
 
