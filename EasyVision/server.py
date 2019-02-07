@@ -80,7 +80,7 @@ class ProxyVision(object):
             return None
 
         if isinstance(result, EasyVisionBase):
-            result = result.name
+            result = result.__class__.__name__
 
         return self.send_data(result)
 
@@ -186,6 +186,14 @@ class ProxyVision(object):
         else:
             result = self._vision.compute()
         return self.send_data(result)
+
+    @Pyro4.expose
+    def hascall(self, name):
+        return hasattr(getattr(self._vision, name), '__call__')
+
+    @Pyro4.expose
+    def hasattr(self, name):
+        return hasattr(self._vision, name)
 
 
 class ServerDaemon(Pyro4.core.Daemon):

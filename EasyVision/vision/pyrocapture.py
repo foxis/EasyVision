@@ -3,9 +3,9 @@
 
 """
 
+from EasyVision.base import lru_cache
 from .base import *
 import Pyro4
-import functools
 import socket
 from EasyVision.server import Command
 
@@ -25,25 +25,35 @@ class PyroCapture(VisionBase):
 
     def __init__(self, name, *args, **kwargs):
         self._name = name
-        self._proxy = None
-        self._sock = None
+        self._proxy = Pyro4.Proxy('PYRONAME:%s' % self._name)
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock.connect(tuple(self._proxy.getsockname()))
         super(PyroCapture, self).__init__(*args, **kwargs)
 
+    def __delete__(self, instance):
+        self._sock.close()
+
     def __getattr__(self, name):
-        def caller_proxy(_self, _name, _attr):
-            @functools.wraps(_attr)
+        def caller_proxy(_self, _name):
             def wrapper(*args, **kwargs):
+                """Remote object call wrapper"""
                 return _self.remote_call(_name, *args, **kwargs)
             return wrapper
 
         if name.startswith('__') and name.endswith('__') or self._proxy is None:
-            return super(PyroCapture, self).__getattr__(name)
+            raise AttributeError("No such attribute could be found: %s" % name)
 
-        attr = getattr(self._proxy, name)
-        if hasattr(attr, '__call__'):
-            return caller_proxy(self, name, attr)
-        else:
-            return self.remote_get(name)
+        if self._hascall(name):
+            return caller_proxy(self, name)
+        return self.remote_get(name)
+
+    @lru_cache(maxsize=None)
+    def _hascall(self, name):
+        return self._proxy.hascall(name)
+
+    @lru_cache(maxsize=None)
+    def _hasattr(self, name):
+        return self._proxy.hasattr(name)
 
     def __receive_blob(self, blob_id):
         if blob_id is not None:
@@ -70,15 +80,10 @@ class PyroCapture(VisionBase):
 
     def setup(self):
         super(PyroCapture, self).setup()
-        self._proxy = Pyro4.Proxy('PYRONAME:%s' % self._name)
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sock.connect(tuple(self._proxy.getsockname()))
         self._proxy.setup()
 
     def release(self):
         self._proxy.release()
-        self._sock.close()
-        self._proxy = None
         super(PyroCapture, self).release()
 
     def capture(self):
