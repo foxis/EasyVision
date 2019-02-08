@@ -62,7 +62,10 @@ class ProxyVision(object):
     @Pyro4.expose
     def command(self, data):
         """Will handle remote commands"""
-        data = base64.b64decode(data['data'])
+        if isinstance(data, dict): # python 3 compatibility
+            data = base64.b64decode(data['data'])
+        else:
+            data = data.encode('latin-1')
         ctrl = pickle.loads(data)
         if ctrl.method == 'SET':
             cur_obj = self._vision

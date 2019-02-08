@@ -76,7 +76,11 @@ class NamedTupleExtendHelper(object):
         return result
 
 
-class EasyVisionBase(metaclass=ABCMeta):
+# compatible with Python 2 *and* 3:
+ABC = ABCMeta('ABC', (object,), {'__slots__': ()})
+
+
+class EasyVisionBase(ABC):
     """EasyVisionBase is an abstract class for all EasyVision algorithms
     Contains simple setup/release, debug/display_results, setup/release and context functionality.
 
@@ -114,7 +118,6 @@ class EasyVisionBase(metaclass=ABCMeta):
 
     """
 
-    __metaclass__ = ABCMeta
     __slots__ = ('_debug', '_display_results', '__setup_called')
 
     def __init__(self, debug=False, display_results=False, *args, **kwargs):

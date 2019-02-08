@@ -26,7 +26,7 @@ class PyroCapture(VisionBase):
     def __init__(self, name, *args, **kwargs):
         self._name = name
         self._proxy = Pyro4.Proxy('PYRONAME:%s' % self._name)
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock = Pyro4.socketutil.createSocket(timeout=Pyro4.config.COMMTIMEOUT, nodelay=False)  # socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect(tuple(self._proxy.getsockname()))
         super(PyroCapture, self).__init__(*args, **kwargs)
 
@@ -58,8 +58,9 @@ class PyroCapture(VisionBase):
     def __receive_blob(self, blob_id):
         if blob_id is not None:
             self._sock.sendall(blob_id.encode('utf-8'))
-            len = int(self._sock.recv(16).decode())
-            data = self._sock.recv(len)
+            size = int(Pyro4.socketutil.receiveData(self._sock, 16).decode())
+            data = Pyro4.socketutil.receiveData(self._sock, size)
+            assert(size == len(data))
             result = pickle.loads(data)
             return result
 
