@@ -113,12 +113,20 @@ class ProcessorBase(VisionBase):
 
     """
 
-    def __init__(self, vision, processor_mask=None, enabled=True, *args, **kwargs):
+    def __init__(self, vision, processor_mask=None, append=False, enabled=True, *args, **kwargs):
+        """Instance initialization. Must be called using super().__init__(*args, *kwargs)
+
+        :param vision: capturing source object.
+        :param processor_mask: a mask specifying which images in a frame should be processed
+        :param append: indicates whether to replace images or append to the frame
+        :param enabled: indicates whether to run processing
+        """
         if not isinstance(vision, VisionBase) and vision is not None:
             raise TypeError("Vision object must be of type VisionBase")
         self._vision = vision
         self._processor_mask = Frame.tidy_processor_mask(processor_mask)
         self._enabled = True
+        self._append = append
         self.enabled = enabled
         super(ProcessorBase, self).__init__(*args, **kwargs)
 
@@ -141,7 +149,11 @@ class ProcessorBase(VisionBase):
             processor_mask = self._processor_mask if self._processor_mask is not None else frame.processor_mask
             if processor_mask is None:
                 processor_mask = "1" * len(frame.images)
-            images = tuple(m == "0" and img or self.process(img)._replace(source=self) for m, img in zip(processor_mask, frame.images))
+            if not self._append:
+                images = tuple(m == "0" and img or self.process(img)._replace(source=self) for m, img in zip(processor_mask, frame.images))
+            else:
+                images = tuple(self.process(img)._replace(source=self) for m, img in zip(processor_mask, frame.images) if m != "0")
+                images = frame.images + images
             return frame._replace(images=images)
 
     def setup(self):
@@ -170,8 +182,6 @@ class ProcessorBase(VisionBase):
 
     def __getattr__(self, name):
         """Allows to access attributes of deeper sources"""
-        if name.startswith('__') and name.endswith('__'):
-            return super(ProcessorBase, self).__getattr__(name)
         return getattr(self._vision, name)
 
     @property
