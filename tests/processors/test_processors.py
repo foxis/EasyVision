@@ -33,6 +33,84 @@ def test_capture():
 
 
 @pytest.mark.main
+def test_capture_disabled():
+    vision = VisionSubclass(0)
+
+    with ProcessorA(vision, enabled=False) as processor:
+        img = processor.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].source is vision)
+        assert(img.images[0].image == "an image")
+
+
+@pytest.mark.main
+def test_capture_append():
+    vision = VisionSubclass(0)
+
+    with ProcessorA(vision, append=True) as processor:
+        img = processor.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].source is vision)
+        assert(img.images[0].image == "an image")
+        assert(img.images[1].source is processor)
+        assert(img.images[1].image == "AN IMAGE")
+
+
+@pytest.mark.main
+def test_capture_mask_images():
+    vision = VisionSubclass(0, num_images=2, processor_mask="10")
+
+    with ProcessorA(vision) as processor:
+        img = processor.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].source is processor)
+        assert(img.images[0].image == "AN IMAGE")
+        assert(img.images[1].source is vision)
+        assert(img.images[1].image == "an image1")
+
+
+@pytest.mark.main
+def test_capture_mask_processor():
+    vision = VisionSubclass(0, num_images=2)
+
+    with ProcessorA(vision, processor_mask="01") as processor:
+        img = processor.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].source is vision)
+        assert(img.images[0].image == "an image")
+        assert(img.images[1].source is processor)
+        assert(img.images[1].image == "AN IMAGE1")
+
+
+@pytest.mark.main
+def test_capture_mask_processor_override():
+    vision = VisionSubclass(0, num_images=2, processor_mask="10")
+
+    with ProcessorA(vision, processor_mask="01") as processor:
+        img = processor.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].source is vision)
+        assert(img.images[0].image == "an image")
+        assert(img.images[1].source is processor)
+        assert(img.images[1].image == "AN IMAGE1")
+
+
+@pytest.mark.main
+def test_capture_mask_processor_override_append():
+    vision = VisionSubclass(0, num_images=2, processor_mask="10")
+
+    with ProcessorA(vision, append=True, processor_mask="01") as processor:
+        img = processor.capture()
+        assert(isinstance(img, Frame))
+        assert(img.images[0].source is vision)
+        assert(img.images[0].image == "an image")
+        assert(img.images[1].source is vision)
+        assert(img.images[1].image == "an image1")
+        assert(img.images[2].source is processor)
+        assert(img.images[2].image == "AN IMAGE1")
+
+
+@pytest.mark.main
 def test_capture_incorrect():
     vision = VisionSubclass(0)
     processor = ProcessorA(vision)
@@ -84,6 +162,7 @@ def test_method_resolution():
     assert(processorB.camera_())
     assert(processorB.camera_called)
     assert(vision.camera_called)
+
 
 @pytest.mark.main
 def test_processor_properties():

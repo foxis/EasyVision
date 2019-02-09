@@ -107,7 +107,7 @@ class MyException(Exception): pass
 
 class VisionSubclass(VisionBase):
 
-    def __init__(self, name="", keyword_argument=None, *args, **kwargs):
+    def __init__(self, name="", num_images=1, processor_mask=None, keyword_argument=None, *args, **kwargs):
         super(VisionSubclass, self).__init__(*args, **kwargs)
         self.frame = 0
         self.frames = 10
@@ -122,11 +122,14 @@ class VisionSubclass(VisionBase):
         self._focus = None
         self._whitebalance = None
         self.keyword_argument = keyword_argument
+        self._num_images = num_images
+        self._mask = processor_mask
 
     def capture(self):
         from datetime import datetime
         self.frame += 1
-        return Frame(datetime.now(), self.frame - 1, (Image(self, 'an image'),))
+        images = tuple(Image(self, 'an image{}'.format(i if i else '')) for i in range(self._num_images))
+        return Frame(datetime.now(), self.frame - 1, images, self._mask)
 
     def setup(self):
         super(VisionSubclass, self).setup()
