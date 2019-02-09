@@ -25,10 +25,8 @@ def test_map_load_plan():
 
     path = _map.plan(target, 11)
 
-    _map.draw(path)
-    cv2.waitKey(0)
-
-    print path
+    #_map.draw(path)
+    #cv2.waitKey(0)
 
     assert(path[0] == (10, 5))
     assert(path[-1] == (325 // 2, 5))
