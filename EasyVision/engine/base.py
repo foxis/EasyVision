@@ -9,6 +9,7 @@ from EasyVision.vision.base import VisionBase
 from EasyVision.processors.base import Features
 import numpy as np
 from collections import namedtuple
+import heapq
 
 
 class EngineCapability(namedtuple('EngineCapability', 'inputs outputs misc')):
@@ -195,3 +196,53 @@ class MapBase(EasyVisionBase):
         :return: a list of poses that connect current pose with target pose
         """
         pass
+
+    @staticmethod
+    def astar(start, goal, neighbors, heuristic):
+        """A* path finding algorithm generalized for searching in general state space.
+        Original taken from http://code.activestate.com/recipes/578919-python-a-pathfinding-with-binary-heap/
+
+        NOTE: States must be hashable. neighbors must be callable and return an iterator.
+
+        :param start: Start state
+        :param goal: Goal state
+        :param neighbors: callable returning valid neighboring states given current state
+        :param heuristic: callable calculating heuristic distance value from A to B
+        """
+
+        push = heapq.heappush
+        pop = heapq.heappop
+
+        close_set = set()
+        came_from = {}
+        gscore = {start: 0}
+        fscore = {start: heuristic(start, goal)}
+        oheap = []
+
+        push(oheap, (fscore[start], start))
+
+        while oheap:
+            current = pop(oheap)[1]
+
+            if current == goal:
+                data = []
+                while current in came_from:
+                    data.append(current)
+                    current = came_from[current]
+                data.append(start)
+                return data[::-1]
+
+            close_set.add(current)
+            for neighbor in neighbors(current):
+                tentative_g_score = gscore[current] + heuristic(current, neighbor)
+
+                if neighbor in close_set and tentative_g_score >= gscore.get(neighbor, 0):
+                    continue
+
+                if  tentative_g_score < gscore.get(neighbor, 0) or neighbor not in [i[1] for i in oheap]:
+                    came_from[neighbor] = current
+                    gscore[neighbor] = tentative_g_score
+                    fscore[neighbor] = tentative_g_score + heuristic(neighbor, goal)
+                    push(oheap, (fscore[neighbor], neighbor))
+
+        return False

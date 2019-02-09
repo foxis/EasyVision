@@ -32,7 +32,7 @@ class OccupancyGridMap(MapBase):
             raise TypeError("Poses must be a list of Pose")
 
         if isinstance(_map, np.ndarray) and len(_map.shape) == 2:
-            self._map = cv2.normalize(_map, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX, dtype='float32')
+            self._map = cv2.normalize(_map, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32FC1)
         elif isinstance(_map, tuple) and len(_map) == 2:
             self._map = np.zeros(_map + (1,), dtype=np.float32)
         else:
@@ -134,7 +134,7 @@ class OccupancyGridMap(MapBase):
 
         return pose
 
-    def draw(self):
+    def draw(self, path=None):
         """Helper method to draw the map"""
         if not len(self._poses):
             return
@@ -150,7 +150,51 @@ class OccupancyGridMap(MapBase):
             cv2.line(disp, (int(tl[0][0]), int(tl[2][0])), (int(t[0][0]), int(t[2][0])), (0, 0, 255))
             tl = t
 
+        tl = path[0]
+        for t in path[1:]:
+            cv2.line(disp, (int(tl[0]), int(tl[1])), (int(t[0]), int(t[1])), (0, 255, 0))
+            tl = t
+
         cv2.imshow(self.name, disp)
 
     def plan(self, target, radius, **kwargs):
-        pass
+        """
+        """
+
+        start = (int(self.pose.translation[0][0] * self._scale), int(self.pose.translation[2][0] * self._scale))
+        goal = (int(target.translation[0][0] * self._scale), int(target.translation[2][0] * self._scale))
+        bs = int(radius * self._scale + .5)
+
+        kernel = np.ones((bs, bs), np.float32) / float(bs * bs)
+        grid = cv2.blur(self._map, (bs, bs))
+        grid += self._map
+        grid = cv2.normalize(grid, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32FC1)
+
+        disp = cv2.normalize(grid, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        cv2.imshow("blurred map", disp)
+
+        #grid = cv2.normalize(grid, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32FC1)
+
+        h, w = self._map.shape
+
+        def heuristic(_a, _b):
+            c = grid[_a[1], _a[0]] + 2.0
+            return c * sum((a - b) ** 2 for a, b in zip(_a, _b)) ** .5
+
+        def neighbors(current):
+            neighbors = ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1))
+            for delta in neighbors:
+                x, y = current[0] + delta[0], current[1] + delta[1]
+                if x < 0 or y < 0:
+                    continue
+                if x >= w or y >= h:
+                    continue
+
+                if grid[y, x] > 0:
+                    continue
+
+                yield x, y
+
+        path = self.astar(start, goal, neighbors, heuristic)
+
+        return path
