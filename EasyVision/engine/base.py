@@ -208,6 +208,7 @@ class MapBase(EasyVisionBase):
         :param goal: Goal state
         :param neighbors: callable returning valid neighboring states given current state
         :param heuristic: callable calculating heuristic distance value from A to B
+        :return: a generator of states starting from goal to start
         """
 
         push = heapq.heappush
@@ -225,12 +226,10 @@ class MapBase(EasyVisionBase):
             current = pop(oheap)[1]
 
             if current == goal:
-                data = []
                 while current in came_from:
-                    data.append(current)
+                    yield current
                     current = came_from[current]
-                data.append(start)
-                return data[::-1]
+                yield start
 
             close_set.add(current)
             for neighbor in neighbors(current):
@@ -244,5 +243,3 @@ class MapBase(EasyVisionBase):
                     gscore[neighbor] = tentative_g_score
                     fscore[neighbor] = tentative_g_score + heuristic(neighbor, goal)
                     push(oheap, (fscore[neighbor], neighbor))
-
-        return False
