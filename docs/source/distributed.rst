@@ -15,7 +15,7 @@ Using PyroCapture
 Since FeatureExtraction doesn't scale properly on the same machine and is usually already parallelized inside
 openCV it is possible to relay some lengthy processing to a different machine. This is really useful
 for stereo processing, where two machines will capture and process images from left and right camera respectively.
-Then CalibratedStereoCamera would capture those processed frames and return as a single frame for further processing
+Then ``CalibratedStereoCamera`` would capture those processed frames and return as a single frame for further processing
 e.g. for Visual Odometry engine.
 
 To achieve that, you need to have two machines on the same network, that run ``EasyVision.bin.server`` instances

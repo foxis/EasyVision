@@ -183,3 +183,8 @@ image pairs to produce stereo images. Can also calculate disparity map.
 
 .. note::
     Currently there is no functionality to synchronise frames from two cameras.
+
+Writing your own processors
+===========================
+
+Just subclass from ``EasyVision.processors.base.ProcessorBase`` and implement ``process`` method.

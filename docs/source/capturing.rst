@@ -98,3 +98,8 @@ Then you should start EasyVision server on the remote machine like this::
 
 For more information on how to configure Pyro4 you can refer to Pyro4 documentation.
 The format of ``remote_processing_stack.json`` file is described on ``ProcessorStackBuilder`` documentation page.
+
+Writing your own adaptors
+=========================
+
+Just subclass from ``EasyVision.vision.base.VisionBase`` and implement all abstract methods.
