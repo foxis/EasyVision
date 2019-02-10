@@ -52,7 +52,19 @@
 Welcome to ``EasyVision`` Documentation
 ==============================================================================
 
-Documentation for ``EasyVision``.
+Documentation for ``EasyVision`` - a simple framework of computer vision algorithms build on top of OpenCV.
+Contains such features as:
+
+    - Calibrated Mono and Stereo camera
+    - Feature extraction
+    - Color blob extraction
+    - Histogram backprojection
+    - Background separation
+    - Multiprocessing
+    - Remote processing using Pyro4
+    - Visual Odometry and Mappings
+    - Object recognition
+    - Bag Of Words
 
 
 .. _install:

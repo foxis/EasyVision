@@ -6,8 +6,10 @@
 
    capturing
    processing
+   stackbuilder
    engines
    distributed
+   tools
 
    EasyVision
    changelog
