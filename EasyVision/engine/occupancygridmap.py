@@ -158,22 +158,21 @@ class OccupancyGridMap(MapBase):
         cv2.imshow(self.name, disp)
 
     def plan(self, target, radius, **kwargs):
-        """
+        """Finds the shortest path in the map between current and target poses.
+        Only uses translation part of the Pose.
+
+        :param target: Pose with valid coordinates. Will be translated to map coordinates using scale.
+        :param radius: map blurring radius in world coordinates. Will be scaled. Specifies how far the path should be away from obstacles.
+        :returns: an iterable of (x, y) scaled map coordinates.
         """
 
         start = (int(self.pose.translation[0][0] * self._scale), int(self.pose.translation[2][0] * self._scale))
         goal = (int(target.translation[0][0] * self._scale), int(target.translation[2][0] * self._scale))
         bs = int(radius * self._scale + .5)
 
-        kernel = np.ones((bs, bs), np.float32) / float(bs * bs)
         grid = cv2.blur(self._map, (bs, bs))
         grid += self._map
         grid = cv2.normalize(grid, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32FC1)
-
-        disp = cv2.normalize(grid, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-        cv2.imshow("blurred map", disp)
-
-        #grid = cv2.normalize(grid, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32FC1)
 
         h, w = self._map.shape
 
@@ -197,4 +196,4 @@ class OccupancyGridMap(MapBase):
 
         path = self.astar(start, goal, neighbors, heuristic)
 
-        return path
+        return tuple((i[0] / self._scale, i[1] / self._scale) for i in path)
