@@ -40,12 +40,12 @@ args_truth_simple_obj = {
 args_truth = {
     'args': (1, 2, 3),
     'kwargs': {
-        'custom': 'object__CustomObject{}'.format([0, 1][sys.version_info.major == 2]),
-        'custom1': 'object__CustomObject{}'.format([1, 0][sys.version_info.major == 2])
+        'custom': 'object__CustomObject{}'.format([0, 1][sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor == 5)]),
+        'custom1': 'object__CustomObject{}'.format([1, 0][sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor == 5)])
     },
     'objects': {
-        'object__CustomObject{}'.format([0, 1][sys.version_info.major == 2]): {'a': 'a var', 'b': 'b var'},
-        'object__CustomObject{}'.format([1, 0][sys.version_info.major == 2]): {'a': 'A var', 'b': 'B var'}
+        'object__CustomObject{}'.format([0, 1][sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor == 5)]): {'a': 'a var', 'b': 'b var'},
+        'object__CustomObject{}'.format([1, 0][sys.version_info.major == 2 or (sys.version_info.major == 3 and sys.version_info.minor == 5)]): {'a': 'A var', 'b': 'B var'}
     }
 }
 
