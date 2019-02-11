@@ -12,7 +12,7 @@ install:
   - pip install codecov # Install coveralls
 
 script:
-  - pytest tests -m "main or slow" --cov=EasyVision # Run unittest
+  - pytest tests -m main --cov=EasyVision # Run unittest
 
 notifications:
   email: false # Mute email notification
