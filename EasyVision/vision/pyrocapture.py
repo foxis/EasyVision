@@ -47,6 +47,12 @@ class PyroCapture(VisionBase):
             return caller_proxy(self, name)
         return self.remote_get(name)
 
+    def __setattr__(self, name, value):
+        if name.startswith('_') or not hasattr(self._vision, name):
+            super(PyroCapture, self).__setattr__(name, value)
+        else:
+            self.remote_set(name, value)
+
     @lru_cache(maxsize=None)
     def _hascall(self, name):
         return self._proxy.hascall(name)

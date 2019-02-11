@@ -10,13 +10,13 @@ class Subclass(EasyVisionBase):
 
     def __init__(self, *args, **kwargs):
         super(Subclass, self).__init__(*args, **kwargs)
-        self.frame = 0
-        self.frames = 10
-        self.release_called = self.setup_called = False
+        self._frame = 0
+        self._frames = 10
+        self._release_called = self._setup_called = False
 
     def setup(self):
         super(Subclass, self).setup()
-        self.setup_called = True
+        self._setup_called = True
 
     def next(self):
         super(Subclass, self).next()
@@ -26,20 +26,20 @@ class Subclass(EasyVisionBase):
             raise StopIteration()
 
     def __len__(self):
-        return self.frames
+        return self._frames
 
     def capture(self):
         from datetime import datetime
-        self.frame += 1
+        self._frame += 1
         return (datetime.now, ('an image',))
 
     def release(self):
         super(Subclass, self).release()
-        self.release_called, self.setup_called = True, False
+        self._release_called, self._setup_called = True, False
 
     @property
     def is_open(self):
-        return self.frame < self.frames
+        return self._frame < self._frames
 
     @property
     def description(self):
@@ -49,24 +49,24 @@ class Subclass(EasyVisionBase):
 class SubclassOverload(Subclass):
 
     def __init__(self, *args, **kwargs):
-        self.debug_changed_called = False
-        self.debug_changed_called_last = False
-        self.debug_changed_called_current = False
+        self._debug_changed_called = False
+        self._debug_changed_called_last = False
+        self._debug_changed_called_current = False
 
-        self.display_changed_called = False
-        self.display_changed_called_last = False
-        self.display_changed_called_current = False
+        self._display_changed_called = False
+        self._display_changed_called_last = False
+        self._display_changed_called_current = False
         super(SubclassOverload, self).__init__(*args, **kwargs)
 
     def debug_changed(self, last, current):
-        self.debug_changed_called = True
-        self.debug_changed_called_last = last
-        self.debug_changed_called_current = current
+        self._debug_changed_called = True
+        self._debug_changed_called_last = last
+        self._debug_changed_called_current = current
 
     def display_results_changed(self, last, current):
-        self.display_changed_called = True
-        self.display_changed_called_last = last
-        self.display_changed_called_current = current
+        self._display_changed_called = True
+        self._display_changed_called_last = last
+        self._display_changed_called_current = current
 
 
 @pytest.mark.main
@@ -85,8 +85,8 @@ def test_implementation():
 def test_implementation_context():
     sub = Subclass()
     with sub as s:
-        assert(s.setup_called)
-    assert(s.release_called)
+        assert(s._setup_called)
+    assert(s._release_called)
 
 
 @pytest.mark.main
@@ -154,30 +154,30 @@ def test_display_init():
 @pytest.mark.main
 def test_debug_changed():
     vis = SubclassOverload()
-    assert(not vis.debug_changed_called)
-    assert(not vis.display_changed_called)
+    assert(not vis._debug_changed_called)
+    assert(not vis._display_changed_called)
     vis.debug = True
-    assert(vis.debug_changed_called)
-    assert(not vis.display_changed_called)
-    vis.debug_changed_called = False
+    assert(vis._debug_changed_called)
+    assert(not vis._display_changed_called)
+    vis._debug_changed_called = False
     vis.debug = True
-    assert(not vis.debug_changed_called)
-    assert(not vis.display_changed_called)
+    assert(not vis._debug_changed_called)
+    assert(not vis._display_changed_called)
     vis.debug = False
-    assert(vis.debug_changed_called)
-    assert(not vis.display_changed_called)
+    assert(vis._debug_changed_called)
+    assert(not vis._display_changed_called)
 
 
 @pytest.mark.main
 def test_debug_changed_init():
     vis = SubclassOverload(debug=True)
     assert(vis.name == 'SubclassOverload')
-    assert(vis.debug_changed_called)
-    assert(not vis.display_changed_called)
+    assert(vis._debug_changed_called)
+    assert(not vis._display_changed_called)
 
 
 @pytest.mark.main
 def test_display_changed_init():
     vis = SubclassOverload(display_results=True)
-    assert(not vis.debug_changed_called)
-    assert(vis.display_changed_called)
+    assert(not vis._debug_changed_called)
+    assert(vis._display_changed_called)

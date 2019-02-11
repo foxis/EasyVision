@@ -74,13 +74,26 @@ class MultiProcessing(ProcessorBase, mp.Process):
                 return _self.remote_call(_name, *args, **kwargs)
             return wrapper
 
-        if (name.startswith('__') and name.endswith('__')) or not self._running.value:
-            return super(MultiProcessing, self).__getattr__(name)
+        # this line is required for pickling/unpickling after fork
+        if not hasattr(self, '_vision') or not hasattr(self, '_running'):
+            raise AttributeError("")
+
+        if not self._running.value:
+            return getattr(self._vision, name)
+
         attr = getattr(self._vision, name)
         if hasattr(attr, '__call__'):
             return caller_proxy(self, name, attr)
         else:
             return self.remote_get(name)
+
+    #def __setattr__(self, name, value):
+    #    if name.startswith('_') or not hasattr(self._vision, name):
+    #        super(MultiProcessing, self).__setattr__(name, value)
+    #    elif self._running.value:
+    #        self.remote_set(name, value)
+    #    else:
+    #        setattr(self._vision, name, value)
 
     def next(self):
         frame = self.capture()

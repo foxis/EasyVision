@@ -111,6 +111,13 @@ class ProcessorBase(VisionBase):
     Abstract methods:
         process
 
+    .. note::
+        This base class overrides ``__getattr__`` and ``__setattr__``. That means, that if there is no attribute in self,
+        it will try to get it from the source.
+
+    .. warning::
+        Overriding ``__setattr__`` incurrs a limitation on how internal attributes should be named when initialized
+        in ``__init__`` method. All internal attributes should be starting from "_", e.g. ``self._my_internal_var = 0``.
     """
 
     def __init__(self, vision, processor_mask=None, append=False, enabled=True, *args, **kwargs):
@@ -182,7 +189,18 @@ class ProcessorBase(VisionBase):
 
     def __getattr__(self, name):
         """Allows to access attributes of deeper sources"""
+        # this line is required for pickling/unpickling after fork
+        if not hasattr(self, '_vision'):
+            raise AttributeError("")
         return getattr(self._vision, name)
+
+    #def __setattr__(self, name, value):
+    #    """Allows to set attributes of deeper sources"""
+    #    print(name, self.__class__.__dict__)
+    #    if name.startswith('_') or name in self.__dict__ or name in self.__class__.__dict__:
+    #        super(ProcessorBase, self).__setattr__(name, value)
+    #    else:
+    #        setattr(self._vision, name, value)
 
     @property
     def enabled(self):

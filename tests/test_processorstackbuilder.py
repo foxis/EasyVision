@@ -8,6 +8,7 @@ from EasyVision.processors import *
 import cv2
 from tests.common import *
 from EasyVision.processorstackbuilder import Builder, Args
+import sys
 
 
 class CustomObject(object):
@@ -38,10 +39,13 @@ args_truth_simple_obj = {
 
 args_truth = {
     'args': (1, 2, 3),
-    'kwargs': {'custom': 'object__CustomObject0', 'custom1': 'object__CustomObject1'},
+    'kwargs': {
+        'custom': 'object__CustomObject{}'.format([0, 1][sys.version_info.major == 2]),
+        'custom1': 'object__CustomObject{}'.format([1, 0][sys.version_info.major == 2])
+    },
     'objects': {
-        'object__CustomObject0': {'a': 'a var', 'b': 'b var'},
-        'object__CustomObject1': {'a': 'A var', 'b': 'B var'}
+        'object__CustomObject{}'.format([0, 1][sys.version_info.major == 2]): {'a': 'a var', 'b': 'b var'},
+        'object__CustomObject{}'.format([1, 0][sys.version_info.major == 2]): {'a': 'A var', 'b': 'B var'}
     }
 }
 
@@ -250,12 +254,16 @@ def test_psb_Builder_simple():
     assert(isinstance(processor.source, ProcessorA))
     assert(isinstance(processor.source.source, VisionSubclass))
 
+    print(processor.display_results)
+    print(processor.source.display_results)
+    print(processor.source.source.display_results)
+
     assert(processor.display_results)
     assert(processor.source.display_results)
     assert(processor.source.source.display_results)
 
-    assert(processor.camera == 'camera')
-    assert(processor.source.color == 'color')
+    assert(processor._camera == 'camera')
+    assert(processor.source._color == 'color')
     assert(processor.name == "ProcessorB <- ProcessorA <- path/to/images")
 
     with processor as vision:
@@ -285,10 +293,10 @@ def test_psb_Builder_simple_obj():
     assert(processor.source.display_results)
     assert(processor.source.source.display_results)
 
-    assert(isinstance(processor.camera, CustomObject))
-    assert(processor.camera.a == 'a var')
-    assert(processor.camera.b == 'b var')
-    assert(processor.source.color == 'color')
+    assert(isinstance(processor._camera, CustomObject))
+    assert(processor._camera.a == 'a var')
+    assert(processor._camera.b == 'b var')
+    assert(processor.source._color == 'color')
     assert(processor.name == "ProcessorB <- ProcessorA <- path/to/images")
 
     with processor as vision:
@@ -322,23 +330,23 @@ def test_psb_Builder_Builder():
 
     assert(isinstance(processor, ProcessorC))
 
-    assert(isinstance(processor.a, ProcessorB))
-    assert(isinstance(processor.a.source, ProcessorA))
-    assert(isinstance(processor.a.source.source, VisionSubclass))
+    assert(isinstance(processor._a, ProcessorB))
+    assert(isinstance(processor._a.source, ProcessorA))
+    assert(isinstance(processor._a.source.source, VisionSubclass))
 
-    assert(isinstance(processor.b, ProcessorB))
-    assert(isinstance(processor.b.source, ProcessorA))
-    assert(isinstance(processor.b.source.source, VisionSubclass))
+    assert(isinstance(processor._b, ProcessorB))
+    assert(isinstance(processor._b.source, ProcessorA))
+    assert(isinstance(processor._b.source.source, VisionSubclass))
 
     assert(processor.display_results)
-    assert(processor.a.display_results == 1)
-    assert(processor.a.source.display_results == 1)
-    assert(processor.a.source.source.display_results == 1)
-    assert(processor.b.display_results == 2)
-    assert(processor.b.source.display_results == 2)
-    assert(processor.b.source.source.display_results == 2)
+    assert(processor._a.display_results == 1)
+    assert(processor._a.source.display_results == 1)
+    assert(processor._a.source.source.display_results == 1)
+    assert(processor._b.display_results == 2)
+    assert(processor._b.source.display_results == 2)
+    assert(processor._b.source.source.display_results == 2)
 
-    assert(processor.camera == 'camera')
+    assert(processor._camera == 'camera')
     assert(processor.name == "ProcessorB <- ProcessorA <- path/to/left_images : ProcessorB <- ProcessorA <- path/to/right_images")
 
     with processor as vision:
@@ -358,8 +366,8 @@ def test_psb_Builder_fromdict_simple():
     assert(isinstance(processor.source, ProcessorA))
     assert(isinstance(processor.source.source, VisionSubclass))
 
-    assert(processor.camera == 'camera')
-    assert(processor.source.color == 'color')
+    assert(processor._camera == 'camera')
+    assert(processor.source._color == 'color')
     assert(processor.name == "ProcessorB <- ProcessorA <- path/to/images")
 
     with processor as vision:
@@ -379,10 +387,10 @@ def test_psb_Builder_fromdict_simple_obj():
     assert(isinstance(processor.source, ProcessorA))
     assert(isinstance(processor.source.source, VisionSubclass))
 
-    assert(isinstance(processor.camera, CustomObject))
-    assert(processor.camera.a == 'a var')
-    assert(processor.camera.b == 'b var')
-    assert(processor.source.color == 'color')
+    assert(isinstance(processor._camera, CustomObject))
+    assert(processor._camera.a == 'a var')
+    assert(processor._camera.b == 'b var')
+    assert(processor.source._color == 'color')
     assert(processor.name == "ProcessorB <- ProcessorA <- path/to/images")
 
     with processor as vision:
@@ -401,15 +409,15 @@ def test_psb_Builder_Builder_fromdict():
 
     assert(isinstance(processor, ProcessorC))
 
-    assert(isinstance(processor.a, ProcessorB))
-    assert(isinstance(processor.a.source, ProcessorA))
-    assert(isinstance(processor.a.source.source, VisionSubclass))
+    assert(isinstance(processor._a, ProcessorB))
+    assert(isinstance(processor._a.source, ProcessorA))
+    assert(isinstance(processor._a.source.source, VisionSubclass))
 
-    assert(isinstance(processor.b, ProcessorB))
-    assert(isinstance(processor.b.source, ProcessorA))
-    assert(isinstance(processor.b.source.source, VisionSubclass))
+    assert(isinstance(processor._b, ProcessorB))
+    assert(isinstance(processor._b.source, ProcessorA))
+    assert(isinstance(processor._b.source.source, VisionSubclass))
 
-    assert(processor.camera == 'camera')
+    assert(processor._camera == 'camera')
     assert(processor.name == "ProcessorB <- ProcessorA <- path/to/left_images : ProcessorB <- ProcessorA <- path/to/right_images")
 
     with processor as vision:

@@ -121,7 +121,7 @@ class CalibratedCamera(ProcessorBase):
                 raise TypeError("Camera must be either PinholeCamera or tuple with (frame_size, camera_matrix, distortion)")
             self._camera = camera
         else:
-            self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+            self._criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
             self._camera = None
             self._grid_shape = grid_shape
             self._square_size = square_size
@@ -136,14 +136,14 @@ class CalibratedCamera(ProcessorBase):
     def __setup(self):
         if self._calibrate:
             # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-            self.objp = np.zeros((np.prod(self._grid_shape), 3), np.float32)
-            self.objp[:, :2] = np.indices(self._grid_shape).T.reshape(-1, 2)
-            self.objp *= self._square_size
+            self._objp = np.zeros((np.prod(self._grid_shape), 3), np.float32)
+            self._objp[:, :2] = np.indices(self._grid_shape).T.reshape(-1, 2)
+            self._objp *= self._square_size
 
             # Arrays to store object points and image points from all the images.
-            self.objpoints = []  # 3d point in real world space
-            self.imgpoints = []  # 2d points in image plane.
-            self.calibration_samples = 0
+            self._objpoints = []  # 3d point in real world space
+            self._imgpoints = []  # 2d points in image plane.
+            self._calibration_samples = 0
         else:
             self._mapx, self._mapy = cv2.initUndistortRectifyMap(
                     self.camera.matrix,
@@ -184,12 +184,12 @@ class CalibratedCamera(ProcessorBase):
             # Find the chess board corners
             ret, corners = cv2.findChessboardCorners(gray, self._grid_shape, None)
             if ret is True:
-                corners = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), self.criteria)
+                corners = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), self._criteria)
 
             # Draw and display the corners
             if self.display_results:
                 img = cv2.drawChessboardCorners(img, self._grid_shape, corners, ret)
-                cv2.putText(img, "Samples added: {}/{}".format(self.calibration_samples, self._max_samples),
+                cv2.putText(img, "Samples added: {}/{}".format(self._calibration_samples, self._max_samples),
                             (20, 11), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 1, 8)
                 cv2.imshow(self.name, img)
 
@@ -207,7 +207,7 @@ class CalibratedCamera(ProcessorBase):
         if not self._calibrate:
             raise ValueError("calibrate parameter must be set")
 
-        if self.calibration_samples >= self._max_samples:
+        if self._calibration_samples >= self._max_samples:
             return self._camera
 
         frame = self.capture()
@@ -218,16 +218,16 @@ class CalibratedCamera(ProcessorBase):
         if (frame.timestamp - self._last_timestamp).total_seconds() > self._frame_delay:
             ret, corners = frame.images[0].features
             if ret is True:
-                self.objpoints.append(self.objp)
-                self.imgpoints.append(corners)
+                self._objpoints.append(self._objp)
+                self._imgpoints.append(corners)
 
-                self.calibration_samples += 1
+                self._calibration_samples += 1
                 self._last_timestamp = frame.timestamp
 
-        if self.calibration_samples >= self._max_samples:
+        if self._calibration_samples >= self._max_samples:
             img = frame.images[0].image
             shape = img.shape[::-1]
-            self._camera = self._finish_calibration(self.objpoints, self.imgpoints, shape)
+            self._camera = self._finish_calibration(self._objpoints, self._imgpoints, shape)
             return self._camera
 
     def _finish_calibration(self, objpoints, imgpoints, shape):

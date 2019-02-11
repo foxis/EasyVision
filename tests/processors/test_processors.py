@@ -160,8 +160,8 @@ def test_method_resolution():
 
     assert(not vision.camera_called)
     assert(processorB.camera_())
-    assert(processorB.camera_called)
-    assert(vision.camera_called)
+    assert(processorB._camera_called)
+    assert(vision._camera_called)
 
 
 @pytest.mark.main
@@ -187,10 +187,10 @@ def test_processor_properties():
         s.focus = 6
         s.whitebalance = 7
 
-        assert(s.autoexposure == 1)
-        assert(s.autofocus == 2)
-        assert(s.autowhitebalance == 3)
-        assert(s.autogain == 4)
-        assert(s.exposure == 5)
-        assert(s.focus == 6)
-        assert(s.whitebalance == 7)
+        assert(vision.autoexposure == 1)
+        assert(vision.autofocus == 2)
+        assert(vision.autowhitebalance == 3)
+        assert(vision.autogain == 4)
+        assert(vision.exposure == 5)
+        assert(vision.focus == 6)
+        assert(vision.whitebalance == 7)

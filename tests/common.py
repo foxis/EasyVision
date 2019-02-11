@@ -109,8 +109,8 @@ class VisionSubclass(VisionBase):
 
     def __init__(self, name="", num_images=1, processor_mask=None, keyword_argument=None, *args, **kwargs):
         super(VisionSubclass, self).__init__(*args, **kwargs)
-        self.frame = 0
-        self.frames = 10
+        self._frame = 0
+        self._frames = 10
         self._name = name
         self._camera_called = False
         self._test_remote_get = 'success'
@@ -121,15 +121,15 @@ class VisionSubclass(VisionBase):
         self._exposure = None
         self._focus = None
         self._whitebalance = None
-        self.keyword_argument = keyword_argument
+        self._keyword_argument = keyword_argument
         self._num_images = num_images
         self._mask = processor_mask
 
     def capture(self):
         from datetime import datetime
-        self.frame += 1
+        self._frame += 1
         images = tuple(Image(self, 'an image{}'.format(i if i else '')) for i in range(self._num_images))
-        return Frame(datetime.now(), self.frame - 1, images, self._mask)
+        return Frame(datetime.now(), self._frame - 1, images, self._mask)
 
     def setup(self):
         super(VisionSubclass, self).setup()
@@ -147,7 +147,7 @@ class VisionSubclass(VisionBase):
 
     @property
     def is_open(self):
-        return self.frame < self.frames
+        return self._frame < self._frames
 
     @property
     def name(self):
@@ -171,7 +171,7 @@ class VisionSubclass(VisionBase):
 
     @property
     def frame_count(self):
-        return self.frames
+        return self._frames
 
     @property
     def devices(self):
@@ -273,8 +273,8 @@ class ProcessorA(ProcessorBase):
 
     def __init__(self, vision, camera=None, color=None, *args, **kwargs):
         super(ProcessorA, self).__init__(vision, *args, **kwargs)
-        self.camera = camera
-        self.color = color
+        self._camera = camera
+        self._color = color
 
     @property
     def description(self):
@@ -292,8 +292,8 @@ class ProcessorB(ProcessorBase):
 
     def __init__(self, vision, camera=None, color=None, *args, **kwargs):
         super(ProcessorB, self).__init__(vision, *args, **kwargs)
-        self.camera = camera
-        self.color = color
+        self._camera = camera
+        self._color = color
 
     @property
     def description(self):
@@ -310,12 +310,12 @@ class ProcessorB(ProcessorBase):
 class ProcessorC(ProcessorBase):
 
     def __init__(self, a, b, camera=None, color=None, *args, **kwargs):
-        self.a = a
-        self.b = b
-        self.camera = camera
+        self._a = a
+        self._b = b
+        self._camera = camera
         a.camera = 'left camera %s' % camera
         b.camera = 'right camera %s' % camera
-        self.color = color
+        self._color = color
         super(ProcessorC, self).__init__(None, *args, **kwargs)
 
     @property
@@ -323,21 +323,21 @@ class ProcessorC(ProcessorBase):
         return "Simple processor 2"
 
     def setup(self):
-        self.a.setup()
-        self.b.setup()
+        self._a.setup()
+        self._b.setup()
         super(ProcessorBase, self).setup()
 
     def release(self):
-        self.a.release()
-        self.b.release()
+        self._a.release()
+        self._b.release()
         super(ProcessorBase, self).release()
 
     def display_results_changed(self, last, current):
         pass
 
     def capture(self):
-        a = self.a.capture()
-        b = self.a.capture()
+        a = self._a.capture()
+        b = self._a.capture()
         if a is None or b is None:
             return None
 
@@ -348,7 +348,7 @@ class ProcessorC(ProcessorBase):
 
     @property
     def name(self):
-        return "{} : {}".format(self.a.name, self.b.name)
+        return "{} : {}".format(self._a.name, self._b.name)
 
 
 def assert_camera(camera):

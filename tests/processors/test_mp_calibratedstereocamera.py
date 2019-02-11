@@ -21,10 +21,10 @@ class DummySubclass(VisionSubclass):
     def capture(self):
         from datetime import datetime
         from time import sleep
-        self.frame += 1
-        if self.frame > 10:
+        self._frame += 1
+        if self._frame > 10:
             return None
-        f = Frame(datetime.now(), self.frame - 1, (Image(self, np.zeros((3 * 1024, 3 * 1024, 3), dtype=np.uint8)),))
+        f = Frame(datetime.now(), self._frame - 1, (Image(self, np.zeros((3 * 1024, 3 * 1024, 3), dtype=np.uint8)),))
         sleep(.01)
         return f
 

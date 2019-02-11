@@ -319,8 +319,16 @@ class CalibratedStereoCamera(ProcessorBase):
             if not isinstance(camera, StereoCamera) and not (isinstance(camera, tuple) and len(camera) == 6):
                 raise TypeError("Camera must be either StereoCamera or tuple with (frame_size, camera_matrix, distortion)")
             self._camera = camera
-            left.camera = camera.left
-            right.camera = camera.right
+
+            if not isinstance(left, PyroCapture):
+                left.get_source('CalibratedCamera').camera = camera.left
+            else:
+                left.remote_set('camera', camera.left)
+            if not isinstance(left, PyroCapture):
+                right.get_source('CalibratedCamera').camera = camera.right
+            else:
+                right.remote_set('camera', camera.right)
+
             if left._calibrate or right._calibrate:
                 raise ValueError("Left and Right cameras must NOT be set to calibrate mode")
         else:
@@ -336,19 +344,19 @@ class CalibratedStereoCamera(ProcessorBase):
             self._grid_shape = grid_shape
             self._square_size = square_size
             self._camera = None
-            self.stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-5)
-            self.flags = 0
+            self._stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-5)
+            self._flags = 0
             #self.flags |= cv2.CALIB_FIX_INTRINSIC
-            self.flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            self._flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
             #self.flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-            self.flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-            self.flags |= cv2.CALIB_FIX_ASPECT_RATIO
-            self.flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            self._flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self._flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            self._flags |= cv2.CALIB_ZERO_TANGENT_DIST
             # self.flags |= cv2.CALIB_RATIONAL_MODEL
-            self.flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            self.flags |= cv2.CALIB_FIX_K3
-            self.flags |= cv2.CALIB_FIX_K4
-            self.flags |= cv2.CALIB_FIX_K5
+            self._flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            self._flags |= cv2.CALIB_FIX_K3
+            self._flags |= cv2.CALIB_FIX_K4
+            self._flags |= cv2.CALIB_FIX_K5
             self._max_samples = max_samples
             self._last_timestamp = None
 
@@ -466,7 +474,7 @@ class CalibratedStereoCamera(ProcessorBase):
             left_camera.matrix, left_camera.distortion,
             right_camera.matrix, right_camera.distortion,
             shape,
-            criteria=self.stereocalib_criteria, flags=self.flags)
+            criteria=self._stereocalib_criteria, flags=self._flags)
 
         R1, R2, P1, P2, Q, vb1, vb2 = cv2.stereoRectify(
             M1,

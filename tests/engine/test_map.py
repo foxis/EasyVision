@@ -28,7 +28,7 @@ def test_map_load_plan():
     #_map.draw(path)
     #cv2.waitKey(0)
 
-    assert(path[0] == (10, 5))
-    assert(path[-1] == (325 // 2, 5))
+    assert(tuple(path[0]) == (10, 5))
+    assert(tuple(path[-1]) == (325 // 2, 5))
     assert(len(path) > 10)
 

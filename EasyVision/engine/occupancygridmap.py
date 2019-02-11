@@ -194,6 +194,6 @@ class OccupancyGridMap(MapBase):
 
                 yield x, y
 
-        path = np.float32(self.astar(start, goal, neighbors, heuristic)) / self._scale
+        path = np.float32(tuple(self.astar(start, goal, neighbors, heuristic))) / self._scale
 
         return path[::-1]
