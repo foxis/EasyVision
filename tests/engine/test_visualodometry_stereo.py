@@ -57,7 +57,7 @@ def test_visual_odometry_kitti_stereo():
             camera)
     occmap = OccupancyGridMap((1200, 1200), .002, display_results=True)
     pose = Pose(0, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[290000], [0], [90000]])
-    with VisualOdometryStereoEngine(cam, pose=pose, occupancy_map=occmap, display_results=True, debug=True) as engine:
+    with VisualOdometryStereoEngine(cam, pose=pose, _map=occmap, display_results=True, debug=True) as engine:
         for img_id, _ in enumerate(images_kitti_l):
             true_x = ground_truth[img_id][3]
             true_y = ground_truth[img_id][7]

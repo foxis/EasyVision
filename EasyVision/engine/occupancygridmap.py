@@ -150,10 +150,11 @@ class OccupancyGridMap(MapBase):
             cv2.line(disp, (int(tl[0][0]), int(tl[2][0])), (int(t[0][0]), int(t[2][0])), (0, 0, 255))
             tl = t
 
-        tl = path[0]
-        for t in path[1:]:
-            cv2.line(disp, (int(tl[0]), int(tl[1])), (int(t[0]), int(t[1])), (0, 255, 0))
-            tl = t
+        if path is not None:
+            tl = path[0]
+            for t in path[1:]:
+                cv2.line(disp, (int(tl[0]), int(tl[1])), (int(t[0]), int(t[1])), (0, 255, 0))
+                tl = t
 
         cv2.imshow(self.name, disp)
 
