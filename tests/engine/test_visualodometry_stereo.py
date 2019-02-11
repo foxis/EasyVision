@@ -20,9 +20,8 @@ def test_visual_odometry_stereo():
     images_kitti_l = ['test_data/kitti00/image_0/{}.png'.format(str(i).zfill(6)) for i in range(3)]
     images_kitti_r = ['test_data/kitti00/image_1/{}.png'.format(str(i).zfill(6)) for i in range(3)]
 
-    cam_left = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_l), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.left)
-    cam_right = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_r), ocl=False, color=cv2.COLOR_BGR2GRAY), camera.right)
-    cam = CalibratedStereoCamera(cam_left, cam_right, camera)
+    cam_left = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_l), ocl=False, color=cv2.COLOR_BGR2GRAY), None)
+    cam_right = CalibratedCamera(ImageTransform(ImagesReader(images_kitti_r), ocl=False, color=cv2.COLOR_BGR2GRAY), None)
     cam = CalibratedStereoCamera(
             FeatureExtraction(cam_left, FEATURE_TYPE),
             FeatureExtraction(cam_right, FEATURE_TYPE),
