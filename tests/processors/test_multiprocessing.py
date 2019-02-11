@@ -159,7 +159,7 @@ def test_capture_mp_images():
         assert(frame_count == 3)
 
 
-@pytest.mark.slow
+@pytest.mark.complex
 def test_capture_mp_camera():
     vision = VideoCapture(0)
     with MultiProcessing(vision, freerun=False) as mp:
