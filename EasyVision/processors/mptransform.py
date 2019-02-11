@@ -222,7 +222,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
 
             if self.debug:
                 cv2.waitKey(1)
-        self._running.value = 0
+        self._running.value = False
         if self.debug:
             cv2.waitKey(0)
 
