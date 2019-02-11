@@ -130,6 +130,8 @@ class MultiProcessing(ProcessorBase, mp.Process):
         if not self._freerun:
             self._cap_event.set()
         if not self._frame_event.wait(self._timeout):
+            if not self._running.value:
+                return None
             raise TimeoutError()
 
         frame = Frame.frombytes(self._frame_in.recv_bytes())
