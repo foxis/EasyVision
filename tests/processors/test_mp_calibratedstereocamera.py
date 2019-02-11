@@ -94,7 +94,7 @@ def test_stereo_calibrated_mp():
     assert(total_single < total_mp < total_sum)
 
 
-@mark.main
+@mark.slow
 def test_stereo_calibrated_mp_dummy():
     from datetime import datetime
 
