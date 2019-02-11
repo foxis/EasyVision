@@ -105,6 +105,6 @@ def test_import_featureextractor():
     from EasyVision.processors import CalibratedCamera
 
 
-@pytest.mark.main
+@pytest.mark.xfail
 def test_import_bowvocabulary():
     from EasyVision.engine import BOWVocabularyBuilderEngine
