@@ -32,7 +32,6 @@ class DummySubclass(VisionSubclass):
 @mark.xfail
 def test_stereo_calibrated_mp():
     from datetime import datetime
-    from itertools import izip
 
     camera = StereoCamera(left_camera, right_camera, R, T, E, F, Q)
     feature_type = 'SURF'
@@ -54,7 +53,7 @@ def test_stereo_calibrated_mp():
     with left as left_:
         with right as right_:
             print('Sequential')
-            for framea, frameb in izip(left_, right_):
+            for framea, frameb in zip(left_, right_):
                 if framea.index == 0:
                     continue
                 delta = (datetime.now() - framea.timestamp).total_seconds()
