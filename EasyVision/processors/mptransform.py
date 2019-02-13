@@ -51,7 +51,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
         self._timeout = timeout
         self._running = mp.Value("b", 0)
 
-        self._frame_in, self._frame_out = mp.Pipe(False)
+        self._frame_in, self._frame_out = mp.Pipe(True)
         self._ctrl_in, self._ctrl_out = mp.Pipe(False)
         self._res_in, self._res_out = mp.Pipe(False)
 
@@ -127,7 +127,9 @@ class MultiProcessing(ProcessorBase, mp.Process):
         if not self._running.value:
             return None
 
+        print("capture")
         if not self._freerun:
+            self._frame_event.clear()
             self._cap_event.set()
         if not self._frame_event.wait(self._timeout):
             if not self._running.value:
@@ -135,7 +137,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
             raise TimeoutError()
 
         frame = Frame.frombytes(self._frame_in.recv_bytes())
-
+        print("frame received")
         self._frame_event.clear()
         if isinstance(frame, Exception):
             raise frame
@@ -207,21 +209,28 @@ class MultiProcessing(ProcessorBase, mp.Process):
         """Forked process loop"""
         super(MultiProcessing, self).setup()
         self._running.value = True
-        self._lazy_frame = None
         self._run_event.set()
-        while self._running.value:
-            self._remote_call_handle()
-
-            try:
+        try:
+            for frame in self._vision:
+                self._remote_call_handle()
                 if self._freerun:
-                    self._capture_freerun()
+                   self._send_frame(frame)
                 else:
-                    self._capture_lazy()
-            except Exception as e:
-                self._send_frame(e)
-
+                    while not self._cap_event.wait(.1):
+                        if not self._running.value:
+                            break
+                    self._cap_event.clear()
+                    self._send_frame(frame)
+                if not self._running.value:
+                    break
             if self.debug:
                 cv2.waitKey(1)
+            print("end of capture")
+            self._cap_event.wait(self._timeout)
+            self._send_frame(None)
+        except Exception as e:
+            self._send_frame(e)
+
         self._running.value = False
         if self.debug:
             cv2.waitKey(0)
@@ -231,28 +240,11 @@ class MultiProcessing(ProcessorBase, mp.Process):
     def _send_frame(self, frame):
         """Helper method to send a frame. Will pickle None, Frame and exceptions."""
         if not self._frame_event.is_set():
+            print("send frame")
             data = frame.tobytes() if isinstance(frame, Frame) else pickle.dumps(frame, protocol=-1)
             self._frame_out.send_bytes(data)
+            print("frame sent")
             self._frame_event.set()
-
-    def _capture_freerun(self):
-        """Helper method to capture frames in freerun mode"""
-        frame = self._vision.capture()
-        self._send_frame(frame)
-        if frame is None:
-            self._running.value = False
-
-    def _capture_lazy(self):
-        """Helper method to capture frames in lazy mode."""
-        if self._cap_event.wait(.001):
-            if self._lazy_frame is not None:
-                self._cap_event.clear()
-                self._send_frame(self._lazy_frame)
-            self._lazy_frame = self._vision.capture()
-            if self._lazy_frame is None:
-                self._cap_event.clear()
-                self._send_frame(None)
-                self._running.value = False
 
     @property
     def autoexposure(self):
