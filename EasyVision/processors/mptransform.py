@@ -239,17 +239,18 @@ class MultiProcessing(ProcessorBase, mp.Process):
         """Helper method to capture frames in freerun mode"""
         frame = self._vision.capture()
         self._send_frame(frame)
-        if not frame:
+        if frame is None:
             self._running.value = False
 
     def _capture_lazy(self):
         """Helper method to capture frames in lazy mode."""
         if self._cap_event.wait(.001):
-            if self._lazy_frame:
-                self._send_frame(self._lazy_frame)
+            if self._lazy_frame is not None:
                 self._cap_event.clear()
+                self._send_frame(self._lazy_frame)
             self._lazy_frame = self._vision.capture()
-            if not self._lazy_frame:
+            if self._lazy_frame is None:
+                self._cap_event.clear()
                 self._send_frame(None)
                 self._running.value = False
 
