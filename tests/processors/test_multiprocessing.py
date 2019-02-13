@@ -132,7 +132,7 @@ def test_capture_mp_noattr():
             _ = mp.remote_set('test_remote_exception_no_such_attr', 0)
 
 
-@pytest.mark.main
+@pytest.mark.xfail
 def test_capture_mp_lazy():
     vision = VisionSubclass(0)
     processor = ProcessorA(vision)
@@ -145,7 +145,7 @@ def test_capture_mp_lazy():
                 break
 
 
-@pytest.mark.slow
+@pytest.mark.xfail
 def test_capture_mp_images():
     vision = ImagesReader(["test_data/34838518832_fd00147042_k.jpg", "test_data/2732011028_f0f033e678_b.jpg", "test_data/4472701625_6b23da9a23_b.jpg"])
     with MultiProcessing(vision, freerun=False) as mp:
