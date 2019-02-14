@@ -190,7 +190,7 @@ class ProcessorBase(VisionBase):
     def __getattr__(self, name):
         """Allows to access attributes of deeper sources"""
         # this line is required for pickling/unpickling after fork
-        if not hasattr(self, '_vision'):
+        if '_vision' not in self.__dict__:
             raise AttributeError("")
         return getattr(self._vision, name)
 

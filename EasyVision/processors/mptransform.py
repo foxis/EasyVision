@@ -75,7 +75,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
             return wrapper
 
         # this line is required for pickling/unpickling after fork
-        if not hasattr(self, '_vision') or not hasattr(self, '_running'):
+        if '_vision' not in self.__dict__ or '_running' not in self.__dict__:
             raise AttributeError("")
 
         if not self._running.value:
@@ -214,21 +214,28 @@ class MultiProcessing(ProcessorBase, mp.Process):
             for frame in self._vision:
                 self._remote_call_handle()
                 if self._freerun:
-                   self._send_frame(frame)
+                    self._send_frame(frame)
                 else:
                     while not self._cap_event.wait(.1):
+                        self._remote_call_handle()
                         if not self._running.value:
                             break
                     self._cap_event.clear()
                     self._send_frame(frame)
+                    
                 if not self._running.value:
                     break
-            if self.debug:
-                cv2.waitKey(1)
+
+                if self.debug:
+                    cv2.waitKey(1)
+
             print("end of capture")
-            self._cap_event.wait(self._timeout)
+            if self._freerun:
+                self._cap_event.wait(self._timeout)
             self._send_frame(None)
         except Exception as e:
+            if self._freerun:
+                self._cap_event.wait(self._timeout)
             self._send_frame(e)
 
         self._running.value = False
