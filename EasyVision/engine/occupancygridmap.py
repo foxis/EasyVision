@@ -179,11 +179,10 @@ class OccupancyGridMap(MapBase):
 
         def heuristic(_a, _b):
             c = grid[_a[1], _a[0]] + 2.0
-            return c * sum((a - b) ** 2 for a, b in zip(_a, _b)) ** .5
+            return c * ((_a[0] - _b[0]) ** 2 + (_a[1] - _b[1]) ** 2) ** .5
 
         def neighbors(current):
-            neighbors = ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1))
-            for delta in neighbors:
+            for delta in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)):
                 x, y = current[0] + delta[0], current[1] + delta[1]
                 if x < 0 or y < 0:
                     continue
