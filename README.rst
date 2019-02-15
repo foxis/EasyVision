@@ -64,12 +64,12 @@ Contains such features as:
     - Remote processing using Pyro4
     - Visual Odometry and Mappings
     - Object recognition
-    - Bag Of Words
+    - Bag Of Words (``pip install pyDBoW3``)
 
 
 .. note::
 
-    Bag Of Words depend on `pyDBoW3 https://github.com/foxis/pyDBoW3`_
+    Bag Of Words depend on `pyDBoW3 <https://github.com/foxis/pyDBoW3>`_
 
 .. _install:
 
