@@ -67,6 +67,10 @@ Contains such features as:
     - Bag Of Words
 
 
+.. note::
+
+    Bag Of Words depend on `pyDBoW3 https://github.com/foxis/pyDBoW3`_
+
 .. _install:
 
 Install
