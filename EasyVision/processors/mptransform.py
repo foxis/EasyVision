@@ -222,7 +222,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
                             break
                     self._cap_event.clear()
                     self._send_frame(frame)
-                    
+
                 if not self._running.value:
                     break
 
