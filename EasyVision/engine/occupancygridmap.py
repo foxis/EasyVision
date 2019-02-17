@@ -175,21 +175,24 @@ class OccupancyGridMap(MapBase):
         grid += self._map
         grid = cv2.normalize(grid, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32FC1)
 
+        grid = grid.tolist()
+
         h, w = self._map.shape
 
         def heuristic(_a, _b):
-            c = grid[_a[1], _a[0]] + 2.0
+            c = grid[_a[1]][_a[0]] + 2.0
             return c * ((_a[0] - _b[0]) ** 2 + (_a[1] - _b[1]) ** 2) ** .5
 
+        deltas = ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1))
+
         def neighbors(current):
-            for delta in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+            for delta in deltas:
                 x, y = current[0] + delta[0], current[1] + delta[1]
                 if x < 0 or y < 0:
                     continue
                 if x >= w or y >= h:
                     continue
-
-                if grid[y, x] > 0:
+                if grid[y][x] > 0:
                     continue
 
                 yield x, y

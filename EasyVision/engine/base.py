@@ -219,19 +219,20 @@ class MapBase(EasyVisionBase):
         gscore = {start: 0}
         fscore = {start: heuristic(start, goal)}
         oheap = []
-        neighbors_cache = [start]
+        neighbors_cache = {start: 1}
 
         push(oheap, (fscore[start], start))
 
         while oheap:
             current = pop(oheap)[1]
-            neighbors_cache.remove(current)
+            neighbors_cache[current] -= 1
 
             if current == goal:
-                while current in came_from:
+                while current is not start:
                     yield current
                     current = came_from[current]
-                yield start
+                yield current
+                return
 
             close_set.add(current)
             for neighbor in neighbors(current):
@@ -240,9 +241,9 @@ class MapBase(EasyVisionBase):
                 if neighbor in close_set and tentative_g_score >= gscore.get(neighbor, 0):
                     continue
 
-                if tentative_g_score < gscore.get(neighbor, 0) or neighbor not in neighbors_cache:
+                if tentative_g_score < gscore.get(neighbor, 0) or neighbors_cache.get(neighbor, 0) <= 0:
                     came_from[neighbor] = current
                     gscore[neighbor] = tentative_g_score
                     fscore[neighbor] = tentative_g_score + heuristic(neighbor, goal)
                     push(oheap, (fscore[neighbor], neighbor))
-                    neighbors_cache.append(neighbor)
+                    neighbors_cache[neighbor] = neighbors_cache.get(neighbor, 0) + 1
