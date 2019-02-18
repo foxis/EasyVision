@@ -179,9 +179,19 @@ class OccupancyGridMap(MapBase):
 
         h, w = self._map.shape
 
-        def heuristic(_a, _b):
-            c = grid[_a[1]][_a[0]] + 2.0
-            return c * ((_a[0] - _b[0]) ** 2 + (_a[1] - _b[1]) ** 2) ** .5
+        def heuristic(_c, _a, _b):
+            cx, cy = _c
+            ax, ay = _a
+            bx, by = _b
+            adx = ax - cx
+            ady = ay - cy
+            bdx = bx - ax
+            bdy = by - ay
+            dist = (bdx ** 2 + bdy ** 2) ** .5
+            if dist == 0:
+                return 0
+            c = grid[ay][ax] + grid[by][bx] + 4.0
+            return c + dist + 1 - (adx * bdx + ady * bdy) / dist
 
         deltas = ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1))
 
