@@ -25,8 +25,8 @@ def test_map_load_plan():
 
     path = _map.plan(target, 11)
 
-    _map.draw(path)
-    cv2.waitKey(0)
+    #_map.draw(path)
+    #cv2.waitKey(0)
 
     assert(tuple(path[0]) == (10, 5))
     assert(tuple(path[-1]) == (325, 5))
