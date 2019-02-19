@@ -15,7 +15,7 @@ class OccupancyGridMap(MapBase):
 
     """
 
-    def __init__(self, _map, scale=.001, theta=.01, alpha=.6, beta=-.4, min_y=-10, max_y=5000, max_d=100000, poses=[], *args, **kwargs):
+    def __init__(self, _map, scale=.001, theta=.01, alpha=.6, beta=-.4, min_y=-10, max_y=5000, max_d=100000, poses=None, *args, **kwargs):
         """Instance initialization.
 
         :param _map: Accepts either a tuple of (map_width, map_height) or a np.float32 two dimensional array
@@ -28,6 +28,9 @@ class OccupancyGridMap(MapBase):
         :param max_d: maximum distance of the feature
         :param poses: a list of poses to initialize a map with
         """
+        if poses is None:
+            poses = []
+
         if not isinstance(poses, list) or not all(isinstance(i, Pose) for i in poses):
             raise TypeError("Poses must be a list of Pose")
 
@@ -134,7 +137,7 @@ class OccupancyGridMap(MapBase):
 
         return pose
 
-    def draw(self, path=None):
+    def draw(self, path=None, display=True):
         """Helper method to draw the map"""
         if not len(self._poses):
             return
@@ -156,7 +159,10 @@ class OccupancyGridMap(MapBase):
                 cv2.line(disp, (int(tl[0]), int(tl[1])), (int(t[0]), int(t[1])), (0, 255, 0))
                 tl = t
 
-        cv2.imshow(self.name, disp)
+        if display:
+            cv2.imshow(self.name, disp)
+        else:
+            return disp
 
     def plan(self, target, radius, **kwargs):
         """Finds the shortest path in the map between current and target poses.

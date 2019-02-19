@@ -8,6 +8,11 @@ from .visualodometry_stereo import VisualOdometryStereoEngine
 from .occupancygridmap import OccupancyGridMap
 
 try:
+    from .topologicalmap import TopologicalMap
+except:
+    pass
+
+try:
     from .bowvocabulary import BOWVocabularyBuilderEngine, BOWMatchingMixin
 except:
     pass
