@@ -12,7 +12,7 @@ import pyDBoW3 as bow
 from collections import namedtuple
 
 
-ORB_VOCABULARY_PATH = os.path.join(__path__, "EasyVision", "engine", "orbvoc.dbow3")
+ORB_VOCABULARY_PATH = os.path.join("", "EasyVision", "engine", "orbvoc.dbow3")
 
 
 class Node(namedtuple("Node", "pose links")):
@@ -45,7 +45,7 @@ class TopologicalMap(OccupancyGridMap):
     On every update call, updates both the topology(visibility graph) and occupancy grid.
     """
 
-    def __init__(self, _map, vocabulary, graph=None, *args, **kwargs):
+    def __init__(self, _map, vocabulary, *args, graph=None, **kwargs):
         """Instance initialization.
 
         :param _map: Accepts either a tuple of (map_width, map_height) or a np.float32 two dimensional array
@@ -60,21 +60,28 @@ class TopologicalMap(OccupancyGridMap):
         self._voc_path = vocabulary
         self._graph = graph
 
+        print("myself init")
+
         super(TopologicalMap, self).__init__(_map, *args, **kwargs)
 
     def setup(self):
+        print("myself setup")
         self._database = bow.Database()
-        self._database.loadVocabulary(self._voc_path)
+        self._database.loadVocabulary(self._voc_path, False, -1)
+
+        print("myself setup pregraph")
 
         for pose in self._graph:
             if pose.features is None:
                 raise AttributeError("All poses must contain features")
             # TODO except for the first pose that initiates the origin of the path
             self._database.add(pose.features.descriptors)
+            print("myself setup add pose")
 
         super(TopologicalMap, self).setup()
 
     def release(self):
+        print("myself release")
         super(TopologicalMap, self).release()
 
     @property
@@ -86,13 +93,19 @@ class TopologicalMap(OccupancyGridMap):
         return self._graph
 
     def update(self, pose, **kwargs):
-        super(TopologicalMap, self).update(pose, **kwargs)
+        print("myself update")
+        updated_pose = super(TopologicalMap, self).update(pose, **kwargs)
 
         if pose.features is None:
             raise AttributeError("All poses must contain features")
 
         results = self._database.query(pose.features.descriptors, 5, -1)
         self._results = [(result.Score, result.Id) for result in results]
+        print("myself update query", self._results)
+
+        if not results or max(score for score, id in self._results) < 0.01:
+            self._database.add(pose.features.descriptors)
+            self._graph.append(Node(pose, tuple(result.Id for result in results)))
 
         # TOOD:
         # query database
@@ -102,13 +115,19 @@ class TopologicalMap(OccupancyGridMap):
         #   add a node
         #   update node links based on query results
 
-        pass
+        return updated_pose
 
     def draw(self, path=None):
         disp = super(TopologicalMap, self).draw(path, display=False)
 
-        for node in self._graph:
-            pass
+        matches = tuple(id for _, id in self._results) if self._results else ()
+
+        for id, node in enumerate(self._graph):
+            draw_x, draw_y = int(node.pose.translation[0] * self._scale), int(node.pose.translation[2] * self._scale)
+            c = (0, 255, 0) if id in matches else (255, 0, 0)
+            cv2.circle(disp, (draw_x, draw_y), 1, c)
+
+        cv2.imshow(self.name, disp)
 
         # TODO:
         # draw the map
