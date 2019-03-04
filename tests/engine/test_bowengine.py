@@ -72,3 +72,16 @@ def test_dbow3_matching_mixin():
             assert(frame.images[0].image is not None)
 
         assert(frame_count == 3)
+
+@mark.long
+def test_dbow3_matching():
+    import pyDBoW3 as bow
+
+    database = bow.Database
+
+    cam = CalibratedCamera(ImageTransform(ImagesReader(images), ocl=False, color=cv2.COLOR_BGR2GRAY, enabled=True), camera, display_results=True, enabled=True)
+    with FeatureExtraction(cam, 'ORB') as vision:
+        for frame in vision:
+            database.add(frame.images[0].features.descriptors)
+
+

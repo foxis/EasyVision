@@ -2,7 +2,7 @@ sphinx==1.8.1
 
 # Theme
 
-sphinx_rtd_theme
+sphinx_materialdesign_theme
 
 # Extensions
 
