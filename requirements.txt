@@ -1,7 +1,7 @@
-numpy==1.15.4
+numpy>=1.15.4
 # for SURF/SIFT
 # use higher version if no SURF/SIFT required
-opencv-contrib-python==3.4.2.16
+#opencv-contrib-python==3.4.2.16
 
 # interserver communication
 pyro4>=4.75
