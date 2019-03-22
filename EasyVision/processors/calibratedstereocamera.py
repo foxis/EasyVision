@@ -345,10 +345,19 @@ class CalibratedStereoCamera(ProcessorBase):
                 else:
                     right.remote_set('enabled', False)
 
-            left._grid_shape = grid_shape
-            right._grid_shape = grid_shape
-            left._square_size = square_size
-            right._square_size = square_size
+            if not isinstance(left, PyroCapture):
+                left._grid_shape = grid_shape
+                left._square_size = square_size
+            else:
+                left.remote_set('_grid_shape', grid_shape)
+                left.remote_set('_square_size', square_size)
+
+            if not isinstance(right, PyroCapture):
+                right._grid_shape = grid_shape
+                right._square_size = square_size
+            else:
+                right.remote_set('_grid_shape', grid_shape)
+                right.remote_set('_square_size', square_size)
 
             self._frame_delay = frame_delay
             self._grid_shape = grid_shape
