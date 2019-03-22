@@ -7,7 +7,7 @@ from .base import *
 from EasyVision.exceptions import TimeoutError
 
 
-class MultiThreading(ProcessorBase, mt.Thread):
+class MultiThreading(ProcessorBase):
     """
     """
 
@@ -26,6 +26,7 @@ class MultiThreading(ProcessorBase, mt.Thread):
         self._exit_event.clear()
         self._frame_event.clear()
         self._frame = None
+        self._thread = None
         self._lock = mt.Lock()
 
         super(MultiThreading, self).__init__(vision, *args, **kwargs)
@@ -46,7 +47,8 @@ class MultiThreading(ProcessorBase, mt.Thread):
         self._frame_event.clear()
         self._frame = None
 
-        self.start()
+        self._thread = mt.Thread(target=self.run)
+        self._thread.start()
         if not self._run_event.wait(self._timeout):
             raise TimeoutError()
 
