@@ -39,6 +39,7 @@ class MultiThreading(ProcessorBase, mt.Thread):
 
     def setup(self):
         assert(not self._run_event.is_set())
+        super(MultiThreading, self).setup()
 
         self._run_event.clear()
         self._exit_event.clear()
@@ -52,6 +53,7 @@ class MultiThreading(ProcessorBase, mt.Thread):
     def release(self):
         self._run_event.clear()
         self._exit_event.wait(self._timeout)
+        super(MultiThreading, self).release()
 
     @property
     def description(self):

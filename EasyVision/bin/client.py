@@ -19,11 +19,12 @@ camera = PinholeCamera.from_parameters(
 if __name__ == "__main__":
     parser = ArgumentParser(description="Simple Remote Processor Client using Pyro4")
     parser.add_argument("name", help="Name of the remote Pyro4 source object")
+    parser.add_argument("-n", "--nameserver", default=None, help="hostname of the name server (default: empty)")
     parser.add_argument("-N", type=int, default=300, help="Number of frames to capture")
 
     args = parser.parse_args()
 
-    with PyroCapture(args.name) as vis:
+    with PyroCapture(args.name, nameserver=args.nameserver) as vis:
         print(vis.name)
         print(vis.fps)
         print(vis.frame_size)

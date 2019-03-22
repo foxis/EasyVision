@@ -168,7 +168,7 @@ def main():
     parser.add_argument("name", help="Name of the remote Pyro4 source object")
     parser.add_argument("file", help="Processor Stack builder Json file")
     parser.add_argument("-H", "--host", default="localhost", help="Hostname of the server (default: localhost)")
-    parser.add_argument("-n", "--nameserver", default="", help="hostname of the name server (default: empty)")
+    parser.add_argument("-n", "--nameserver", default=None, help="hostname of the name server (default: empty)")
     parser.add_argument("-p", "--port", default=0, help="Port of the server (default: 0)")
     parser.add_argument("-l", "--lazy", const=True, default=False, action='store_const',
                         help="Specifies whether to do lazy capturing, e.g. on demand (default: false)")
@@ -204,4 +204,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
