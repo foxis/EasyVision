@@ -17,24 +17,25 @@ class MultiConsumers(ProcessorBase):
     def __init__(self, *args, **kwargs):
         self._frame = None
         self._consumers = 0
-        self._numcaptured = 0
+        self._num_consumed = 0
+        self._num_captured = 0
         super(MultiConsumers, self).__init__(*args, **kwargs)
 
     def process(self, image):
-        raise NotImplementedError()
+        return self.source.process(image)
 
     def capture(self):
         super(ProcessorBase, self).capture()
 
-        if self._numcaptured == 0:
+        if self._num_captured == 0:
             self._frame = self._vision.capture()
 
-        self._numcaptured = (self._numcaptured + 1) % self._consumers
+        self._num_captured = (self._num_captured + 1) % self._consumers
 
         return self._frame
 
     def setup(self):
-        self._numconsumed = 0
+        self._num_consumed = 0
         if not self._consumers:
             super(MultiConsumers, self).setup()
         self._consumers += 1

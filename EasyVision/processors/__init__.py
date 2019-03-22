@@ -9,4 +9,6 @@ from .imagetransform import ImageTransform
 from .histogrambackprojection import HistogramBackprojection
 from .backgroundseparation import BackgroundSeparation
 from .mptransform import MultiProcessing
+from .mttransform import MultiThreading
 from .mctransform import MultiConsumers
+from .synchronisation import Synchronise
