@@ -59,7 +59,7 @@ class MultiThreading(ProcessorBase, mt.Thread):
 
     def process(self, image):
         return self.source.process(image)
-    
+
     def capture(self):
         if not self._run_event.is_set():
             return None

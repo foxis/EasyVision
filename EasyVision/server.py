@@ -253,13 +253,14 @@ class ServerDaemon(Pyro4.core.Daemon):
 class Server(object):
     """Server of the EasyVision objects or any other objects supplied to the server"""
 
-    def __init__(self, name, vision, host='localhost', port=0, freerun=True, proxy_class=ProxyVision, objects=None):
+    def __init__(self, name, vision, host='localhost', port=0, nameserver="", freerun=True, proxy_class=ProxyVision, objects=None):
         """
 
         :param name: Name of the EasyVision object
         :param vision: EasyVision object (One of vision/processors or engine
         :param host: Host name to serve on
         :param port: Port number to serve on
+        :param nameserver: Host name of the name server
         :param freerun: Whether to start capturing loop
         :param proxy_class: Specify a custom vision object remote proxy class
         :param objects: misc objects to be remotely served as a dictionary {"name": Object_or_class, ...}
@@ -271,6 +272,7 @@ class Server(object):
         self._running = False
         self._host = host
         self._port = port
+        self._nameserver = nameserver
         self._objects = objects if objects else {}
 
         self._proxy = proxy_class(vision, freerun)
@@ -282,7 +284,10 @@ class Server(object):
         :return: None
         """
         with ServerDaemon(host=self._host, port=self._port) as daemon:
-            ns = Pyro4.locateNS()
+            if self._nameserver:
+                ns = Pyro4.locateNS(host=self._nameserver)
+            else:
+                ns = Pyro4.locateNS()
 
             uri = daemon.register(self._proxy)
             ns.register(self._name, uri)
