@@ -72,6 +72,8 @@ class PyroCapture(VisionBase):
             data = Pyro4.socketutil.receiveData(self._sock, size)
             assert(size == len(data))
             result = pickle.loads(data)
+            if isinstance(result, Frame):
+                result = result._replace(images=tuple(i._replace(source=self) for i in result.images))
             return result
 
     def __command(self, cmd):

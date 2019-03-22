@@ -324,7 +324,7 @@ class CalibratedStereoCamera(ProcessorBase):
                 left.get_source('CalibratedCamera').camera = camera.left
             else:
                 left.remote_set('camera', camera.left)
-            if not isinstance(left, PyroCapture):
+            if not isinstance(right, PyroCapture):
                 right.get_source('CalibratedCamera').camera = camera.right
             else:
                 right.remote_set('camera', camera.right)
@@ -334,6 +334,16 @@ class CalibratedStereoCamera(ProcessorBase):
         else:
             if not left._calibrate or not right._calibrate:
                 raise ValueError("Left and Right cameras must be set to calibrate mode")
+
+            if left.get_source('FeatureExtraction'):
+                if not isinstance(left, PyroCapture):
+                    left.get_source('FeatureExtraction').enabled = False
+                else:
+                    left.remote_set('enabled', False)
+                if not isinstance(right, PyroCapture):
+                    right.get_source('FeatureExtraction').enabled = False
+                else:
+                    right.remote_set('enabled', False)
 
             left._grid_shape = grid_shape
             right._grid_shape = grid_shape
@@ -429,6 +439,7 @@ class CalibratedStereoCamera(ProcessorBase):
             img = image.image
             if self.display_results:
                 cv2.imshow("Left" if image.source is self._vision._left._vision else "Right", img)
+            print (image.source, self._vision._left._vision)
 
         return image
 
