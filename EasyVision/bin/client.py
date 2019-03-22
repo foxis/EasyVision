@@ -6,10 +6,12 @@ import cv2
 import time
 from argparse import ArgumentParser
 
+W, H = 640, 480
+
 camera = PinholeCamera.from_parameters(
-    (1280, 720),
-    (1280/2, 720/2),
-    (1280/2, 720/2),
+    (W, H),
+    (W/2, H/2),
+    (W/2, H/2),
     [0.0, 0.0, 0.0, 0.0, 0.0]
 )
 
@@ -35,7 +37,7 @@ if __name__ == "__main__":
         name = vis.name
 
         now = datetime.now()
-        for i in xrange(30):
+        for i in range(30):
             vis._proxy.echo('dat' * 640*480)
         print("echo calls ps with 640*480*3 bytes", 30 / (datetime.now() - now).total_seconds())
 
