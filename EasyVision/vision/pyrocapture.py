@@ -28,7 +28,6 @@ class PyroCapture(VisionBase):
         with Pyro4.locateNS(host=nameserver) as ns:
             uri = ns.lookup(self._name)
 
-        #self._proxy = Pyro4.Proxy('PYRONAME:%s' % self._name)
         self._proxy = Pyro4.Proxy(uri)
         self._sock = Pyro4.socketutil.createSocket(timeout=Pyro4.config.COMMTIMEOUT, nodelay=False)  # socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect(tuple(self._proxy.getsockname()))
