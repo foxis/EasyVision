@@ -3,6 +3,14 @@
 Release and Version History
 ==============================================================================
 
+0.0.4 (2019-03-24)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- FPS Counter (access e.g. like vision.CalibratedCamera_fps)
+- Multithreaded processor for efficient capture
+- Synchronization processor
+- Added Pyro NameServer host arguments to PyroCapture and server
+- Small bugfixes
+- Removed opencv from requirements.txt as on linux it makes more sense to build it from source
 
 0.0.3 (2019-02-08)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

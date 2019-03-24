@@ -83,3 +83,19 @@ EasyVision.processors.mptransform module
     :members:
     :undoc-members:
     :show-inheritance:
+
+EasyVision.processors.mttransform module
+----------------------------------------
+
+.. automodule:: EasyVision.processors.mttransform
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+EasyVision.processors.synchronization module
+----------------------------------------
+
+.. automodule:: EasyVision.processors.synchronization
+    :members:
+    :undoc-members:
+    :show-inheritance:

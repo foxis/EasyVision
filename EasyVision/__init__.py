@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 """
-Package Description.
+The main intent behind EasyVision Library is to create simple yet powerful vision framework for autonomous robots, that
+mainly run on NanoPi/RaspberryPi or any other embedded platforms that support Python and OpenCV.
 """
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 __short_description__ = "Easy Computer Vision Library using OpenCV."
 __license__ = "BSD 3-Clause"
 __author__ = "Andrius Mikonis"
