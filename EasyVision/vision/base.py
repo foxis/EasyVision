@@ -243,6 +243,7 @@ class VisionBase(EasyVisionBase):
     def capture(self):
         """Abstract method. Captures a frame from capturing device. ``setup`` must be called before calling this method."""
         super(VisionBase, self).next()
+        self.update_fps()
 
     @abstractproperty
     def is_open(self):

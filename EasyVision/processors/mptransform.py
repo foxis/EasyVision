@@ -127,7 +127,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
         if not self._running.value:
             return None
 
-        print("capture")
+        self.update_fps()
         if not self._freerun:
             self._frame_event.clear()
             self._cap_event.set()
@@ -137,7 +137,6 @@ class MultiProcessing(ProcessorBase, mp.Process):
             raise TimeoutError()
 
         frame = Frame.frombytes(self._frame_in.recv_bytes())
-        print("frame received")
         self._frame_event.clear()
         if isinstance(frame, Exception):
             raise frame

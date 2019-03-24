@@ -28,7 +28,7 @@ class MultiConsumers(ProcessorBase):
         super(ProcessorBase, self).capture()
 
         if self._num_captured == 0:
-            self._frame = self._vision.capture()
+            self._frame = self.source.capture()
 
         self._num_captured = (self._num_captured + 1) % self._consumers
 

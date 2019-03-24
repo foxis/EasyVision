@@ -4,6 +4,7 @@
 """
 
 from abc import ABCMeta, abstractmethod, abstractproperty
+from datetime import datetime
 
 try:
     from functools import lru_cache
@@ -80,6 +81,38 @@ class NamedTupleExtendHelper(object):
 ABC = ABCMeta('ABC', (object,), {'__slots__': ()})
 
 
+class FPSCounter(object):
+    """Simple FPS Counter descriptor.
+
+    setting a datetime object or None to this descriptor will update fps.
+    getting this descriptor will return calculated fps.
+    deleting this descriptor will reset the counter
+    """
+    def __init__(self, num_frames=30):
+        self._frames = 0
+        self._num_frames = num_frames
+        self._last_fps = 0
+        self._last_now = datetime.now()
+
+    def __get__(self, instance, owner):
+        return self._last_fps
+
+    def __set__(self, instance, now):
+        if now is None:
+            now = datetime.now()
+        assert(isinstance(now, datetime))
+        if self._frames % self._num_frames == 0:
+            if self._frames != 0:
+                print(self._last_fps, now, self._last_now, (now - self._last_now).total_seconds())
+                self._last_fps = self._num_frames / (now - self._last_now).total_seconds()
+            self._last_now = now
+        self._frames += 1
+
+    def __delete__(self, instance):
+        self._frames = 0
+        self._last_fps = 0
+
+
 class EasyVisionBase(ABC):
     """EasyVisionBase is an abstract class for all EasyVision algorithms
     Contains simple setup/release, debug/display_results, setup/release and context functionality.
@@ -97,6 +130,10 @@ class EasyVisionBase(ABC):
             Implements an iterator
         __len__
             Allows to receive a preliminary number of frames available
+        __getattr__
+            Catches {ClassName}_fps and returns current fps
+        update_fps
+            Updates fps counter
         name
             Returns Derived Class name
 
@@ -119,6 +156,8 @@ class EasyVisionBase(ABC):
     """
 
     __slots__ = ('_debug', '_display_results', '__setup_called')
+
+    _fps_counter = FPSCounter()
 
     def __init__(self, debug=False, display_results=False, *args, **kwargs):
         """Initializes the instance. super must be called after all the derived class
@@ -151,6 +190,20 @@ class EasyVisionBase(ABC):
         """Makes derived class into iterable."""
         return self
 
+    def __getattr__(self, name):
+        if name == "%s_fps" % self.__class__.__name__:
+            return self._fps_counter
+        else:
+            super(EasyVisionBase, self).__getattr__(name)
+
+    def update_fps(self, now=None):
+        """Updates FPS counter
+
+        :param now: optional datetime object. If set to None will use datetime.now() instead.
+        :return: None
+        """
+        self._fps_counter = now
+
     @abstractmethod
     def __len__(self):
         """Abstract method. Used for len(MyAlgorithm). Should return the number of images/frames/computations available.
@@ -173,6 +226,7 @@ class EasyVisionBase(ABC):
         """
         assert(not self.__setup_called)
         self.__setup_called = True
+        del self._fps_counter
 
     @abstractmethod
     def release(self):

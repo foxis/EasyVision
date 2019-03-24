@@ -67,7 +67,7 @@ class MultiThreading(ProcessorBase):
     def capture(self):
         if not self._run_event.is_set():
             return None
-
+        self.update_fps()
         if not self._frame_event.wait(self._timeout):
             raise TimeoutError()
         with self._lock:
@@ -78,7 +78,7 @@ class MultiThreading(ProcessorBase):
 
     def run(self):
         self._run_event.set()
-        for frame in self._vision:
+        for frame in self.source:
             if not self._run_event.is_set():
                 break
 

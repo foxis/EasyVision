@@ -51,7 +51,7 @@ class EngineBase(EasyVisionBase):
     @abstractmethod
     def compute(self):
         """Will compute the algorithm and return a frame and computation result"""
-        pass
+        self.update_fps()
 
     def setup(self):
         self._vision.setup()
