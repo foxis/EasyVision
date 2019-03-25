@@ -41,7 +41,7 @@ class ImageTransform(ProcessorBase):
         elif isinstance(img, cv2.UMat):
             img = img.get()
         if self._color:
-            img = cv2.cvtColor(img, self._color, dst=img)
+            img = cv2.cvtColor(img, self._color)
         if self._operator:
             img = self._operator(img)
 
