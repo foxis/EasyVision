@@ -201,7 +201,7 @@ class CalibratedCamera(ProcessorBase):
             if self.display_results:
                 cv2.imshow(self.name, mapped)
 
-            self._cache_mapped = mapped
+            self._cache_mapped = image
             return image._replace(image=mapped)
 
     def calibrate(self):
