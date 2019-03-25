@@ -129,6 +129,7 @@ class CalibratedCamera(ProcessorBase):
             self._frame_delay = frame_delay
             self._last_timestamp = None
 
+        self._cache_mapped = None
         self._calibrate = calibrate
         self.__setup_called = False
         super(CalibratedCamera, self).__init__(vision, *args, **kwargs)
@@ -195,11 +196,12 @@ class CalibratedCamera(ProcessorBase):
 
             return Image(self, gray, features=(ret, corners), feature_type='corners')
         else:
-            mapped = cv2.remap(image.image, self._mapx, self._mapy, cv2.INTER_NEAREST)
+            mapped = cv2.remap(image.image, self._mapx, self._mapy, cv2.INTER_NEAREST, dst=self._cache_mapped)
 
             if self.display_results:
                 cv2.imshow(self.name, mapped)
 
+            self._cache_mapped = mapped
             return image._replace(image=mapped)
 
     def calibrate(self):

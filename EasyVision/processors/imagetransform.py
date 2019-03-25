@@ -23,6 +23,7 @@ class ImageTransform(ProcessorBase):
         self._color = color
         self._ocl = ocl
         self._operator = operator
+        self._cache_img = None
 
         super(ImageTransform, self).__init__(vision, *args, **kwargs)
 
@@ -40,11 +41,12 @@ class ImageTransform(ProcessorBase):
         elif isinstance(img, cv2.UMat):
             img = img.get()
         if self._color:
-            img = cv2.cvtColor(img, self._color)
+            img = cv2.cvtColor(img, self._color, dst=img)
         if self._operator:
             img = self._operator(img)
 
         if self.display_results:
             cv2.imshow(self.name, img)
 
+        self._cache_img = img
         return image._replace(image=img)
