@@ -46,6 +46,11 @@ class PyroCapture(VisionBase):
         if name.startswith('__') and name.endswith('__') or self._proxy is None:
             raise AttributeError("No such attribute could be found: %s" % name)
 
+        try:
+            return super(PyroCapture, self).__getattr__(name)
+        except AttributeError:
+            pass
+
         if self._hascall(name):
             return caller_proxy(self, name)
         return self.remote_get(name)

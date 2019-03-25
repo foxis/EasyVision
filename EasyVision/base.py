@@ -91,26 +91,22 @@ class FPSCounter(object):
     def __init__(self, num_frames=30):
         self._frames = 0
         self._num_frames = num_frames
-        self._last_fps = 0
+        self.fps = 0
         self._last_now = datetime.now()
 
-    def __get__(self, instance, owner):
-        return self._last_fps
-
-    def __set__(self, instance, now):
+    def update(self, now):
         if now is None:
             now = datetime.now()
         assert(isinstance(now, datetime))
         if self._frames % self._num_frames == 0:
             if self._frames != 0:
-                print(self._last_fps, now, self._last_now, (now - self._last_now).total_seconds())
-                self._last_fps = self._num_frames / (now - self._last_now).total_seconds()
+                self.fps = self._num_frames / (now - self._last_now).total_seconds()
             self._last_now = now
         self._frames += 1
 
-    def __delete__(self, instance):
+    def reset(self):
         self._frames = 0
-        self._last_fps = 0
+        self.fps = 0
 
 
 class EasyVisionBase(ABC):
@@ -155,11 +151,9 @@ class EasyVisionBase(ABC):
 
     """
 
-    __slots__ = ('_debug', '_display_results', '__setup_called')
+    __slots__ = ('_debug', '_display_results', '__setup_called', '__fps_counter')
 
-    _fps_counter = FPSCounter()
-
-    def __init__(self, debug=False, display_results=False, *args, **kwargs):
+    def __init__(self, debug=False, display_results=False, fps_num_frames=30, *args, **kwargs):
         """Initializes the instance. super must be called after all the derived class
         initialization is complete.
 
@@ -171,6 +165,7 @@ class EasyVisionBase(ABC):
         self.__setup_called = False
         self.debug = debug
         self.display_results = display_results
+        self.__fps_counter = FPSCounter(fps_num_frames)
         super(EasyVisionBase, self).__init__()
 
     def __enter__(self):
@@ -192,9 +187,9 @@ class EasyVisionBase(ABC):
 
     def __getattr__(self, name):
         if name == "%s_fps" % self.__class__.__name__:
-            return self._fps_counter
+            return self.__fps_counter.fps
         else:
-            super(EasyVisionBase, self).__getattr__(name)
+            raise AttributeError("Unsupported dynamic attribute: %s" % name)
 
     def update_fps(self, now=None):
         """Updates FPS counter
@@ -202,7 +197,7 @@ class EasyVisionBase(ABC):
         :param now: optional datetime object. If set to None will use datetime.now() instead.
         :return: None
         """
-        self._fps_counter = now
+        self.__fps_counter.update(now)
 
     @abstractmethod
     def __len__(self):
@@ -226,7 +221,7 @@ class EasyVisionBase(ABC):
         """
         assert(not self.__setup_called)
         self.__setup_called = True
-        del self._fps_counter
+        self.__fps_counter.reset()
 
     @abstractmethod
     def release(self):

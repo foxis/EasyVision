@@ -120,12 +120,13 @@ class ProcessorBase(VisionBase):
         in ``__init__`` method. All internal attributes should be starting from "_", e.g. ``self._my_internal_var = 0``.
     """
 
-    def __init__(self, vision, processor_mask=None, append=False, enabled=True, *args, **kwargs):
+    def __init__(self, vision, processor_mask=None, append=False, null_image=False, enabled=True, *args, **kwargs):
         """Instance initialization. Must be called using super().__init__(*args, *kwargs)
 
         :param vision: capturing source object.
         :param processor_mask: a mask specifying which images in a frame should be processed
         :param append: indicates whether to replace images or append to the frame
+        :param null_image: indicates whether to set image.image to None for processed image
         :param enabled: indicates whether to run processing
         """
         if not isinstance(vision, VisionBase) and vision is not None:
@@ -134,6 +135,7 @@ class ProcessorBase(VisionBase):
         self._processor_mask = Frame.tidy_processor_mask(processor_mask)
         self._enabled = True
         self._append = append
+        self._null_image = null_image
         self.enabled = enabled
         super(ProcessorBase, self).__init__(*args, **kwargs)
 
@@ -153,13 +155,17 @@ class ProcessorBase(VisionBase):
         if not self.enabled:
             return frame
         elif frame:
+            if self._null_image:
+                postprocess = lambda x: x._replace(image=None, original=None, mask=None, source=self)
+            else:
+                postprocess = lambda x: x._replace(source=self)
             processor_mask = self._processor_mask if self._processor_mask is not None else frame.processor_mask
             if processor_mask is None:
                 processor_mask = "1" * len(frame.images)
             if not self._append:
-                images = tuple(m == "0" and img or self.process(img)._replace(source=self) for m, img in zip(processor_mask, frame.images))
+                images = tuple(m == "0" and img or postprocess(self.process(img)) for m, img in zip(processor_mask, frame.images))
             else:
-                images = tuple(self.process(img)._replace(source=self) for m, img in zip(processor_mask, frame.images) if m != "0")
+                images = tuple(postprocess(self.process(img)) for m, img in zip(processor_mask, frame.images) if m != "0")
                 images = frame.images + images
             return frame._replace(images=images)
 
@@ -191,8 +197,11 @@ class ProcessorBase(VisionBase):
         """Allows to access attributes of deeper sources"""
         # this line is required for pickling/unpickling after fork
         if '_vision' not in self.__dict__:
-            raise AttributeError("")
-        return getattr(self._vision, name)
+            raise AttributeError("Source was not set")
+        try:
+            return super(ProcessorBase, self).__getattr__(name)
+        except AttributeError:
+            return getattr(self._vision, name)
 
     #def __setattr__(self, name, value):
     #    """Allows to set attributes of deeper sources"""
@@ -240,12 +249,6 @@ class ProcessorBase(VisionBase):
     @property
     def devices(self):
         return self._vision.devices
-
-    def display_results_changed(self, last, current):
-        if current:
-            cv2.namedWindow(self.name, cv2.WINDOW_NORMAL)
-        else:
-            cv2.destroyWindow(self.name)
 
     @property
     def autoexposure(self):
