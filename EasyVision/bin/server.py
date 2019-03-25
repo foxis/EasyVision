@@ -186,8 +186,10 @@ def main():
         ImageTransform,
         FeatureExtraction,
         BackgroundSeparation,
+        HistogramBackprojection,
         BlobExtraction,
-        MultiThreading
+        MultiThreading,
+        MultiProcessing
     )
     with open(args.file) as f:
         builder = Builder.fromdict(json.load(f), classes)
