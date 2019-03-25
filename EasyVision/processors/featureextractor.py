@@ -29,6 +29,7 @@ class FeatureExtraction(ProcessorBase):
         self._kwargs.pop('enabled', None)
         self._kwargs.pop('debug', None)
         self._kwargs.pop('display_results', None)
+        self._kwargs.pop('processor_mask', None)
         self._feature_type = feature_type
         self._extract = extract
         self._detector = self._descriptor = None
