@@ -7,12 +7,9 @@ By the way, Multiprocessing doesn't really work fine with e.g. feature extractio
 and usually is a little bit slower than if processing sequentially. See tests for more details.
 """
 
-import cv2
-import numpy as np
 import multiprocessing as mp
 import multiprocessing.connection
 from .base import *
-from EasyVision.exceptions import TimeoutError
 import functools
 
 try:
@@ -24,7 +21,7 @@ Attr = namedtuple("Attr", 'name method args kwargs')
 multiprocessing.connection.BUFSIZE = 64 * 1024 * 1024
 
 
-class MultiProcessing(ProcessorBase, mp.Process):
+class MultiProcessing(ProcessorBase):
     """Implements processor stack using multiprocessing
     Allows to set/get properties on the forked process as well as calling methods.
     This processor supports two modes: freerun and lazy.
@@ -64,6 +61,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
         self._run_event.clear()
         self._frame_event.clear()
         self._cap_event.clear()
+        self._process = None
 
         super(MultiProcessing, self).__init__(vision, *args, **kwargs)
 
@@ -77,6 +75,11 @@ class MultiProcessing(ProcessorBase, mp.Process):
         # this line is required for pickling/unpickling after fork
         if '_vision' not in self.__dict__ or '_running' not in self.__dict__:
             raise AttributeError("")
+
+        try:
+            return super(MultiProcessing, self).__getattr__(name)
+        except:
+            pass
 
         if not self._running.value:
             return getattr(self._vision, name)
@@ -104,13 +107,15 @@ class MultiProcessing(ProcessorBase, mp.Process):
 
     def setup(self):
         assert(not self._running.value)
-        self.start()
+        self._process = mp.Process(target=self.run)
+        self._process.start()
         if not self._run_event.wait(self._timeout):
-            raise TimeoutError()
+            raise TimeoutError("Timeout occured while setup")
 
     def release(self):
         self._running.value = False
-        self.join(self._timeout)
+        self._process.join(self._timeout)
+        self._process = None
 
     @property
     def is_open(self):
@@ -134,7 +139,7 @@ class MultiProcessing(ProcessorBase, mp.Process):
         if not self._frame_event.wait(self._timeout):
             if not self._running.value:
                 return None
-            raise TimeoutError()
+            raise TimeoutError("Timeout occured while waiting for a frame")
 
         frame = Frame.frombytes(self._frame_in.recv_bytes())
         self._frame_event.clear()
@@ -228,7 +233,6 @@ class MultiProcessing(ProcessorBase, mp.Process):
                 if self.debug:
                     cv2.waitKey(1)
 
-            print("end of capture")
             if self._freerun:
                 self._cap_event.wait(self._timeout)
             self._send_frame(None)
@@ -246,10 +250,8 @@ class MultiProcessing(ProcessorBase, mp.Process):
     def _send_frame(self, frame):
         """Helper method to send a frame. Will pickle None, Frame and exceptions."""
         if not self._frame_event.is_set():
-            print("send frame")
             data = frame.tobytes() if isinstance(frame, Frame) else pickle.dumps(frame, protocol=-1)
             self._frame_out.send_bytes(data)
-            print("frame sent")
             self._frame_event.set()
 
     @property
