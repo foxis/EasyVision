@@ -51,7 +51,8 @@ class BlobExtraction(ProcessorBase):
         :param min_convexity: blob convexity
         :param min_inertia: blob inertia
         """
-        vision = HistogramBackprojection(vision, histogram, channels=channels, ranges=ranges) if not isinstance(vision, HistogramBackprojection) else vision
+
+        vision = HistogramBackprojection(vision, histogram, channels=channels, ranges=ranges) if vision.get_source("HistogramBackprojection") is None else vision
 
         if not isinstance(blur_size, tuple) or len(blur_size) != 2:
             raise TypeError("Blur Kernel Size must be a tuple of two integers")
@@ -113,7 +114,7 @@ class BlobExtraction(ProcessorBase):
             _, mask = cv2.threshold(mask, 50, 255, 0)
             kps = self._detector.detect(mask)
             keypoints += kps
-            if self.display_results:
+            if self.debug:
                 cv2.imshow("Mask%i" % i, mask)
 
         if self.display_results:

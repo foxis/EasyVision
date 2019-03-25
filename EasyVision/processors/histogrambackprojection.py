@@ -34,6 +34,17 @@ class HistogramBackprojection(ProcessorBase):
         :param range_min: min value for filtering of color
         :param range_max: max value for filtering of color
         """
+        if not isinstance(histogram, np.ndarray) and not isinstance(histogram, tuple) and not isinstance(histogram, list):
+            raise TypeError("Histogram must be either a list, a tuple or numpy darray")
+
+        if not isinstance(histogram, np.ndarray):
+            if isinstance(histogram[0], float):
+                histogram = np.float32(histogram)
+            elif isinstance(histogram[0], list) or isinstance(histogram[0], tuple):
+                histogram = tuple(np.float32(i) for i in histogram)
+            else:
+                raise TypeError("Wrong histogram format. Must be a numpy array, a list or a tuple or a list/tuple of ndarrays/lists/tuples")
+
         if isinstance(histogram, tuple) and not histogram:
             raise ValueError("If Histogram is a list of histograms, then it must not be empty.")
         self._hist = histogram if isinstance(histogram, tuple) else (histogram, )
