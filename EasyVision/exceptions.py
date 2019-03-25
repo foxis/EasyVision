@@ -7,8 +7,3 @@
 class EasyVisionError(Exception):
     """General EasyVision exception"""
     pass
-
-
-class TimeoutError(EasyVisionError):
-    """Timeout exception for multithreaded/multiprocessed/RPC code"""
-    pass
