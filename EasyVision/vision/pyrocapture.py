@@ -30,6 +30,8 @@ class PyroCapture(VisionBase):
 
         self._proxy = Pyro4.Proxy(uri)
         self._sock = Pyro4.socketutil.createSocket(timeout=Pyro4.config.COMMTIMEOUT, nodelay=False)  # socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1024*1024*10)
         self._sock.connect(tuple(self._proxy.getsockname()))
         super(PyroCapture, self).__init__(*args, **kwargs)
 

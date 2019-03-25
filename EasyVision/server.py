@@ -11,6 +11,7 @@ from collections import namedtuple
 import threading
 import Pyro4
 import select
+import socket
 import uuid
 import base64
 from datetime import datetime
@@ -209,6 +210,8 @@ class ServerDaemon(Pyro4.core.Daemon):
         super(ServerDaemon, self).__init__(host, port)
         host, _ = self.transportServer.sock.getsockname()
         self.blobsocket = Pyro4.socketutil.createSocket(bind=(host, 0), timeout=Pyro4.config.COMMTIMEOUT, nodelay=False)
+        self.blobsocket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024*1024*10)
+        self.blobsocket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1024)
         self.datablobs = {}
 
     def close(self):
