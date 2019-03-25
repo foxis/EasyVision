@@ -52,7 +52,7 @@ if __name__ == "__main__":
         now = datetime.now()
         for i, frame in enumerate(vis):
             assert(isinstance(frame, Frame))
-            print('.',)
+            print("fps:", vis.VideoCapture_fps, vis.CalibratedCamera_fps, vis.FeatureExtraction_fps, vis.PyroCapture_fps)
             if i > args.N:
                 break
             cv2.imshow(name, frame.images[0].image)
@@ -62,5 +62,6 @@ if __name__ == "__main__":
         print('remote fps', vis._proxy.fps())
         print("-------------------------------------")
         print("VideoCapture_fps", vis.VideoCapture_fps)
+        print("CalibratedCamera_fps", vis.CalibratedCamera_fps)
         print("FeatureExtraction_fps", vis.FeatureExtraction_fps)
         print("PyroCapture_fps", vis.PyroCapture_fps)

@@ -201,7 +201,10 @@ def main():
     server = Server(args.name, vision, host=args.host, port=args.port, nameserver=args.nameserver, freerun=not args.lazy)
 
     print("Starting server...")
-    server.run()
+    try:
+        server.run()
+    except KeyboardInterrupt:
+        print("Exiting...")
 
 
 if __name__ == "__main__":
