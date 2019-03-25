@@ -6,7 +6,6 @@
 import cv2
 import numpy as np
 from .base import *
-from EasyVision.exceptions import TimeoutError
 from .calibratedcamera import PinholeCamera
 from EasyVision.vision import PyroCapture
 import threading as mt

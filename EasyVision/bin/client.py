@@ -45,6 +45,9 @@ if __name__ == "__main__":
         print("letting to freerun for 10s")
         time.sleep(10)
         print('remote fps', vis._proxy.fps())
+        print("VideoCapture_fps", vis.VideoCapture_fps)
+        print("FeatureExtraction_fps", vis.FeatureExtraction_fps)
+        print("PyroCapture_fps", vis.PyroCapture_fps)
 
         now = datetime.now()
         for i, frame in enumerate(vis):
@@ -57,3 +60,7 @@ if __name__ == "__main__":
 
         print('capture fps', args.N / (datetime.now() - now).total_seconds())
         print('remote fps', vis._proxy.fps())
+        print("-------------------------------------")
+        print("VideoCapture_fps", vis.VideoCapture_fps)
+        print("FeatureExtraction_fps", vis.FeatureExtraction_fps)
+        print("PyroCapture_fps", vis.PyroCapture_fps)
