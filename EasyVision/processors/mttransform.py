@@ -4,7 +4,7 @@
 
 import threading as mt
 from .base import *
-from EasyVision.exceptions import TimeoutError
+import cv2
 
 
 class MultiThreading(ProcessorBase):
@@ -85,6 +85,9 @@ class MultiThreading(ProcessorBase):
             with self._lock:
                 self._frame = frame
                 self._frame_event.set()
+
+            if self.display_results:
+                cv2.waitKey(1)
 
         with self._lock:
             self._frame = None
