@@ -57,6 +57,7 @@ class HistogramBackprojection(ProcessorBase):
         self._cache_mask = None
         self._cache_mask1 = None
         self._combine_masks = combine_masks
+        self._disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
         super(HistogramBackprojection, self).__init__(vision, *args, **kwargs)
 
     def setup(self):
@@ -92,13 +93,14 @@ class HistogramBackprojection(ProcessorBase):
 
     def process(self, image):
         hsv = cv2.cvtColor(image.image, cv2.COLOR_BGR2HSV, dst=self._cache_img)
-        _mask = cv2.inRange(hsv, self._range_min, self._range_max)
+        #_mask = cv2.inRange(hsv, self._range_min, self._range_max)
+        self._cache_img = hsv
 
-        disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
         masks = ()
         for hist in self._hist:
-            mask = cv2.calcBackProject((hsv,), self._channels, hist, self._ranges, 1)
-            mask = cv2.filter2D(mask, -1, disc, dst=mask)
+            mask = cv2.calcBackProject((hsv,), self._channels, hist, self._ranges, 1, dst=self._cache_mask)
+            self._cache_mask = mask
+            mask = cv2.filter2D(mask, -1, self._disc, dst=mask)
             mask = cv2.blur(mask, (50, 50), dst=mask)
             _, mask = cv2.threshold(mask, 50, 255, 0, dst=mask)
             #mask = cv2.bitwise_and(_mask, mask)
