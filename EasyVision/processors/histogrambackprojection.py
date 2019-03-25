@@ -89,7 +89,7 @@ class HistogramBackprojection(ProcessorBase):
         if mask is not None:
             _mask = cv2.bitwise_and(_mask, mask, dst=_mask)
         hist = cv2.calcHist((hsv,), channels, _mask, bins, ranges)
-        return cv2.normalize(hist, None, 0, 256, cv2.NORM_MINMAX, dst=hist)
+        return cv2.normalize(hist, hist, 0, 256, cv2.NORM_MINMAX)
 
     def process(self, image):
         hsv = cv2.cvtColor(image.image, cv2.COLOR_BGR2HSV, dst=self._cache_img)
