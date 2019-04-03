@@ -44,7 +44,7 @@ class SimpleSynchronizer(object):
     """Simple Multiprocessing synchronizer that uses events and locks to synchronize two processes together.
     """
 
-    def __init__(self, num_streams, timeout=30):
+    def __init__(self, num_streams, timeout=30, *args, **kwargs):
         """SimpleSynchronizer object initialization.
 
         :param num_streams: Number of streams to synchronize
@@ -93,11 +93,12 @@ class PyroSynchronizer(object):
         self._proxy.sync()
 
 
+@Pyro4.behavior(instance_mode="single")
 class PyroSynchronizerObject(SimpleSynchronizer):
     """A Pyro synchronizer object wrapper over SimpleSynchronizer to provide syncing functionality over Pyro"""
 
-    def __init__(self, num_streams):
-        super(PyroSynchronizerObject, self).__init__(num_streams)
+    def __init__(self, num_streams, *args, **kwargs):
+        super(PyroSynchronizerObject, self).__init__(num_streams, *args, **kwargs)
 
     @Pyro4.expose
     def sync(self):
