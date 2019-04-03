@@ -89,8 +89,8 @@ class BlobExtraction(ProcessorBase):
         super(BlobExtraction, self).__init__(vision, *args, **kwargs)
 
     def setup(self):
-        self._detector = cv2.SimpleBlobDetector_create(self._params)
         super(BlobExtraction, self).setup()
+        self._detector = cv2.SimpleBlobDetector_create(self._params)
 
     def release(self):
         super(BlobExtraction, self).release()
@@ -110,8 +110,8 @@ class BlobExtraction(ProcessorBase):
 
         for i, mask in enumerate(image.mask):
             mask = 255 - mask
-            mask = cv2.blur(mask, self._blur_size)
-            _, mask = cv2.threshold(mask, 50, 255, 0)
+            mask = cv2.blur(mask, self._blur_size, dst=mask)
+            _, mask = cv2.threshold(mask, 50, 255, 0, dst=mask)
             kps = self._detector.detect(mask)
             keypoints += kps
             if self.debug:

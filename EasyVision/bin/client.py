@@ -52,7 +52,7 @@ if __name__ == "__main__":
         now = datetime.now()
         for i, frame in enumerate(vis):
             assert(isinstance(frame, Frame))
-            print(vis.VideoCapture_fps, vis.CalibratedCamera_fps, vis.FeatureExtraction_fps, vis.PyroCapture_fps)
+            print("fps:", vis.VideoCapture_fps, vis.CalibratedCamera_fps, vis.FeatureExtraction_fps, vis.PyroCapture_fps)
             if i > args.N:
                 break
             cv2.imshow(name, frame.images[0].image)
