@@ -1,3 +1,4 @@
+> *!!!IMPORTANT!!!* This repository is being discontinued. All the development is being moved to https://github.com/itohio/EasyVision.
 
 .. image:: https://readthedocs.org/projects/easyvision/badge/?version=latest
     :target: https://easyvision.readthedocs.io/?badge=latest
